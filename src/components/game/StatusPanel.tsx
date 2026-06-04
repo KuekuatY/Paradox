@@ -3,7 +3,8 @@ import { useGameStore } from '@/stores/gameStore';
 import { realms } from '@/data/realms';
 import { cultivationStrategies } from '@/data/strategies';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
-import type { Attributes, CultivationStrategyId } from '@/types';
+import { getLifeGoalDefinition } from '@/data/lifeGoals';
+import type { ActiveLifeGoal, Attributes, CultivationStrategyId, GameEvent } from '@/types';
 
 export default function StatusPanel() {
   const { gameState, setStrategy } = useGameStore();
@@ -82,6 +83,13 @@ export default function StatusPanel() {
       />
 
       {gameState.status === 'playing' && (
+        <LifeGoalPanel
+          activeGoal={gameState.activeGoal}
+          completedCount={gameState.completedGoals.length}
+        />
+      )}
+
+      {gameState.status === 'playing' && (
         <StrategyPanel
           selectedStrategy={gameState.strategy}
           onSelect={setStrategy}
@@ -99,6 +107,8 @@ export default function StatusPanel() {
       </div>
 
       <AchievementPanel achievements={gameState.achievements} />
+
+      <RecentEvents events={gameState.events} />
     </motion.div>
   );
 }
@@ -248,6 +258,71 @@ function StrategyPanel({
   );
 }
 
+function LifeGoalPanel({
+  activeGoal,
+  completedCount
+}: {
+  activeGoal: ActiveLifeGoal | null;
+  completedCount: number;
+}) {
+  const definition = activeGoal ? getLifeGoalDefinition(activeGoal.id) : undefined;
+
+  if (!activeGoal || !definition) {
+    return (
+      <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3 text-sm text-[#66766e]">
+        道途目标将在入世后显现。
+      </div>
+    );
+  }
+
+  const progressPercent = Math.min(100, Math.round(activeGoal.progress / definition.target * 100));
+  const rewardEntries = Object.entries(definition.reward).filter(([, value]) => value !== undefined);
+
+  return (
+    <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">道途目标</span>
+        <span className="text-xs text-[#66766e]">已成 {completedCount}</span>
+      </div>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-bold text-[#355d58]">{definition.name}</div>
+          <p className="mt-1 text-xs leading-relaxed text-[#66766e]">{definition.description}</p>
+        </div>
+        <div className="shrink-0 rounded border border-[#738275]/20 bg-[#fffdf2]/60 px-2 py-1 text-xs font-semibold text-[#6d634d]">
+          {definition.targetLabel}
+        </div>
+      </div>
+      <div className="mt-3">
+        <div className="mb-1 flex items-center justify-between text-xs">
+          <span className="ink-muted">进度</span>
+          <span className="font-semibold text-[#263832]">
+            {activeGoal.progress}/{definition.target}
+          </span>
+        </div>
+        <div className="relative h-2 rounded-full bg-[#c8c2a9]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#355d58] to-[#9a8a54]"
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {rewardEntries.map(([key, value]) => (
+          <span
+            key={key}
+            className="rounded-full bg-[#e7eddd] px-2 py-1 text-xs font-semibold text-[#355d58]"
+          >
+            {key} {typeof value === 'number' && value > 0 ? '+' : ''}{String(value)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AchievementPanel({ achievements }: { achievements: string[] }) {
   const unlocked = new Set(achievements);
   const visibleAchievements = achievementCatalog.slice(0, 8);
@@ -296,6 +371,47 @@ function AchievementPanel({ achievements }: { achievements: string[] }) {
       )}
     </div>
   );
+}
+
+function RecentEvents({ events }: { events: GameEvent[] }) {
+  const recentEvents = events.slice(-4).reverse();
+
+  if (recentEvents.length === 0) return null;
+
+  return (
+    <div className="mt-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">最近年表</span>
+        <span className="text-xs text-[#66766e]">{events.length} 事</span>
+      </div>
+      <div className="space-y-2">
+        {recentEvents.map(event => (
+          <div
+            key={`${event.id}-${event.age}`}
+            className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-2"
+          >
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-[#355d58]">第 {event.age} 年</span>
+              <span className={getEventResultClass(event.result)}>{getEventResultText(event.result)}</span>
+            </div>
+            <div className="mt-1 truncate text-sm font-semibold text-[#45564f]">{event.title}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getEventResultText(result: GameEvent['result']): string {
+  if (result === 'success') return '成';
+  if (result === 'failure') return '折';
+  return '平';
+}
+
+function getEventResultClass(result: GameEvent['result']): string {
+  if (result === 'success') return 'font-semibold text-[#355d58]';
+  if (result === 'failure') return 'font-semibold text-[#9d3d2f]';
+  return 'font-semibold text-[#6d634d]';
 }
 
 function getRequirementItems(

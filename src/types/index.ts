@@ -14,6 +14,28 @@ export interface CultivationStrategy {
   modifiers: GrowthModifiers;
 }
 
+export type LifeGoalProgressKind = 'effectGain' | 'eventCount' | 'breakthrough';
+
+export interface LifeGoalDefinition {
+  id: string;
+  name: string;
+  description: string;
+  progressKind: LifeGoalProgressKind;
+  target: number;
+  targetLabel: string;
+  effectKeys?: Array<keyof Attributes | '修为' | '寿命'>;
+  eventTypes?: EventType[];
+  minRealmLevel?: number;
+  maxRealmLevel?: number;
+  reward: GameEvent['effects'];
+  completionText: string;
+}
+
+export interface ActiveLifeGoal {
+  id: string;
+  progress: number;
+}
+
 export interface GrowthModifiers {
   修为倍率?: number;
   属性倍率?: number;
@@ -79,6 +101,8 @@ export interface GameState {
   lifespan: number;
   cultivationProgress: number;
   pendingEvent: GameEvent | null;
+  activeGoal: ActiveLifeGoal | null;
+  completedGoals: string[];
   events: GameEvent[];
   achievements: string[];
   endReason?: 'lifespan' | 'meditation' | 'ascended';

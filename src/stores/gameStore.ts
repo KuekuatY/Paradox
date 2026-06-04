@@ -4,7 +4,18 @@ import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
 import { events } from '@/data/events';
 import { getCultivationStrategy } from '@/data/strategies';
-import type { GameState, Talent, GameEvent, Attributes, SpiritRoot, GrowthModifiers, CultivationStrategyId } from '@/types';
+import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
+import type {
+  ActiveLifeGoal,
+  GameState,
+  Talent,
+  GameEvent,
+  Attributes,
+  SpiritRoot,
+  GrowthModifiers,
+  CultivationStrategyId,
+  LifeGoalDefinition
+} from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
 interface GameStore {
@@ -46,6 +57,8 @@ const initialState: GameState = {
   lifespan: 100,
   cultivationProgress: 0,
   pendingEvent: null,
+  activeGoal: null,
+  completedGoals: [],
   events: [],
   achievements: []
 };
@@ -65,20 +78,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
       家境: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0), startingAttributeCap)
     };
 
+    const newGameState: GameState = {
+      status: 'playing',
+      age: STARTING_AGE,
+      currentRealm: realms[0],
+      attributes: initialAttributes,
+      spiritRoot,
+      talent,
+      strategy: 'balanced',
+      lifespan: 100,
+      cultivationProgress: 0,
+      pendingEvent: null,
+      activeGoal: null,
+      completedGoals: [],
+      events: [],
+      achievements: ['初入仙途']
+    };
+
     set({
       gameState: {
-        status: 'playing',
-        age: STARTING_AGE,
-        currentRealm: realms[0],
-        attributes: initialAttributes,
-        spiritRoot,
-        talent,
-        strategy: 'balanced',
-        lifespan: 100,
-        cultivationProgress: 0,
-        pendingEvent: null,
-        events: [],
-        achievements: ['初入仙途']
+        ...newGameState,
+        activeGoal: createActiveLifeGoal(newGameState)
       }
     });
 
@@ -142,15 +162,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       result
     };
 
+    const stateAfterEvent: GameState = {
+      ...gameState,
+      pendingEvent: null,
+      attributes: newAttributes,
+      lifespan: newLifespan,
+      cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+      events: [...gameState.events, newEvent]
+    };
+
     set({
-      gameState: unlockAchievements({
-        ...gameState,
-        pendingEvent: null,
-        attributes: newAttributes,
-        lifespan: newLifespan,
-        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-        events: [...gameState.events, newEvent]
-      })
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent))
     });
 
     get().checkGameEnd();
@@ -212,14 +234,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       result: 'neutral'
     };
 
+    const stateAfterPreparation: GameState = {
+      ...gameState,
+      attributes: newAttributes,
+      lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+      cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+      events: [...gameState.events, preparationEvent]
+    };
+
     set({
-      gameState: unlockAchievements({
-        ...gameState,
-        attributes: newAttributes,
-        lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
-        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-        events: [...gameState.events, preparationEvent]
-      })
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterPreparation, preparationEvent))
     });
   },
 
@@ -287,14 +311,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       result: 'success'
     };
 
+    const stateAfterBreakthrough: GameState = {
+      ...gameState,
+      currentRealm: nextRealm,
+      lifespan: addLifespan(gameState.lifespan, lifespanGain),
+      cultivationProgress: 0,
+      events: [...gameState.events, breakthroughEvent]
+    };
+
     set({
-      gameState: unlockAchievements({
-        ...gameState,
-        currentRealm: nextRealm,
-        lifespan: addLifespan(gameState.lifespan, lifespanGain),
-        cultivationProgress: 0,
-        events: [...gameState.events, breakthroughEvent]
-      })
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterBreakthrough, breakthroughEvent))
     });
 
     get().checkGameEnd();
@@ -593,6 +619,147 @@ function getPreparationAction(actionId: string): PreparationAction | undefined {
   ];
 
   return actions.find(action => action.id === actionId);
+}
+
+function createActiveLifeGoal(gameState: GameState): ActiveLifeGoal | null {
+  const availableGoals = getAvailableLifeGoals(gameState, false);
+  const candidates = availableGoals.length > 0 ? availableGoals : getAvailableLifeGoals(gameState, true);
+  if (candidates.length === 0) return null;
+
+  const selected = candidates[Math.floor(Math.random() * candidates.length)];
+  return {
+    id: selected.id,
+    progress: 0
+  };
+}
+
+function getAvailableLifeGoals(gameState: GameState, allowCompleted: boolean): LifeGoalDefinition[] {
+  return lifeGoals.filter(goal => {
+    if (!allowCompleted && gameState.completedGoals.includes(goal.id)) return false;
+    if (goal.minRealmLevel && gameState.currentRealm.level < goal.minRealmLevel) return false;
+    if (goal.maxRealmLevel && gameState.currentRealm.level > goal.maxRealmLevel) return false;
+    return true;
+  });
+}
+
+function applyLifeGoalProgress(gameState: GameState, triggeringEvent: GameEvent): GameState {
+  if (!gameState.activeGoal) {
+    return {
+      ...gameState,
+      activeGoal: createActiveLifeGoal(gameState)
+    };
+  }
+
+  const definition = getLifeGoalDefinition(gameState.activeGoal.id);
+  if (!definition) {
+    return {
+      ...gameState,
+      activeGoal: createActiveLifeGoal(gameState)
+    };
+  }
+
+  const progressGain = calculateLifeGoalProgress(definition, triggeringEvent);
+  if (progressGain <= 0) return gameState;
+
+  const activeGoal = {
+    ...gameState.activeGoal,
+    progress: Math.min(definition.target, gameState.activeGoal.progress + progressGain)
+  };
+
+  if (activeGoal.progress < definition.target) {
+    return {
+      ...gameState,
+      activeGoal
+    };
+  }
+
+  return completeLifeGoal(
+    {
+      ...gameState,
+      activeGoal
+    },
+    definition,
+    triggeringEvent
+  );
+}
+
+function calculateLifeGoalProgress(definition: LifeGoalDefinition, event: GameEvent): number {
+  if (definition.progressKind === 'breakthrough') {
+    return event.appliedEffects?.境界 === 'advance' || event.effects.境界 === 'advance' ? 1 : 0;
+  }
+
+  if (definition.progressKind === 'eventCount') {
+    return definition.eventTypes?.includes(event.type) ? 1 : 0;
+  }
+
+  const appliedEffects = event.appliedEffects ?? event.effects;
+  return (definition.effectKeys ?? []).reduce((sum, key) => {
+    const value = appliedEffects[key];
+    return typeof value === 'number' && value > 0 ? sum + value : sum;
+  }, 0);
+}
+
+function completeLifeGoal(
+  gameState: GameState,
+  definition: LifeGoalDefinition,
+  triggeringEvent: GameEvent
+): GameState {
+  const completedGoals = Array.from(new Set([...gameState.completedGoals, definition.id]));
+  const rewardEvent: GameEvent = {
+    id: `life-goal-${definition.id}-${Date.now()}`,
+    age: gameState.age,
+    type: 'daily',
+    title: `道途目标：${definition.name}`,
+    description: definition.completionText,
+    effects: definition.reward,
+    result: 'success'
+  };
+  const progressDelta = calculateCultivationProgressDelta(gameState, rewardEvent, definition.reward);
+  const lifespanDelta = calculateLifespanDelta(gameState, rewardEvent, definition.reward);
+  const rewardEffects = buildAppliedEffects(definition.reward, progressDelta, lifespanDelta);
+  const newAttributes = applyAttributeEffects(gameState, definition.reward);
+  const requiredProgress = getRequiredCultivationProgress(gameState);
+  const events = mergeLifeGoalRewardIntoEvents(
+    gameState.events,
+    triggeringEvent,
+    definition,
+    rewardEffects
+  );
+  const stateAfterReward: GameState = {
+    ...gameState,
+    attributes: newAttributes,
+    lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+    cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+    events,
+    completedGoals
+  };
+
+  return {
+    ...stateAfterReward,
+    activeGoal: createActiveLifeGoal(stateAfterReward)
+  };
+}
+
+function mergeLifeGoalRewardIntoEvents(
+  events: GameEvent[],
+  triggeringEvent: GameEvent,
+  definition: LifeGoalDefinition,
+  rewardEffects: GameEvent['effects']
+): GameEvent[] {
+  if (events.length === 0) return events;
+
+  const updatedEvents = [...events];
+  const eventIndex = updatedEvents.findIndex(event => event.id === triggeringEvent.id);
+  const targetIndex = eventIndex >= 0 ? eventIndex : updatedEvents.length - 1;
+  const event = updatedEvents[targetIndex];
+
+  updatedEvents[targetIndex] = {
+    ...event,
+    description: `${event.description}道途目标「${definition.name}」完成，${definition.completionText}`,
+    appliedEffects: mergeEffects(event.appliedEffects ?? {}, rewardEffects)
+  };
+
+  return updatedEvents;
 }
 
 function clampAttribute(value: number, cap = ATTRIBUTE_MAX): number {
@@ -1017,6 +1184,8 @@ function unlockAchievements(gameState: GameState): GameState {
 
   if (gameState.events.length >= 1) achievements.add('初历世事');
   if (gameState.events.length >= 30) achievements.add('三十年风雨');
+  if (gameState.completedGoals.length >= 1) achievements.add('道途初成');
+  if (gameState.completedGoals.length >= 5) achievements.add('百炼成途');
   if (gameState.currentRealm.level >= 2) achievements.add('筑基有成');
   if (gameState.currentRealm.level >= 3) achievements.add('金丹大道');
   if (gameState.currentRealm.level >= 4) achievements.add('元婴出窍');
