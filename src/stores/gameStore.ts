@@ -24,7 +24,6 @@ interface GameStore {
 const ATTRIBUTE_MAX = 800;
 const STARTING_AGE = 10;
 const BASE_ATTRIBUTE_VALUE = 10;
-const POSITIVE_PROGRESS_PACE = 0.72;
 
 const initialState: GameState = {
   status: 'idle',
@@ -334,6 +333,7 @@ function calculateCultivationProgressDelta(
   const modifiers = getCombinedModifiers(gameState);
   const cultivationMultiplier = modifiers.修为倍率 ?? 1;
   const realmProgressMultiplier = getRealmProgressMultiplier(gameState);
+  const realmProgressPace = getRealmProgressPace(gameState);
   const disasterResistance = getDisasterResistance(gameState);
   let percentDelta = typeof effects.修为 === 'number'
     ? effects.修为
@@ -349,7 +349,7 @@ function calculateCultivationProgressDelta(
   }
 
   if (percentDelta > 0) {
-    percentDelta *= cultivationMultiplier * realmProgressMultiplier * POSITIVE_PROGRESS_PACE;
+    percentDelta *= cultivationMultiplier * realmProgressMultiplier * realmProgressPace;
   }
 
   return toProgressDelta(Math.max(-35, Math.min(40, percentDelta)));
@@ -360,19 +360,40 @@ function getRealmProgressMultiplier(gameState: GameState): number {
     case 1:
       return 1;
     case 2:
-      return 1.04;
-    case 3:
       return 1.08;
+    case 3:
+      return 1.16;
     case 4:
-      return 1.14;
+      return 1.2;
     case 5:
-      return 1.22;
+      return 1.28;
     case 6:
-      return 1.3;
+      return 1.36;
     case 7:
-      return 1.38;
+      return 1.44;
     case 8:
-      return 1.46;
+      return 1.52;
+    default:
+      return 1;
+  }
+}
+
+function getRealmProgressPace(gameState: GameState): number {
+  if (gameState.currentRealm.level < 4) {
+    return 1;
+  }
+
+  switch (gameState.currentRealm.level) {
+    case 4:
+      return 0.78;
+    case 5:
+      return 0.74;
+    case 6:
+      return 0.7;
+    case 7:
+      return 0.66;
+    case 8:
+      return 0.62;
     default:
       return 1;
   }
