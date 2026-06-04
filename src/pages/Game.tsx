@@ -10,7 +10,7 @@ import GameOverModal from '@/components/game/GameOverModal';
 
 export default function Game() {
   const navigate = useNavigate();
-  const { gameState, startNewGame, canBreakthrough, breakthroughRealm, endGame } = useGameStore();
+  const { gameState, resetGame, canBreakthrough, breakthroughRealm, endGame } = useGameStore();
   const [showGameOver, setShowGameOver] = useState(false);
   const canBreak = canBreakthrough();
 
@@ -29,7 +29,7 @@ export default function Game() {
 
   const handleRestart = () => {
     setShowGameOver(false);
-    startNewGame();
+    resetGame();
   };
 
   const handleBreakthrough = () => {
