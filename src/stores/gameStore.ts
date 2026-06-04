@@ -333,6 +333,7 @@ function calculateCultivationProgressDelta(
   };
   const modifiers = getCombinedModifiers(gameState);
   const cultivationMultiplier = modifiers.修为倍率 ?? 1;
+  const realmProgressMultiplier = getRealmProgressMultiplier(gameState);
   const disasterResistance = getDisasterResistance(gameState);
   let percentDelta = typeof effects.修为 === 'number'
     ? effects.修为
@@ -348,10 +349,33 @@ function calculateCultivationProgressDelta(
   }
 
   if (percentDelta > 0) {
-    percentDelta *= cultivationMultiplier;
+    percentDelta *= cultivationMultiplier * realmProgressMultiplier;
   }
 
   return toProgressDelta(Math.max(-35, Math.min(40, percentDelta)));
+}
+
+function getRealmProgressMultiplier(gameState: GameState): number {
+  switch (gameState.currentRealm.level) {
+    case 1:
+      return 1;
+    case 2:
+      return 1.08;
+    case 3:
+      return 1.16;
+    case 4:
+      return 1.28;
+    case 5:
+      return 1.42;
+    case 6:
+      return 1.56;
+    case 7:
+      return 1.7;
+    case 8:
+      return 1.85;
+    default:
+      return 1;
+  }
 }
 
 function getDefaultProgressPercent(type: GameEvent['type']): number {
