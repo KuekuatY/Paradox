@@ -54,7 +54,7 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             animate={{ opacity: 1, y: 0 }}
             className="ink-title text-4xl font-bold mb-2"
           >
-            {isAscended ? '飞升成仙' : isMeditationEnd ? '原地坐化' : '寿元耗尽'}
+            {isAscended ? '飞升成仙' : isMeditationEnd ? '散功坐化' : '寿元耗尽'}
           </motion.h2>
           
           <motion.div

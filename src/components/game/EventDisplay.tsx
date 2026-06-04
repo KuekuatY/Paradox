@@ -17,6 +17,7 @@ export default function EventDisplay({
 }: EventDisplayProps) {
   const { gameState } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
+  const [isConfirmingMeditationEnd, setIsConfirmingMeditationEnd] = useState(false);
   
   const currentEvent = gameState.events[gameState.events.length - 1];
   const effectEntries = currentEvent?.appliedEffects
@@ -24,6 +25,8 @@ export default function EventDisplay({
     : [];
 
   useEffect(() => {
+    setIsConfirmingMeditationEnd(false);
+
     if (!currentEvent) {
       setDisplayedText('命途初定，修仙路即将展开。');
       return;
@@ -45,6 +48,20 @@ export default function EventDisplay({
 
     return () => clearInterval(timer);
   }, [currentEvent]);
+
+  const handleContinue = () => {
+    setIsConfirmingMeditationEnd(false);
+    onContinue();
+  };
+
+  const handleMeditationEndClick = () => {
+    if (!isConfirmingMeditationEnd) {
+      setIsConfirmingMeditationEnd(true);
+      return;
+    }
+
+    onMeditationEnd();
+  };
 
   const getEventIcon = (type: string) => {
     const icons: Record<string, string> = {
@@ -183,7 +200,7 @@ export default function EventDisplay({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onContinue}
+          onClick={handleContinue}
           className="ink-button-primary text-xl"
         >
           继续修仙
@@ -191,12 +208,37 @@ export default function EventDisplay({
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onMeditationEnd}
-          className="ink-button-secondary text-xl"
+          onClick={handleMeditationEndClick}
+          className={`text-xl ${
+            isConfirmingMeditationEnd
+              ? 'rounded-md border border-[#a94d37]/45 bg-[#f2d9d2] px-6 py-3 font-bold text-[#9d3d2f] shadow-md transition-all hover:brightness-105'
+              : 'ink-button-secondary'
+          }`}
         >
-          原地坐化
+          {isConfirmingMeditationEnd ? '确认散功' : '散功坐化'}
         </motion.button>
+        {isConfirmingMeditationEnd && (
+          <motion.button
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsConfirmingMeditationEnd(false)}
+            className="rounded-md border border-[#738275]/35 bg-[#fff9e8]/70 px-6 py-3 text-xl font-bold text-[#45564f] transition-all hover:bg-[#fffdf2]"
+          >
+            取消
+          </motion.button>
+        )}
       </div>
+      {isConfirmingMeditationEnd && (
+        <motion.p
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 text-center text-sm font-semibold text-[#9d3d2f]"
+        >
+          散去一身修为，此世将就此结束。
+        </motion.p>
+      )}
     </motion.div>
   );
 }
