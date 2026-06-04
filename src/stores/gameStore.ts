@@ -115,13 +115,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const newAttributes = { ...attributes };
     const effects = resolveEventEffects(event, isSuccess);
-    const newEvent: GameEvent = {
-      ...event,
-      age,
-      appliedEffects: effects,
-      result: isSuccess ? 'success' : 'failure'
-    };
-
     const effectsRecord = effects as Record<string, number | undefined>;
     Object.keys(effects).forEach((key) => {
       const attrKey = key as keyof Attributes;
@@ -141,10 +134,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     let newLifespan = gameState.lifespan;
-    const progressDelta = calculateCultivationProgressDelta(event, effects);
+    const progressDelta = calculateCultivationProgressDelta(gameState, event, effects);
+    const lifespanDelta = calculateLifespanDelta(gameState, effects);
+    const appliedEffects = buildAppliedEffects(effects, progressDelta, lifespanDelta);
+    const newEvent: GameEvent = {
+      ...event,
+      age,
+      appliedEffects,
+      result: isSuccess ? 'success' : 'failure'
+    };
 
-    if (effects.寿命) {
-      newLifespan = Math.max(1, newLifespan + effects.寿命);
+    if (lifespanDelta) {
+      newLifespan = Math.max(1, newLifespan + lifespanDelta);
     }
 
     set({
@@ -152,7 +153,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...gameState,
         attributes: newAttributes,
         lifespan: newLifespan,
-        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta),
+        cultivationProgress: clampProgress(
+          gameState.cultivationProgress + progressDelta,
+          getRequiredCultivationProgress(gameState)
+        ),
         events: [...gameState.events, newEvent]
       }
     });
@@ -186,6 +190,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
+    const requiredProgress = getRequiredCultivationProgress(gameState);
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
       age: gameState.age,
@@ -193,7 +198,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       title: '突破瓶颈',
       description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
       effects: { 境界: 'advance', 修为: -100 },
-      appliedEffects: { 境界: 'advance', 修为: -100 },
+      appliedEffects: { 境界: 'advance', 修为: -requiredProgress },
       result: 'success'
     };
 
@@ -262,43 +267,72 @@ function selectAvailableEvent(): GameEvent {
 }
 
 function calculateCultivationProgressDelta(
+  gameState: GameState,
   event: GameEvent,
   effects: GameEvent['effects']
 ): number {
+  const requiredProgress = getRequiredCultivationProgress(gameState);
+  const toProgressDelta = (percent: number) => {
+    return Math.trunc(requiredProgress * percent / 100);
+  };
+
   if (typeof effects.修为 === 'number') {
-    return effects.修为;
+    return toProgressDelta(effects.修为);
   }
 
-  let delta = 0;
+  let percentDelta = 0;
 
   switch (event.type) {
     case 'cultivation':
-      delta = 8;
+      percentDelta = 8;
       break;
     case 'encounter':
-      delta = 5;
+      percentDelta = 5;
       break;
     case 'daily':
-      delta = 4;
+      percentDelta = 4;
       break;
     case 'social':
-      delta = 2;
+      percentDelta = 2;
       break;
     case 'disaster':
-      delta = -8;
+      percentDelta = -8;
       break;
   }
 
   Object.entries(effects).forEach(([key, value]) => {
     if (key === '寿命' || key === '境界' || key === '修为' || typeof value !== 'number') return;
-    delta += value > 0 ? 1 : -2;
+    percentDelta += value > 0 ? 1 : -2;
   });
 
-  return Math.max(-25, Math.min(25, delta));
+  return toProgressDelta(Math.max(-25, Math.min(25, percentDelta)));
 }
 
-function clampProgress(progress: number): number {
-  return Math.max(0, Math.min(100, progress));
+function calculateLifespanDelta(
+  gameState: GameState,
+  effects: GameEvent['effects']
+): number {
+  if (typeof effects.寿命 !== 'number' || gameState.lifespan === Infinity) {
+    return 0;
+  }
+
+  return Math.trunc(gameState.lifespan * effects.寿命 / 100);
+}
+
+function buildAppliedEffects(
+  effects: GameEvent['effects'],
+  progressDelta: number,
+  lifespanDelta: number
+): GameEvent['effects'] {
+  return {
+    ...effects,
+    ...(typeof effects.修为 === 'number' ? { 修为: progressDelta } : {}),
+    ...(typeof effects.寿命 === 'number' ? { 寿命: lifespanDelta } : {})
+  };
+}
+
+function clampProgress(progress: number, requiredProgress: number): number {
+  return Math.max(0, Math.min(requiredProgress, progress));
 }
 
 function calculateEventSuccessRate(event: GameEvent, attributes: Attributes): number {
@@ -387,7 +421,7 @@ function scaleNumericEffects(effects: GameEvent['effects'], factor: number): Gam
 }
 
 function canBreakthrough(gameState: GameState): boolean {
-  return gameState.cultivationProgress >= 100 && canAdvanceRealm(gameState);
+  return gameState.cultivationProgress >= getRequiredCultivationProgress(gameState) && canAdvanceRealm(gameState);
 }
 
 function canAdvanceRealm(gameState: GameState): boolean {
@@ -412,4 +446,11 @@ function meetsAttributeRequirements(
 
     return attributes[key as keyof Attributes] >= required;
   });
+}
+
+function getRequiredCultivationProgress(gameState: GameState): number {
+  const realmIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
+  const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
+
+  return nextRealm?.cultivationRequired ?? 0;
 }

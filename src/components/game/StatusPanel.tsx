@@ -56,7 +56,10 @@ export default function StatusPanel() {
         </div>
       </div>
 
-      <CultivationProgress progress={cultivationProgress} />
+      <CultivationProgress
+        currentRealmName={currentRealm.name}
+        progress={cultivationProgress}
+      />
 
       <BreakthroughRequirements
         currentRealmName={currentRealm.name}
@@ -73,20 +76,38 @@ export default function StatusPanel() {
   );
 }
 
-function CultivationProgress({ progress }: { progress: number }) {
+function CultivationProgress({
+  currentRealmName,
+  progress
+}: {
+  currentRealmName: string;
+  progress: number;
+}) {
+  const realmIndex = realms.findIndex(realm => realm.name === currentRealmName);
+  const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
+  const requiredProgress = nextRealm?.cultivationRequired ?? 0;
+  const progressPercent = requiredProgress > 0
+    ? Math.round(Math.min(100, progress / requiredProgress * 100))
+    : 100;
+
   return (
     <div className="mb-3 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="ink-muted">修炼进度</span>
-        <span className="font-semibold text-[#263832]">{progress}/100</span>
+        <span className="font-semibold text-[#263832]">
+          {requiredProgress > 0 ? `${progress}/${requiredProgress}` : '圆满'}
+        </span>
       </div>
       <div className="relative h-2 rounded-full bg-[#c8c2a9]">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
+          animate={{ width: `${progressPercent}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#355d58] to-[#9a8a54]"
         />
+      </div>
+      <div className="mt-1 text-right text-xs text-[#66766e]">
+        {nextRealm ? `距 ${nextRealm.name} ${progressPercent}%` : '大道圆满'}
       </div>
     </div>
   );
