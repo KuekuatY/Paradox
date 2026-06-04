@@ -131,48 +131,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const event = gameState.pendingEvent;
     const choice = getEventChoices(gameState, event).find(item => item.id === choiceId) ?? getEventChoices(gameState, event)[1];
-    const isNeutralEvent = event.result === 'neutral';
-    const successRate = isNeutralEvent
-      ? 1
-      : clampRate(calculateEventSuccessRate(event, gameState) + (choice.successModifier ?? 0));
-    const isSuccess = isNeutralEvent || Math.random() < successRate;
-    const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
-
-    const resolvedEffects = resolveEventEffects(event, isSuccess);
-    const choiceEffects = resolveChoiceEffects(gameState, choice);
-    const chosenEffects = mergeEffects(scaleEventEffectsForChoice(resolvedEffects, choice), choiceEffects);
-    const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
-    const progressDelta = calculateCultivationProgressDelta(gameState, event, chosenEffects);
-    const lifespanDelta = calculateLifespanDelta(gameState, event, chosenEffects);
-    const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
-    const stateForEffects = {
-      ...gameState,
-      pendingEvent: null
-    };
-    const newAttributes = applyAttributeEffects(stateForEffects, adjustedEffects);
-    const newLifespan = lifespanDelta
-      ? Math.max(1, gameState.lifespan + lifespanDelta)
-      : gameState.lifespan;
-    const requiredProgress = getRequiredCultivationProgress(gameState);
-    const newEvent: GameEvent = {
-      ...event,
-      title: `${event.title}：${choice.label}`,
-      description: `${event.description}你选择${choice.label}，${choice.outcome}`,
-      appliedEffects,
-      result
-    };
-
-    const stateAfterEvent: GameState = {
-      ...gameState,
-      pendingEvent: null,
-      attributes: newAttributes,
-      lifespan: newLifespan,
-      cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-      events: [...gameState.events, newEvent]
-    };
 
     set({
-      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent))
+      gameState: resolveGameEvent(gameState, event, choice)
     });
 
     get().checkGameEnd();
@@ -271,14 +232,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
   processEvent: () => {
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent) return;
+    const event = {
+      ...selectAvailableEvent(gameState),
+      age: gameState.age
+    };
+
+    if (!shouldOfferEventChoice(gameState, event)) {
+      set({
+        gameState: resolveGameEvent(gameState, event)
+      });
+
+      get().checkGameEnd();
+      return;
+    }
 
     set({
       gameState: {
         ...gameState,
-        pendingEvent: {
-          ...selectAvailableEvent(gameState),
-          age: gameState.age
-        }
+        pendingEvent: event
       }
     });
   },
@@ -447,6 +418,64 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
   }
 
   return true;
+}
+
+function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean {
+  if (event.result === 'neutral' && event.type === 'daily') return false;
+  if (event.type === 'disaster') return true;
+  if (hasNegativeNumericEffect(event)) return true;
+  if (event.conditions && event.type !== 'daily') return true;
+  if ((event.weight ?? 1) <= 0.55) return true;
+
+  const choiceFriendlyTypes: GameEvent['type'][] = ['encounter', 'social', 'resource', 'mind', 'sect'];
+  if (!choiceFriendlyTypes.includes(event.type)) return false;
+
+  const baseChance = gameState.currentRealm.level >= 4 ? 0.32 : 0.22;
+  const typeBonus = event.type === 'encounter' || event.type === 'resource' ? 0.08 : 0;
+  return Math.random() < baseChance + typeBonus;
+}
+
+function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
+  const isNeutralEvent = event.result === 'neutral';
+  const successRate = isNeutralEvent
+    ? 1
+    : clampRate(calculateEventSuccessRate(event, gameState) + (choice?.successModifier ?? 0));
+  const isSuccess = isNeutralEvent || Math.random() < successRate;
+  const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
+  const resolvedEffects = resolveEventEffects(event, isSuccess);
+  const chosenEffects = choice
+    ? mergeEffects(scaleEventEffectsForChoice(resolvedEffects, choice), resolveChoiceEffects(gameState, choice))
+    : resolvedEffects;
+  const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
+  const progressDelta = calculateCultivationProgressDelta(gameState, event, chosenEffects);
+  const lifespanDelta = calculateLifespanDelta(gameState, event, chosenEffects);
+  const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
+  const stateForEffects = {
+    ...gameState,
+    pendingEvent: null
+  };
+  const newAttributes = applyAttributeEffects(stateForEffects, adjustedEffects);
+  const newLifespan = lifespanDelta
+    ? Math.max(1, gameState.lifespan + lifespanDelta)
+    : gameState.lifespan;
+  const requiredProgress = getRequiredCultivationProgress(gameState);
+  const newEvent: GameEvent = {
+    ...event,
+    title: choice ? `${event.title}：${choice.label}` : event.title,
+    description: choice ? `${event.description}你选择${choice.label}，${choice.outcome}` : event.description,
+    appliedEffects,
+    result
+  };
+  const stateAfterEvent: GameState = {
+    ...gameState,
+    pendingEvent: null,
+    attributes: newAttributes,
+    lifespan: newLifespan,
+    cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+    events: [...gameState.events, newEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
 }
 
 function getEventChoices(gameState: GameState, event: GameEvent): EventChoice[] {
@@ -1052,6 +1081,10 @@ function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['e
 }
 
 function isHarmfulEvent(event: GameEvent): boolean {
+  return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
+}
+
+function hasNegativeNumericEffect(event: GameEvent): boolean {
   return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
 }
 
