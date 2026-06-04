@@ -69,9 +69,14 @@ export default function History() {
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
-                  <p className="text-[#45564f]">
-                    天赋: <span className="text-[#9a5b2f]">{record.talent}</span>
-                  </p>
+                  <div className="text-left text-[#45564f]">
+                    <p>
+                      灵根: <span className="text-[#355d58]">{record.spiritRoot || '旧档无记录'}</span>
+                    </p>
+                    <p>
+                      天赋: <span className="text-[#9a5b2f]">{record.talent || '旧档无记录'}</span>
+                    </p>
+                  </div>
                   <div className="flex space-x-4 text-[#59645f]">
                     <span>根骨: {record.stats.根骨}</span>
                     <span>悟性: {record.stats.悟性}</span>

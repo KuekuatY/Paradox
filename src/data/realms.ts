@@ -9,7 +9,7 @@ export const realms: Realm[] = [
     description: '吸纳灵气，引气入体',
     requirements: {
       minAge: 0,
-      attributes: { 根骨: 1 }
+      attributes: { 根骨: 0 }
     }
   },
   {
@@ -20,7 +20,7 @@ export const realms: Realm[] = [
     description: '筑就仙基，丹中气旋',
     requirements: {
       minAge: 20,
-      attributes: { 根骨: 3, 悟性: 3, 气运: 2 }
+      attributes: { 根骨: 18, 悟性: 16, 气运: 10 }
     }
   },
   {
@@ -31,7 +31,7 @@ export const realms: Realm[] = [
     description: '丹成金色，金丹入腹',
     requirements: {
       minAge: 50,
-      attributes: { 根骨: 5, 悟性: 4, 气运: 3 }
+      attributes: { 根骨: 32, 悟性: 28, 气运: 20 }
     }
   },
   {
@@ -42,7 +42,7 @@ export const realms: Realm[] = [
     description: '孕育元婴，神魂出窍',
     requirements: {
       minAge: 100,
-      attributes: { 根骨: 7, 悟性: 6, 气运: 4 }
+      attributes: { 根骨: 48, 悟性: 42, 气运: 32 }
     }
   },
   {
@@ -53,7 +53,7 @@ export const realms: Realm[] = [
     description: '元婴化神，神识万里',
     requirements: {
       minAge: 200,
-      attributes: { 根骨: 8, 悟性: 7, 气运: 5, 家境: 5 }
+      attributes: { 根骨: 60, 悟性: 55, 气运: 42, 家境: 35 }
     }
   },
   {
@@ -64,7 +64,7 @@ export const realms: Realm[] = [
     description: '炼化虚妄，身化天地',
     requirements: {
       minAge: 400,
-      attributes: { 根骨: 9, 悟性: 8, 气运: 6, 家境: 6 }
+      attributes: { 根骨: 72, 悟性: 68, 气运: 55, 家境: 48 }
     }
   },
   {
@@ -75,7 +75,7 @@ export const realms: Realm[] = [
     description: '神魂合体，初窥天道',
     requirements: {
       minAge: 800,
-      attributes: { 根骨: 9, 悟性: 9, 气运: 8, 家境: 7 }
+      attributes: { 根骨: 82, 悟性: 78, 气运: 68, 家境: 60 }
     }
   },
   {
@@ -86,7 +86,7 @@ export const realms: Realm[] = [
     description: '功德圆满，只待飞升',
     requirements: {
       minAge: 1500,
-      attributes: { 根骨: 10, 悟性: 10, 气运: 9, 家境: 8 }
+      attributes: { 根骨: 92, 悟性: 88, 气运: 78, 家境: 72 }
     }
   },
   {
@@ -97,7 +97,7 @@ export const realms: Realm[] = [
     description: '历经天劫，飞升成仙',
     requirements: {
       minAge: 3000,
-      attributes: { 根骨: 10, 悟性: 10, 气运: 10, 家境: 9 }
+      attributes: { 根骨: 100, 悟性: 96, 气运: 90, 家境: 82 }
     }
   }
 ];

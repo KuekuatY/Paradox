@@ -18,9 +18,9 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
     const avgAttr = (attributes.根骨 + attributes.悟性 + attributes.气运) / 3;
     
     if (isAscended) return { text: '神话', color: '#9a5b2f', icon: '仙' };
-    if (realmLevel >= 7 && avgAttr >= 8) return { text: '传奇', color: '#9a5b2f', icon: '玄' };
-    if (realmLevel >= 5 && avgAttr >= 6) return { text: '天骄', color: '#7f3f2e', icon: '魁' };
-    if (realmLevel >= 3 && avgAttr >= 4) return { text: '强者', color: '#355d58', icon: '道' };
+    if (realmLevel >= 7 && avgAttr >= 80) return { text: '传奇', color: '#9a5b2f', icon: '玄' };
+    if (realmLevel >= 5 && avgAttr >= 60) return { text: '天骄', color: '#7f3f2e', icon: '魁' };
+    if (realmLevel >= 3 && avgAttr >= 40) return { text: '强者', color: '#355d58', icon: '道' };
     if (realmLevel >= 2) return { text: '普通', color: '#5f7c64', icon: '修' };
     return { text: '废柴', color: '#6f746d', icon: '凡' };
   };
@@ -114,15 +114,21 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             </div>
           </motion.div>
 
-          {gameState.talent && (
+          {(gameState.spiritRoot || gameState.talent) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mb-6"
+              className="mb-6 grid grid-cols-2 gap-4"
             >
-              <p className="ink-muted text-sm">天赋</p>
-              <p className="text-lg text-[#9a5b2f]">{gameState.talent.name}</p>
+              <div>
+                <p className="ink-muted text-sm">灵根</p>
+                <p className="text-lg text-[#355d58]">{gameState.spiritRoot?.name || '无'}</p>
+              </div>
+              <div>
+                <p className="ink-muted text-sm">天赋</p>
+                <p className="text-lg text-[#9a5b2f]">{gameState.talent?.name || '无'}</p>
+              </div>
             </motion.div>
           )}
 

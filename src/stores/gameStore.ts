@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import { talents } from '@/data/talents';
+import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
 import { events } from '@/data/events';
-import type { GameState, Talent, GameEvent, Attributes } from '@/types';
-import { randomSelect } from '@/utils/random';
+import type { GameState, Talent, GameEvent, Attributes, SpiritRoot, GrowthModifiers } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
 interface GameStore {
   gameState: GameState;
-  startNewGame: (selectedTalent?: Talent) => void;
+  startNewGame: (selectedSpiritRoot?: SpiritRoot, selectedTalent?: Talent) => void;
+  drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
   advanceAge: () => void;
   processEvent: () => void;
@@ -20,9 +21,12 @@ interface GameStore {
   resetGame: () => void;
 }
 
+const ATTRIBUTE_MAX = 100;
+const STARTING_AGE = 10;
+
 const initialState: GameState = {
   status: 'idle',
-  age: 10,
+  age: STARTING_AGE,
   currentRealm: realms[0],
   attributes: {
     根骨: 0,
@@ -31,6 +35,7 @@ const initialState: GameState = {
     颜值: 0,
     家境: 0
   },
+  spiritRoot: null,
   talent: null,
   lifespan: 100,
   cultivationProgress: 0,
@@ -41,22 +46,24 @@ const initialState: GameState = {
 export const useGameStore = create<GameStore>((set, get) => ({
   gameState: initialState,
 
-  startNewGame: (selectedTalent) => {
+  startNewGame: (selectedSpiritRoot, selectedTalent) => {
+    const spiritRoot = selectedSpiritRoot ?? get().drawSpiritRoot();
     const talent = selectedTalent ?? get().drawTalent();
     const initialAttributes: Attributes = {
-      根骨: clampAttribute(talent.effect.根骨 || 0),
-      悟性: clampAttribute(talent.effect.悟性 || 0),
-      气运: clampAttribute(talent.effect.气运 || 0),
-      颜值: clampAttribute(talent.effect.颜值 || 0),
-      家境: clampAttribute(talent.effect.家境 || 0)
+      根骨: clampAttribute((spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0)),
+      悟性: clampAttribute((spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0)),
+      气运: clampAttribute((spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0)),
+      颜值: clampAttribute((spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0)),
+      家境: clampAttribute((spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0))
     };
 
     set({
       gameState: {
         status: 'playing',
-        age: 10,
+        age: STARTING_AGE,
         currentRealm: realms[0],
         attributes: initialAttributes,
+        spiritRoot,
         talent,
         lifespan: 100,
         cultivationProgress: 0,
@@ -65,21 +72,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     });
 
-    get().advanceAge();
+    get().processEvent();
+  },
+
+  drawSpiritRoot: () => {
+    return pickByProbability(spiritRoots);
   },
 
   drawTalent: () => {
-    const totalProbability = talents.reduce((sum, t) => sum + t.probability, 0);
-    let random = Math.random() * totalProbability;
-
-    for (const talent of talents) {
-      random -= talent.probability;
-      if (random <= 0) {
-        return talent;
-      }
-    }
-
-    return talents[0];
+    return pickByProbability(talents);
   },
 
   advanceAge: () => {
@@ -109,54 +110,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const { age, attributes } = gameState;
 
-    const event = selectAvailableEvent();
-    const successRate = calculateEventSuccessRate(event, attributes);
-    const isSuccess = Math.random() < successRate;
+    const event = selectAvailableEvent(gameState);
+    const isNeutralEvent = event.result === 'neutral';
+    const successRate = isNeutralEvent ? 1 : calculateEventSuccessRate(event, gameState);
+    const isSuccess = isNeutralEvent || Math.random() < successRate;
+    const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
 
-    const newAttributes = { ...attributes };
-    const effects = resolveEventEffects(event, isSuccess);
-    const effectsRecord = effects as Record<string, number | undefined>;
-    Object.keys(effects).forEach((key) => {
-      const attrKey = key as keyof Attributes;
-      const effectValue = effectsRecord[key];
-      if (
-        attrKey in newAttributes
-        && key !== '境界'
-        && key !== '寿命'
-        && key !== '修为'
-        && effectValue !== undefined
-      ) {
-        newAttributes[attrKey] = Math.max(
-          0,
-          Math.min(10, newAttributes[attrKey] + effectValue)
-        );
-      }
-    });
+    const resolvedEffects = resolveEventEffects(event, isSuccess);
+    const adjustedEffects = applyAttributeModifiers(gameState, event, resolvedEffects);
+    const progressDelta = calculateCultivationProgressDelta(gameState, event, resolvedEffects);
+    const lifespanDelta = calculateLifespanDelta(gameState, event, resolvedEffects);
+    const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
 
-    let newLifespan = gameState.lifespan;
-    const progressDelta = calculateCultivationProgressDelta(gameState, event, effects);
-    const lifespanDelta = calculateLifespanDelta(gameState, effects);
-    const appliedEffects = buildAppliedEffects(effects, progressDelta, lifespanDelta);
+    const newAttributes = applyAttributeEffects(attributes, adjustedEffects);
+    const newLifespan = lifespanDelta
+      ? Math.max(1, gameState.lifespan + lifespanDelta)
+      : gameState.lifespan;
+    const requiredProgress = getRequiredCultivationProgress(gameState);
+
     const newEvent: GameEvent = {
       ...event,
       age,
       appliedEffects,
-      result: isSuccess ? 'success' : 'failure'
+      result
     };
-
-    if (lifespanDelta) {
-      newLifespan = Math.max(1, newLifespan + lifespanDelta);
-    }
 
     set({
       gameState: {
         ...gameState,
         attributes: newAttributes,
         lifespan: newLifespan,
-        cultivationProgress: clampProgress(
-          gameState.cultivationProgress + progressDelta,
-          getRequiredCultivationProgress(gameState)
-        ),
+        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
         events: [...gameState.events, newEvent]
       }
     });
@@ -166,17 +150,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   checkRealmAdvancement: () => {
     const { gameState } = get();
-    const { currentRealm, attributes } = gameState;
-
-    const realmIndex = realms.findIndex(r => r.name === currentRealm.name);
-    if (realmIndex >= realms.length - 1) return false;
-
-    const nextRealm = realms[realmIndex + 1];
-    const requirements = nextRealm.requirements;
-
-    if (!meetsAttributeRequirements(attributes, requirements.attributes)) return false;
-
-    return true;
+    return canAdvanceRealm(gameState);
   },
 
   canBreakthrough: () => {
@@ -233,7 +207,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (gameState.status === 'ended') return;
     const endReason = reason ?? (result === 'ascended' ? 'ascended' : 'lifespan');
-    
+
     set({
       gameState: {
         ...gameState,
@@ -247,6 +221,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       date: new Date().toISOString(),
       finalRealm: gameState.currentRealm.name,
       age: gameState.age,
+      spiritRoot: gameState.spiritRoot?.name || '',
       talent: gameState.talent?.name || '',
       result,
       stats: gameState.attributes,
@@ -259,16 +234,88 @@ export const useGameStore = create<GameStore>((set, get) => ({
   }
 }));
 
-function selectAvailableEvent(): GameEvent {
+function pickByProbability<T extends { probability: number }>(items: T[]): T {
+  const totalProbability = items.reduce((sum, item) => sum + item.probability, 0);
+  let random = Math.random() * totalProbability;
+
+  for (const item of items) {
+    random -= item.probability;
+    if (random <= 0) {
+      return item;
+    }
+  }
+
+  return items[0];
+}
+
+function selectAvailableEvent(gameState: GameState): GameEvent {
   const availableEvents = events.filter(event => {
-    return event.effects.境界 !== 'advance';
+    return event.effects.境界 !== 'advance' && matchesEventConditions(event, gameState);
   });
 
-  return randomSelect(availableEvents.length > 0 ? availableEvents : events);
+  return pickWeightedEvent(availableEvents.length > 0 ? availableEvents : events, gameState);
+}
+
+function pickWeightedEvent(availableEvents: GameEvent[], gameState: GameState): GameEvent {
+  const modifiers = getCombinedModifiers(gameState);
+  const weightedEvents = availableEvents.map(event => ({
+    event,
+    weight: Math.max(0.05, (event.weight ?? 1) * (modifiers.事件权重?.[event.type] ?? 1))
+  }));
+  const totalWeight = weightedEvents.reduce((sum, item) => sum + item.weight, 0);
+  let random = Math.random() * totalWeight;
+
+  for (const item of weightedEvents) {
+    random -= item.weight;
+    if (random <= 0) {
+      return item.event;
+    }
+  }
+
+  return weightedEvents[0].event;
+}
+
+function matchesEventConditions(event: GameEvent, gameState: GameState): boolean {
+  const conditions = event.conditions;
+  if (!conditions) return true;
+
+  const realmLevel = gameState.currentRealm.level;
+  if (conditions.minRealmLevel && realmLevel < conditions.minRealmLevel) return false;
+  if (conditions.maxRealmLevel && realmLevel > conditions.maxRealmLevel) return false;
+  if (conditions.minAge && gameState.age < conditions.minAge) return false;
+  if (conditions.spiritRootIds && !conditions.spiritRootIds.includes(gameState.spiritRoot?.id ?? '')) return false;
+  if (conditions.talentIds && !conditions.talentIds.includes(gameState.talent?.id ?? '')) return false;
+
+  if (conditions.attributes && !meetsAttributeRequirements(gameState.attributes, conditions.attributes)) {
+    return false;
+  }
+
+  return true;
 }
 
 function clampAttribute(value: number): number {
-  return Math.max(0, Math.min(10, value));
+  return Math.max(0, Math.min(ATTRIBUTE_MAX, Math.round(value)));
+}
+
+function applyAttributeEffects(attributes: Attributes, effects: GameEvent['effects']): Attributes {
+  const newAttributes = { ...attributes };
+  const effectsRecord = effects as Record<string, number | undefined>;
+
+  Object.keys(effects).forEach((key) => {
+    const attrKey = key as keyof Attributes;
+    const effectValue = effectsRecord[key];
+    if (
+      attrKey in newAttributes
+      && key !== '境界'
+      && key !== '寿命'
+      && key !== '修为'
+      && effectValue !== undefined
+    ) {
+      newAttributes[attrKey] = clampAttribute(newAttributes[attrKey] + effectValue);
+    }
+  });
+
+  return newAttributes;
 }
 
 function calculateCultivationProgressDelta(
@@ -280,48 +327,69 @@ function calculateCultivationProgressDelta(
   const toProgressDelta = (percent: number) => {
     return Math.trunc(requiredProgress * percent / 100);
   };
-
-  if (typeof effects.修为 === 'number') {
-    return toProgressDelta(effects.修为);
-  }
-
-  let percentDelta = 0;
-
-  switch (event.type) {
-    case 'cultivation':
-      percentDelta = 8;
-      break;
-    case 'encounter':
-      percentDelta = 5;
-      break;
-    case 'daily':
-      percentDelta = 4;
-      break;
-    case 'social':
-      percentDelta = 2;
-      break;
-    case 'disaster':
-      percentDelta = -8;
-      break;
-  }
+  const modifiers = getCombinedModifiers(gameState);
+  const cultivationMultiplier = modifiers.修为倍率 ?? 1;
+  const disasterResistance = getDisasterResistance(gameState);
+  let percentDelta = typeof effects.修为 === 'number'
+    ? effects.修为
+    : getDefaultProgressPercent(event.type);
 
   Object.entries(effects).forEach(([key, value]) => {
     if (key === '寿命' || key === '境界' || key === '修为' || typeof value !== 'number') return;
-    percentDelta += value > 0 ? 1 : -2;
+    percentDelta += value > 0 ? 0.6 : -1.2;
   });
 
-  return toProgressDelta(Math.max(-25, Math.min(25, percentDelta)));
+  if (event.type === 'disaster' && percentDelta < 0) {
+    percentDelta *= Math.max(0.25, 1 - disasterResistance);
+  }
+
+  if (percentDelta > 0) {
+    percentDelta *= cultivationMultiplier;
+  }
+
+  return toProgressDelta(Math.max(-35, Math.min(40, percentDelta)));
+}
+
+function getDefaultProgressPercent(type: GameEvent['type']): number {
+  switch (type) {
+    case 'cultivation':
+      return 8;
+    case 'encounter':
+      return 5;
+    case 'daily':
+      return 4;
+    case 'social':
+      return 2;
+    case 'disaster':
+      return -8;
+    case 'resource':
+      return 5;
+    case 'mind':
+      return 6;
+    case 'sect':
+      return 6;
+    default:
+      return 0;
+  }
 }
 
 function calculateLifespanDelta(
   gameState: GameState,
+  event: GameEvent,
   effects: GameEvent['effects']
 ): number {
   if (typeof effects.寿命 !== 'number' || gameState.lifespan === Infinity) {
     return 0;
   }
 
-  return Math.trunc(gameState.lifespan * effects.寿命 / 100);
+  const modifiers = getCombinedModifiers(gameState);
+  const lifespanMultiplier = modifiers.寿命倍率 ?? 1;
+  const resistance = event.type === 'disaster' ? getDisasterResistance(gameState) : 0;
+  const percent = effects.寿命 > 0
+    ? effects.寿命 * lifespanMultiplier
+    : effects.寿命 * Math.max(0.25, 1 - resistance);
+
+  return Math.trunc(gameState.lifespan * percent / 100);
 }
 
 function addLifespan(lifespan: number, lifespanGain: number): number {
@@ -348,35 +416,54 @@ function clampProgress(progress: number, requiredProgress: number): number {
   return Math.max(0, Math.min(requiredProgress, progress));
 }
 
-function calculateEventSuccessRate(event: GameEvent, attributes: Attributes): number {
+function calculateEventSuccessRate(event: GameEvent, gameState: GameState): number {
+  const { attributes } = gameState;
+  const disasterResistance = getDisasterResistance(gameState);
   let baseRate = 0.5;
 
   switch (event.type) {
     case 'cultivation':
-      baseRate = 0.24
-        + (attributes.根骨 * 0.04)
-        + (attributes.悟性 * 0.04)
-        + (attributes.家境 * 0.015);
+      baseRate = 0.2
+        + (attributes.根骨 * 0.003)
+        + (attributes.悟性 * 0.003)
+        + (attributes.家境 * 0.001);
       break;
     case 'encounter':
-      baseRate = 0.28
-        + (attributes.气运 * 0.05)
-        + (attributes.家境 * 0.025);
+      baseRate = 0.25
+        + (attributes.气运 * 0.004)
+        + (attributes.家境 * 0.0015);
       break;
     case 'social':
-      baseRate = 0.34
-        + (attributes.颜值 * 0.04)
-        + (attributes.家境 * 0.03);
+      baseRate = 0.25
+        + (attributes.颜值 * 0.0035)
+        + (attributes.家境 * 0.0015);
       break;
     case 'disaster':
-      baseRate = 0.24
-        + (attributes.根骨 * 0.04)
-        + (attributes.家境 * 0.025);
+      baseRate = 0.25
+        + (attributes.根骨 * 0.003)
+        + (attributes.家境 * 0.0015)
+        + disasterResistance;
       break;
     case 'daily':
-      baseRate = 0.44
-        + (attributes.悟性 * 0.025)
-        + (attributes.家境 * 0.035);
+      baseRate = 0.35
+        + (attributes.悟性 * 0.002)
+        + (attributes.家境 * 0.002);
+      break;
+    case 'resource':
+      baseRate = 0.26
+        + (attributes.家境 * 0.004)
+        + (attributes.气运 * 0.0015);
+      break;
+    case 'mind':
+      baseRate = 0.28
+        + (attributes.悟性 * 0.0035)
+        + (attributes.气运 * 0.001);
+      break;
+    case 'sect':
+      baseRate = 0.27
+        + (attributes.家境 * 0.0025)
+        + (attributes.颜值 * 0.0015)
+        + (attributes.悟性 * 0.001);
       break;
   }
 
@@ -388,17 +475,53 @@ function calculateEventSuccessRate(event: GameEvent, attributes: Attributes): nu
 function getEventSpecificModifier(event: GameEvent, attributes: Attributes): number {
   switch (event.id) {
     case 'daily-merchant':
-      return attributes.家境 * 0.015;
+    case 'resource-auction':
+      return attributes.家境 * 0.0015;
     case 'daily-sect-mission':
-      return attributes.家境 * 0.01;
+    case 'sect-inner-test':
+      return attributes.家境 * 0.001;
     case 'encounter-master':
-      return attributes.家境 * 0.01;
+      return attributes.家境 * 0.001;
     case 'social-partner':
     case 'social-brother':
-      return attributes.家境 * 0.01;
+      return attributes.家境 * 0.001;
     default:
       return 0;
   }
+}
+
+function applyAttributeModifiers(
+  gameState: GameState,
+  event: GameEvent,
+  effects: GameEvent['effects']
+): GameEvent['effects'] {
+  const modifiers = getCombinedModifiers(gameState);
+  const attributeMultiplier = modifiers.属性倍率 ?? 1;
+  const disasterResistance = event.type === 'disaster' ? getDisasterResistance(gameState) : 0;
+  const adjustedEffects: GameEvent['effects'] = {};
+
+  Object.entries(effects).forEach(([key, value]) => {
+    if (typeof value !== 'number') {
+      (adjustedEffects as Record<string, typeof value>)[key] = value;
+      return;
+    }
+
+    if (key === '寿命' || key === '修为') {
+      (adjustedEffects as Record<string, number>)[key] = value;
+      return;
+    }
+
+    const rawValue = value > 0
+      ? value * attributeMultiplier
+      : value * Math.max(0.35, 1 - disasterResistance);
+    const roundedValue = rawValue > 0 ? Math.ceil(rawValue) : Math.floor(rawValue);
+
+    if (roundedValue !== 0) {
+      (adjustedEffects as Record<string, number>)[key] = roundedValue;
+    }
+  });
+
+  return adjustedEffects;
 }
 
 function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['effects'] {
@@ -485,4 +608,44 @@ function getRealmLifespanGain(currentIndex: number): number {
   }
 
   return Math.max(0, nextRealm.maxAge - currentRealm.maxAge);
+}
+
+function getCombinedModifiers(gameState: GameState): GrowthModifiers {
+  return mergeModifiers(gameState.spiritRoot?.modifiers, gameState.talent?.modifiers);
+}
+
+function mergeModifiers(...modifiersList: Array<GrowthModifiers | undefined>): GrowthModifiers {
+  return modifiersList.reduce<GrowthModifiers>((merged, modifiers) => {
+    if (!modifiers) return merged;
+
+    return {
+      修为倍率: multiplyOptional(merged.修为倍率, modifiers.修为倍率),
+      属性倍率: multiplyOptional(merged.属性倍率, modifiers.属性倍率),
+      寿命倍率: multiplyOptional(merged.寿命倍率, modifiers.寿命倍率),
+      灾劫抗性: (merged.灾劫抗性 ?? 0) + (modifiers.灾劫抗性 ?? 0),
+      事件权重: mergeEventWeights(merged.事件权重, modifiers.事件权重)
+    };
+  }, {});
+}
+
+function multiplyOptional(current: number | undefined, next: number | undefined): number | undefined {
+  if (next === undefined) return current;
+  return (current ?? 1) * next;
+}
+
+function mergeEventWeights(
+  current: GrowthModifiers['事件权重'],
+  next: GrowthModifiers['事件权重']
+): GrowthModifiers['事件权重'] {
+  if (!next) return current;
+
+  return Object.entries(next).reduce<NonNullable<GrowthModifiers['事件权重']>>((merged, [type, weight]) => {
+    merged[type as keyof NonNullable<GrowthModifiers['事件权重']>] =
+      (merged[type as keyof NonNullable<GrowthModifiers['事件权重']>] ?? 1) * (weight ?? 1);
+    return merged;
+  }, { ...current });
+}
+
+function getDisasterResistance(gameState: GameState): number {
+  return Math.max(-0.25, Math.min(0.5, getCombinedModifiers(gameState).灾劫抗性 ?? 0));
 }

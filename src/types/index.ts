@@ -1,15 +1,34 @@
+export type EventType = 'cultivation' | 'encounter' | 'social' | 'disaster' | 'daily' | 'resource' | 'mind' | 'sect';
+
+export type Rarity = '凡品' | '下品' | '中品' | '上品' | '极品' | '神话' | '传说';
+
+export type AttributeEffect = Partial<Attributes>;
+
+export interface GrowthModifiers {
+  修为倍率?: number;
+  属性倍率?: number;
+  寿命倍率?: number;
+  灾劫抗性?: number;
+  事件权重?: Partial<Record<EventType, number>>;
+}
+
 export interface Talent {
   id: string;
   name: string;
   description: string;
-  rarity: '凡品' | '下品' | '中品' | '上品' | '极品' | '神话' | '传说';
-  effect: {
-    根骨?: number;
-    悟性?: number;
-    气运?: number;
-    颜值?: number;
-    家境?: number;
-  };
+  rarity: Rarity;
+  effect: AttributeEffect;
+  modifiers?: GrowthModifiers;
+  probability: number;
+}
+
+export interface SpiritRoot {
+  id: string;
+  name: string;
+  description: string;
+  rarity: Rarity;
+  effect: AttributeEffect;
+  modifiers: GrowthModifiers;
   probability: number;
 }
 
@@ -43,6 +62,7 @@ export interface GameState {
   age: number;
   currentRealm: Realm;
   attributes: Attributes;
+  spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   lifespan: number;
   cultivationProgress: number;
@@ -54,9 +74,18 @@ export interface GameState {
 export interface GameEvent {
   id: string;
   age: number;
-  type: 'cultivation' | 'encounter' | 'social' | 'disaster' | 'daily';
+  type: EventType;
   title: string;
   description: string;
+  weight?: number;
+  conditions?: {
+    minRealmLevel?: number;
+    maxRealmLevel?: number;
+    minAge?: number;
+    attributes?: Partial<Attributes>;
+    spiritRootIds?: string[];
+    talentIds?: string[];
+  };
   effects: {
     根骨?: number;
     悟性?: number;
@@ -78,6 +107,7 @@ export interface GameRecord {
   date: string;
   finalRealm: string;
   age: number;
+  spiritRoot?: string;
   talent: string;
   result: 'died' | 'ascended';
   stats: Attributes;

@@ -52,7 +52,10 @@ export default function EventDisplay({
       'encounter': '缘',
       'social': '交',
       'disaster': '劫',
-      'daily': '常'
+      'daily': '常',
+      'resource': '财',
+      'mind': '心',
+      'sect': '宗'
     };
     return icons[type] || '道';
   };
@@ -156,10 +159,10 @@ export default function EventDisplay({
               ))}
             </div>
           )}
-          <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
-            currentEvent?.result === 'success' ? 'bg-green-100 text-green-700' :
-            currentEvent?.result === 'failure' ? 'bg-red-100 text-red-700' :
-            'bg-gray-100 text-gray-700'
+          <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
+            currentEvent?.result === 'success' ? 'bg-[#e7eddd] text-[#355d58]' :
+            currentEvent?.result === 'failure' ? 'bg-[#f2d9d2] text-[#9d3d2f]' :
+            'bg-[#eee8d4] text-[#6d634d]'
           }`}>
             {getResultText(currentEvent?.result || '')}
           </span>

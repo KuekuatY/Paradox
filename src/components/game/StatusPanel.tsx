@@ -5,7 +5,7 @@ import type { Attributes } from '@/types';
 
 export default function StatusPanel() {
   const { gameState } = useGameStore();
-  const { currentRealm, age, lifespan, attributes, talent, cultivationProgress } = gameState;
+  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationProgress } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
 
@@ -28,13 +28,26 @@ export default function StatusPanel() {
         <p className="ink-muted text-xs mt-1">{currentRealm.description}</p>
       </div>
 
-      {talent && (
-        <div className="text-center border-b border-[#738275]/30 pb-4 mb-4">
-          <div className="ink-muted text-xs">天赋</div>
-          <div className="text-lg font-semibold" style={{ color: getRarityColor(talent.rarity) }}>
-            {talent.name}
+      {(spiritRoot || talent) && (
+        <div className="border-b border-[#738275]/30 pb-4 mb-4">
+          <div className="grid grid-cols-1 gap-3">
+            {spiritRoot && (
+              <FateSummary
+                label="灵根"
+                name={spiritRoot.name}
+                rarity={spiritRoot.rarity}
+                description={spiritRoot.description}
+              />
+            )}
+            {talent && (
+              <FateSummary
+                label="天赋"
+                name={talent.name}
+                rarity={talent.rarity}
+                description={talent.description}
+              />
+            )}
           </div>
-          <p className="ink-muted text-xs mt-1">{talent.description}</p>
         </div>
       )}
 
@@ -73,6 +86,28 @@ export default function StatusPanel() {
         ))}
       </div>
     </motion.div>
+  );
+}
+
+function FateSummary({
+  label,
+  name,
+  rarity,
+  description
+}: {
+  label: string;
+  name: string;
+  rarity: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-md border border-[#738275]/20 bg-[#fff9e8]/45 px-3 py-2 text-center">
+      <div className="ink-muted text-xs">{label}</div>
+      <div className="text-base font-semibold" style={{ color: getRarityColor(rarity) }}>
+        {name}
+      </div>
+      <p className="ink-muted mt-1 text-xs leading-relaxed">{description}</p>
+    </div>
   );
 }
 
@@ -185,7 +220,7 @@ function AttributeBar({ name, value }: { name: string; value: number }) {
       <div className="relative h-1.5 bg-[#c8c2a9] rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${value * 10}%` }}
+          animate={{ width: `${value}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#355d58] to-[#88a876]"
         />
