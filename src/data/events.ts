@@ -8,7 +8,7 @@ export const events: GameEvent[] = [
     title: '周天顺行',
     description: '一夜吐纳之后，经脉中的灵气自成小周天，修炼进境比往日顺畅许多。',
     weight: 1.2,
-    effects: { 修为: 8, 根骨: 2 },
+    effects: { 修为: 8, 根骨: 3 },
     result: 'success'
   },
   {
@@ -18,7 +18,7 @@ export const events: GameEvent[] = [
     title: '瓶颈松动',
     description: '灵气在经脉中流转圆融，境界瓶颈出现一丝可贵的裂隙。',
     weight: 0.9,
-    effects: { 修为: 14, 根骨: 1 },
+    effects: { 修为: 14, 根骨: 2 },
     result: 'success'
   },
   {
@@ -27,8 +27,8 @@ export const events: GameEvent[] = [
     type: 'cultivation',
     title: '淬体炼骨',
     description: '你以灵气反复冲刷筋骨，过程苦涩漫长，却让肉身根基更能承载灵机。',
-    weight: 1.05,
-    effects: { 根骨: 3, 修为: 5 },
+    weight: 1.15,
+    effects: { 根骨: 5, 修为: 5 },
     result: 'success'
   },
   {
@@ -38,7 +38,7 @@ export const events: GameEvent[] = [
     title: '夜逢灵雨',
     description: '山中灵雨落了半夜，你借天地清气洗练肉身，根基更稳。',
     weight: 0.8,
-    effects: { 根骨: 3, 修为: 10 },
+    effects: { 根骨: 5, 修为: 10 },
     result: 'success'
   },
   {
@@ -59,7 +59,7 @@ export const events: GameEvent[] = [
     description: '体内火行灵机一振，修炼速度骤然拔高，但气血也被烧得躁动。',
     weight: 0.45,
     conditions: { spiritRootIds: ['fire-root', 'heaven-root', 'chaos-root'] },
-    effects: { 修为: 18, 根骨: 3, 寿命: -2 },
+    effects: { 修为: 18, 根骨: 5, 寿命: -2 },
     result: 'success'
   },
   {
@@ -81,7 +81,7 @@ export const events: GameEvent[] = [
     description: '你在林间静坐，草木生机与灵息互相牵引，连旧伤都淡了几分。',
     weight: 0.45,
     conditions: { spiritRootIds: ['wood-root', 'chaos-root'] },
-    effects: { 根骨: 2, 寿命: 3, 修为: 9 },
+    effects: { 根骨: 4, 寿命: 3, 修为: 9 },
     result: 'success'
   },
   {
@@ -92,7 +92,7 @@ export const events: GameEvent[] = [
     description: '驳杂灵机没有拖住你，反而在耐心梳理后形成了稳固的内息。',
     weight: 0.5,
     conditions: { spiritRootIds: ['mixed-root'] },
-    effects: { 根骨: 2, 悟性: 2, 修为: 7 },
+    effects: { 根骨: 4, 悟性: 2, 修为: 7 },
     result: 'success'
   },
   {
@@ -121,9 +121,9 @@ export const events: GameEvent[] = [
     type: 'cultivation',
     title: '洗髓小成',
     description: '你用数月时间调整呼吸与药浴，体内杂质渐渐排出，根骨有了实打实的进益。',
-    weight: 0.7,
+    weight: 0.85,
     conditions: { minRealmLevel: 2 },
-    effects: { 根骨: 5, 修为: 6, 家境: -2 },
+    effects: { 根骨: 8, 修为: 6, 家境: -2 },
     result: 'success'
   },
 
@@ -144,7 +144,7 @@ export const events: GameEvent[] = [
     title: '高人指路',
     description: '云游高人见你还算诚恳，点破了你修炼中最大的误区。',
     weight: 0.65,
-    effects: { 根骨: 4, 悟性: 3, 修为: 9 },
+    effects: { 根骨: 6, 悟性: 3, 修为: 9 },
     result: 'success'
   },
   {
@@ -365,7 +365,7 @@ export const events: GameEvent[] = [
     title: '静室打坐',
     description: '这一年没有大事，你安静打坐，慢慢把零散灵气归入丹田。',
     weight: 1.4,
-    effects: { 修为: 6, 悟性: 1, 根骨: 1 },
+    effects: { 修为: 6, 悟性: 1, 根骨: 2 },
     result: 'success'
   },
   {
@@ -374,8 +374,8 @@ export const events: GameEvent[] = [
     type: 'daily',
     title: '晨起练形',
     description: '你每日天未亮便在山前练形，动作看似朴拙，却一点点打磨筋骨。',
-    weight: 1.1,
-    effects: { 根骨: 2, 修为: 3 },
+    weight: 1.2,
+    effects: { 根骨: 4, 修为: 3 },
     result: 'success'
   },
   {
@@ -457,7 +457,7 @@ export const events: GameEvent[] = [
     description: '坊市拍卖会上，你用积攒的灵石换来一枚品相不错的灵丹。',
     weight: 0.55,
     conditions: { attributes: { 家境: 20 } },
-    effects: { 家境: -4, 根骨: 5, 修为: 8 },
+    effects: { 家境: -4, 根骨: 7, 修为: 8 },
     result: 'success'
   },
   {
@@ -468,7 +468,7 @@ export const events: GameEvent[] = [
     description: '你花去一笔灵石换来淬骨药材，药性猛烈，但确实能补足肉身短板。',
     weight: 0.75,
     conditions: { attributes: { 家境: 12 } },
-    effects: { 家境: -3, 根骨: 4 },
+    effects: { 家境: -3, 根骨: 7 },
     result: 'success'
   },
   {
@@ -575,7 +575,7 @@ export const events: GameEvent[] = [
     description: '宗门考校中，你以扎实根基赢得长老点头，修行资源也随之增加。',
     weight: 0.55,
     conditions: { attributes: { 根骨: 25, 悟性: 20 } },
-    effects: { 根骨: 3, 家境: 5, 修为: 8 },
+    effects: { 根骨: 6, 家境: 5, 修为: 8 },
     result: 'success'
   },
   {
