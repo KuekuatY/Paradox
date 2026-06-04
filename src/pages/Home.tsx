@@ -29,7 +29,7 @@ export default function Home() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="ink-title text-6xl md:text-8xl font-bold mb-4 tracking-normal"
         >
-          修仙人生
+          修仙模拟器
         </motion.h1>
         
         <motion.p
@@ -38,7 +38,7 @@ export default function Home() {
           transition={{ delay: 0.4 }}
           className="text-2xl md:text-3xl text-[#6d5a36] mb-12"
         >
-          重开模拟器
+          问道重生
         </motion.p>
 
         <motion.div
@@ -72,7 +72,7 @@ export default function Home() {
           transition={{ delay: 0.8 }}
           className="mt-12 text-[#4f5d55] text-sm"
         >
-          从炼气期到飞升，体验修仙人生
+          从炼气期到飞升，体验一世仙途
         </motion.p>
       </motion.div>
     </div>
