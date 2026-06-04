@@ -24,6 +24,7 @@ interface GameStore {
 const ATTRIBUTE_MAX = 800;
 const STARTING_AGE = 10;
 const BASE_ATTRIBUTE_VALUE = 10;
+const POSITIVE_PROGRESS_PACE = 0.72;
 
 const initialState: GameState = {
   status: 'idle',
@@ -340,7 +341,7 @@ function calculateCultivationProgressDelta(
 
   Object.entries(effects).forEach(([key, value]) => {
     if (key === '寿命' || key === '境界' || key === '修为' || typeof value !== 'number') return;
-    percentDelta += value > 0 ? 0.6 : -1.2;
+    percentDelta += value > 0 ? 0.25 : -1.2;
   });
 
   if (event.type === 'disaster' && percentDelta < 0) {
@@ -348,7 +349,7 @@ function calculateCultivationProgressDelta(
   }
 
   if (percentDelta > 0) {
-    percentDelta *= cultivationMultiplier * realmProgressMultiplier;
+    percentDelta *= cultivationMultiplier * realmProgressMultiplier * POSITIVE_PROGRESS_PACE;
   }
 
   return toProgressDelta(Math.max(-35, Math.min(40, percentDelta)));
@@ -359,19 +360,19 @@ function getRealmProgressMultiplier(gameState: GameState): number {
     case 1:
       return 1;
     case 2:
-      return 1.08;
+      return 1.04;
     case 3:
-      return 1.16;
+      return 1.08;
     case 4:
-      return 1.28;
+      return 1.14;
     case 5:
-      return 1.42;
+      return 1.22;
     case 6:
-      return 1.56;
+      return 1.3;
     case 7:
-      return 1.7;
+      return 1.38;
     case 8:
-      return 1.85;
+      return 1.46;
     default:
       return 1;
   }
