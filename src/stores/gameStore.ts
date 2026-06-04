@@ -22,7 +22,7 @@ interface GameStore {
 
 const initialState: GameState = {
   status: 'idle',
-  age: 0,
+  age: 10,
   currentRealm: realms[0],
   attributes: {
     根骨: 0,
@@ -54,7 +54,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       gameState: {
         status: 'playing',
-        age: 0,
+        age: 10,
         currentRealm: realms[0],
         attributes: initialAttributes,
         talent,
