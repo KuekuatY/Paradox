@@ -43,13 +43,13 @@ export const spiritRoots: SpiritRoot[] = [
   {
     id: 'fire-root',
     name: '火灵根',
-    description: '灵机炽烈，修炼迅猛，却也更易招来波折。',
+    description: '灵机炽烈，修炼迅猛，偶有躁烈之气需要压制。',
     rarity: '上品',
-    effect: { 根骨: 22, 悟性: 14, 气运: 8 },
+    effect: { 根骨: 24, 悟性: 14, 气运: 10 },
     modifiers: {
       修为倍率: 1.25,
-      灾劫抗性: -0.08,
-      事件权重: { cultivation: 1.35, disaster: 1.2 }
+      灾劫抗性: -0.03,
+      事件权重: { cultivation: 1.35, disaster: 1.08 }
     },
     probability: 0.14
   },
