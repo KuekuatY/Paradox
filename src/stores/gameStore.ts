@@ -25,11 +25,11 @@ const initialState: GameState = {
   age: 0,
   currentRealm: realms[0],
   attributes: {
-    根骨: 5,
-    悟性: 5,
-    气运: 5,
-    颜值: 5,
-    家境: 5
+    根骨: 0,
+    悟性: 0,
+    气运: 0,
+    颜值: 0,
+    家境: 0
   },
   talent: null,
   lifespan: 100,
@@ -44,11 +44,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startNewGame: (selectedTalent) => {
     const talent = selectedTalent ?? get().drawTalent();
     const initialAttributes: Attributes = {
-      根骨: Math.min(10, 5 + (talent.effect.根骨 || 0)),
-      悟性: Math.min(10, 5 + (talent.effect.悟性 || 0)),
-      气运: Math.min(10, 5 + (talent.effect.气运 || 0)),
-      颜值: Math.min(10, 5 + (talent.effect.颜值 || 0)),
-      家境: Math.min(10, 5 + (talent.effect.家境 || 0))
+      根骨: clampAttribute(talent.effect.根骨 || 0),
+      悟性: clampAttribute(talent.effect.悟性 || 0),
+      气运: clampAttribute(talent.effect.气运 || 0),
+      颜值: clampAttribute(talent.effect.颜值 || 0),
+      家境: clampAttribute(talent.effect.家境 || 0)
     };
 
     set({
@@ -127,7 +127,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         && effectValue !== undefined
       ) {
         newAttributes[attrKey] = Math.max(
-          1,
+          0,
           Math.min(10, newAttributes[attrKey] + effectValue)
         );
       }
@@ -191,14 +191,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
     const requiredProgress = getRequiredCultivationProgress(gameState);
+    const lifespanGain = getRealmLifespanGain(currentIndex);
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
       age: gameState.age,
       type: 'cultivation',
       title: '突破瓶颈',
       description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
-      effects: { 境界: 'advance', 修为: -100 },
-      appliedEffects: { 境界: 'advance', 修为: -requiredProgress },
+      effects: { 境界: 'advance', 修为: -100, 寿命: lifespanGain },
+      appliedEffects: { 境界: 'advance', 修为: -requiredProgress, 寿命: lifespanGain },
       result: 'success'
     };
 
@@ -206,7 +207,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gameState: {
         ...gameState,
         currentRealm: nextRealm,
-        lifespan: nextRealm.maxAge,
+        lifespan: addLifespan(gameState.lifespan, lifespanGain),
         cultivationProgress: 0,
         events: [...gameState.events, breakthroughEvent]
       }
@@ -266,6 +267,10 @@ function selectAvailableEvent(): GameEvent {
   return randomSelect(availableEvents.length > 0 ? availableEvents : events);
 }
 
+function clampAttribute(value: number): number {
+  return Math.max(0, Math.min(10, value));
+}
+
 function calculateCultivationProgressDelta(
   gameState: GameState,
   event: GameEvent,
@@ -317,6 +322,14 @@ function calculateLifespanDelta(
   }
 
   return Math.trunc(gameState.lifespan * effects.寿命 / 100);
+}
+
+function addLifespan(lifespan: number, lifespanGain: number): number {
+  if (lifespan === Infinity || lifespanGain === Infinity) {
+    return Infinity;
+  }
+
+  return Math.max(1, lifespan + lifespanGain);
 }
 
 function buildAppliedEffects(
@@ -453,4 +466,23 @@ function getRequiredCultivationProgress(gameState: GameState): number {
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
 
   return nextRealm?.cultivationRequired ?? 0;
+}
+
+function getRealmLifespanGain(currentIndex: number): number {
+  const currentRealm = realms[currentIndex];
+  const nextRealm = realms[currentIndex + 1];
+
+  if (!currentRealm || !nextRealm) {
+    return 0;
+  }
+
+  if (nextRealm.maxAge === Infinity) {
+    return Infinity;
+  }
+
+  if (currentRealm.maxAge === Infinity) {
+    return 0;
+  }
+
+  return Math.max(0, nextRealm.maxAge - currentRealm.maxAge);
 }

@@ -85,6 +85,10 @@ export default function EventDisplay({
     }
 
     if (typeof value === 'number') {
+      if (!Number.isFinite(value)) {
+        return `${key} 无尽`;
+      }
+
       return `${key} ${value > 0 ? '+' : ''}${value}`;
     }
 
