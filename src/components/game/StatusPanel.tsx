@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { realms } from '@/data/realms';
-import type { Attributes } from '@/types';
+import { cultivationStrategies } from '@/data/strategies';
+import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
+import type { Attributes, CultivationStrategyId } from '@/types';
 
 export default function StatusPanel() {
-  const { gameState } = useGameStore();
+  const { gameState, setStrategy } = useGameStore();
   const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationProgress } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
@@ -79,6 +81,13 @@ export default function StatusPanel() {
         attributes={attributes}
       />
 
+      {gameState.status === 'playing' && (
+        <StrategyPanel
+          selectedStrategy={gameState.strategy}
+          onSelect={setStrategy}
+        />
+      )}
+
       <div className="space-y-3">
         <div className="mb-2 flex items-center justify-between text-xs">
           <span className="ink-muted">属性</span>
@@ -88,6 +97,8 @@ export default function StatusPanel() {
           <AttributeBar key={key} name={key} value={value} cap={currentRealm.attributeCap} />
         ))}
       </div>
+
+      <AchievementPanel achievements={gameState.achievements} />
     </motion.div>
   );
 }
@@ -191,6 +202,98 @@ function BreakthroughRequirements({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function StrategyPanel({
+  selectedStrategy,
+  onSelect
+}: {
+  selectedStrategy: CultivationStrategyId;
+  onSelect: (strategyId: CultivationStrategyId) => void;
+}) {
+  const selected = cultivationStrategies.find(strategy => strategy.id === selectedStrategy) ?? cultivationStrategies[0];
+
+  return (
+    <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">修炼策略</span>
+        <span className="text-xs text-[#66766e]">当前偏向 {selected.focus}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {cultivationStrategies.map(strategy => {
+          const isSelected = strategy.id === selectedStrategy;
+
+          return (
+            <button
+              key={strategy.id}
+              onClick={() => onSelect(strategy.id)}
+              className={`min-h-[46px] rounded border px-2 py-2 text-left text-sm transition-all ${
+                isSelected
+                  ? 'border-[#355d58]/55 bg-[#e7eddd] text-[#263832]'
+                  : 'border-[#738275]/20 bg-[#fffdf2]/55 text-[#59645f] hover:border-[#9a5b2f]/40'
+              }`}
+            >
+              <span className="block font-semibold leading-tight">{strategy.name}</span>
+              <span className="block text-xs leading-tight opacity-80">{strategy.focus}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
+        {selected.description}
+      </p>
+    </div>
+  );
+}
+
+function AchievementPanel({ achievements }: { achievements: string[] }) {
+  const unlocked = new Set(achievements);
+  const visibleAchievements = achievementCatalog.slice(0, 8);
+
+  return (
+    <div className="mt-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">成就</span>
+        <span className="text-xs text-[#66766e]">
+          {achievements.length}/{achievementCatalog.length}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {visibleAchievements.map(achievement => {
+          const isUnlocked = unlocked.has(achievement.id);
+
+          return (
+            <div
+              key={achievement.id}
+              title={achievement.description}
+              className={`rounded border px-2 py-2 text-xs ${
+                isUnlocked
+                  ? 'border-[#a9823c]/35 bg-[#f0dfad]/55 text-[#6f4d24]'
+                  : 'border-[#738275]/15 bg-[#eee8d4]/40 text-[#8d947f]'
+              }`}
+            >
+              <span className="block truncate font-semibold">
+                {isUnlocked ? achievement.name : '未解锁'}
+              </span>
+              <span className="block truncate opacity-75">
+                {isUnlocked ? achievement.description : achievement.name}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {achievements.length > visibleAchievements.length && (
+        <div className="mt-2 text-right text-xs text-[#66766e]">
+          另有 {achievements.length - visibleAchievements.length} 项已解锁
+        </div>
+      )}
+      {achievements.length > 0 && (
+        <div className="mt-2 text-xs text-[#66766e]">
+          最近：{getAchievementInfo(achievements[achievements.length - 1]).name}
+        </div>
+      )}
     </div>
   );
 }

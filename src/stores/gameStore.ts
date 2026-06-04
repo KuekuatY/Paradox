@@ -3,7 +3,8 @@ import { talents } from '@/data/talents';
 import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
 import { events } from '@/data/events';
-import type { GameState, Talent, GameEvent, Attributes, SpiritRoot, GrowthModifiers } from '@/types';
+import { getCultivationStrategy } from '@/data/strategies';
+import type { GameState, Talent, GameEvent, Attributes, SpiritRoot, GrowthModifiers, CultivationStrategyId } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
 interface GameStore {
@@ -11,6 +12,9 @@ interface GameStore {
   startNewGame: (selectedSpiritRoot?: SpiritRoot, selectedTalent?: Talent) => void;
   drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
+  setStrategy: (strategyId: CultivationStrategyId) => void;
+  chooseEventOption: (choiceId: string) => void;
+  useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
   processEvent: () => void;
   checkRealmAdvancement: () => boolean;
@@ -38,8 +42,10 @@ const initialState: GameState = {
   },
   spiritRoot: null,
   talent: null,
+  strategy: 'balanced',
   lifespan: 100,
   cultivationProgress: 0,
+  pendingEvent: null,
   events: [],
   achievements: []
 };
@@ -67,10 +73,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         attributes: initialAttributes,
         spiritRoot,
         talent,
+        strategy: 'balanced',
         lifespan: 100,
         cultivationProgress: 0,
+        pendingEvent: null,
         events: [],
-        achievements: []
+        achievements: ['初入仙途']
       }
     });
 
@@ -85,9 +93,139 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return pickByProbability(talents);
   },
 
-  advanceAge: () => {
+  setStrategy: (strategyId) => {
     const { gameState } = get();
     if (gameState.status !== 'playing') return;
+
+    set({
+      gameState: {
+        ...gameState,
+        strategy: strategyId
+      }
+    });
+  },
+
+  chooseEventOption: (choiceId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || !gameState.pendingEvent) return;
+
+    const event = gameState.pendingEvent;
+    const choice = getEventChoices(gameState, event).find(item => item.id === choiceId) ?? getEventChoices(gameState, event)[1];
+    const isNeutralEvent = event.result === 'neutral';
+    const successRate = isNeutralEvent
+      ? 1
+      : clampRate(calculateEventSuccessRate(event, gameState) + (choice.successModifier ?? 0));
+    const isSuccess = isNeutralEvent || Math.random() < successRate;
+    const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
+
+    const resolvedEffects = resolveEventEffects(event, isSuccess);
+    const choiceEffects = resolveChoiceEffects(gameState, choice);
+    const chosenEffects = mergeEffects(scaleEventEffectsForChoice(resolvedEffects, choice), choiceEffects);
+    const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
+    const progressDelta = calculateCultivationProgressDelta(gameState, event, chosenEffects);
+    const lifespanDelta = calculateLifespanDelta(gameState, event, chosenEffects);
+    const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
+    const stateForEffects = {
+      ...gameState,
+      pendingEvent: null
+    };
+    const newAttributes = applyAttributeEffects(stateForEffects, adjustedEffects);
+    const newLifespan = lifespanDelta
+      ? Math.max(1, gameState.lifespan + lifespanDelta)
+      : gameState.lifespan;
+    const requiredProgress = getRequiredCultivationProgress(gameState);
+    const newEvent: GameEvent = {
+      ...event,
+      title: `${event.title}：${choice.label}`,
+      description: `${event.description}你选择${choice.label}，${choice.outcome}`,
+      appliedEffects,
+      result
+    };
+
+    set({
+      gameState: unlockAchievements({
+        ...gameState,
+        pendingEvent: null,
+        attributes: newAttributes,
+        lifespan: newLifespan,
+        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+        events: [...gameState.events, newEvent]
+      })
+    });
+
+    get().checkGameEnd();
+  },
+
+  useBreakthroughPreparation: (actionId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
+
+    const action = getPreparationAction(actionId);
+    if (!action) return;
+
+    if ((gameState.attributes.家境 ?? 0) < action.cost) return;
+
+    const requiredProgress = getRequiredCultivationProgress(gameState);
+    const effects = action.effects(gameState);
+    const attributesAfterCost = {
+      ...gameState.attributes,
+      家境: clampAttribute(gameState.attributes.家境 - action.cost, getAttributeCap(gameState.currentRealm))
+    };
+    const stateAfterCost = {
+      ...gameState,
+      attributes: attributesAfterCost
+    };
+    const newAttributes = applyAttributeEffects(stateAfterCost, effects);
+    const progressDelta = calculateCultivationProgressDelta(gameState, {
+      id: action.id,
+      age: gameState.age,
+      type: 'daily',
+      title: action.name,
+      description: action.description,
+      effects,
+      result: 'neutral'
+    }, effects);
+    const lifespanDelta = calculateLifespanDelta(gameState, {
+      id: action.id,
+      age: gameState.age,
+      type: 'daily',
+      title: action.name,
+      description: action.description,
+      effects,
+      result: 'neutral'
+    }, effects);
+    const preparationEvent: GameEvent = {
+      id: `preparation-${action.id}-${Date.now()}`,
+      age: gameState.age,
+      type: 'daily',
+      title: action.name,
+      description: action.description,
+      effects,
+      appliedEffects: buildAppliedEffects(
+        {
+          ...effects,
+          ...(action.cost ? { 家境: -action.cost } : {})
+        },
+        progressDelta,
+        lifespanDelta
+      ),
+      result: 'neutral'
+    };
+
+    set({
+      gameState: unlockAchievements({
+        ...gameState,
+        attributes: newAttributes,
+        lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+        events: [...gameState.events, preparationEvent]
+      })
+    });
+  },
+
+  advanceAge: () => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
 
     const newAge = gameState.age + 1;
     const agedState: GameState = {
@@ -108,46 +246,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   processEvent: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing') return;
-
-    const { age } = gameState;
-
-    const event = selectAvailableEvent(gameState);
-    const isNeutralEvent = event.result === 'neutral';
-    const successRate = isNeutralEvent ? 1 : calculateEventSuccessRate(event, gameState);
-    const isSuccess = isNeutralEvent || Math.random() < successRate;
-    const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
-
-    const resolvedEffects = resolveEventEffects(event, isSuccess);
-    const adjustedEffects = applyAttributeModifiers(gameState, event, resolvedEffects);
-    const progressDelta = calculateCultivationProgressDelta(gameState, event, resolvedEffects);
-    const lifespanDelta = calculateLifespanDelta(gameState, event, resolvedEffects);
-    const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
-
-    const newAttributes = applyAttributeEffects(gameState, adjustedEffects);
-    const newLifespan = lifespanDelta
-      ? Math.max(1, gameState.lifespan + lifespanDelta)
-      : gameState.lifespan;
-    const requiredProgress = getRequiredCultivationProgress(gameState);
-
-    const newEvent: GameEvent = {
-      ...event,
-      age,
-      appliedEffects,
-      result
-    };
+    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
 
     set({
       gameState: {
         ...gameState,
-        attributes: newAttributes,
-        lifespan: newLifespan,
-        cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-        events: [...gameState.events, newEvent]
+        pendingEvent: {
+          ...selectAvailableEvent(gameState),
+          age: gameState.age
+        }
       }
     });
-
-    get().checkGameEnd();
   },
 
   checkRealmAdvancement: () => {
@@ -179,13 +288,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
 
     set({
-      gameState: {
+      gameState: unlockAchievements({
         ...gameState,
         currentRealm: nextRealm,
         lifespan: addLifespan(gameState.lifespan, lifespanGain),
         cultivationProgress: 0,
         events: [...gameState.events, breakthroughEvent]
-      }
+      })
     });
 
     get().checkGameEnd();
@@ -213,6 +322,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gameState: {
         ...gameState,
         status: 'ended',
+        pendingEvent: null,
         endReason
       }
     });
@@ -234,6 +344,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ gameState: initialState });
   }
 }));
+
+interface EventChoice {
+  id: string;
+  label: string;
+  description: string;
+  outcome: string;
+  successModifier?: number;
+  positiveScale?: number;
+  negativeScale?: number;
+  effects?: GameEvent['effects'];
+}
+
+interface PreparationAction {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  effects: (gameState: GameState) => GameEvent['effects'];
+}
 
 function pickByProbability<T extends { probability: number }>(items: T[]): T {
   const totalProbability = items.reduce((sum, item) => sum + item.probability, 0);
@@ -292,6 +421,178 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
   }
 
   return true;
+}
+
+function getEventChoices(gameState: GameState, event: GameEvent): EventChoice[] {
+  const strategy = getCultivationStrategy(gameState.strategy);
+
+  return [
+    {
+      id: 'steady',
+      label: '稳扎稳打',
+      description: '降低风险，收益略少。',
+      outcome: '以稳为先，少取机缘，也少惹祸端。',
+      successModifier: 0.1,
+      positiveScale: 0.75,
+      negativeScale: 0.6
+    },
+    {
+      id: 'flow',
+      label: '顺势而为',
+      description: '按原本机缘发展。',
+      outcome: '顺着当下局势行事，让因果自然落定。',
+      positiveScale: 1,
+      negativeScale: 1
+    },
+    {
+      id: 'focus',
+      label: strategy.name,
+      description: `贯彻当前策略：${strategy.focus}。`,
+      outcome: `你把此事纳入${strategy.name}的修行安排，获得了偏向性的收获。`,
+      successModifier: getStrategySuccessModifier(gameState.strategy, event),
+      positiveScale: getStrategyPositiveScale(gameState.strategy, event),
+      negativeScale: getStrategyNegativeScale(gameState.strategy, event),
+      effects: getStrategyChoiceEffects(gameState.strategy)
+    }
+  ];
+}
+
+function getStrategySuccessModifier(strategyId: CultivationStrategyId, event: GameEvent): number {
+  if (strategyId === 'balanced') return 0.02;
+  if (strategyId === 'body' && event.type === 'disaster') return 0.08;
+  if (strategyId === 'insight' && event.type === 'mind') return 0.08;
+  if (strategyId === 'roaming' && (event.type === 'encounter' || event.type === 'social')) return 0.06;
+  if (strategyId === 'business' && (event.type === 'resource' || event.type === 'sect')) return 0.06;
+  if (strategyId === 'seclusion' && event.type === 'cultivation') return 0.04;
+
+  return strategyId === 'seclusion' ? -0.04 : 0;
+}
+
+function getStrategyPositiveScale(strategyId: CultivationStrategyId, event: GameEvent): number {
+  if (strategyId === 'balanced') return 1;
+  if (strategyId === 'seclusion' && event.type === 'cultivation') return 1.18;
+  if (strategyId === 'roaming' && event.type === 'encounter') return 1.12;
+  if (strategyId === 'business' && event.type === 'resource') return 1.12;
+  return 1.05;
+}
+
+function getStrategyNegativeScale(strategyId: CultivationStrategyId, event: GameEvent): number {
+  if (strategyId === 'body' && event.type === 'disaster') return 0.75;
+  if (strategyId === 'seclusion' && event.type === 'disaster') return 1.18;
+  return 1;
+}
+
+function getStrategyChoiceEffects(strategyId: CultivationStrategyId): GameEvent['effects'] {
+  switch (strategyId) {
+    case 'body':
+      return { 根骨: 5, 修为: -2 };
+    case 'insight':
+      return { 悟性: 5, 修为: -1 };
+    case 'roaming':
+      return { 气运: 4, 颜值: 3, 修为: -2 };
+    case 'business':
+      return { 家境: 5, 修为: -3 };
+    case 'seclusion':
+      return { 修为: 6 };
+    default:
+      return { 气运: 2, 修为: 2 };
+  }
+}
+
+function resolveChoiceEffects(gameState: GameState, choice: EventChoice): GameEvent['effects'] {
+  const cap = getAttributeCap(gameState.currentRealm);
+  const effects = choice.effects ?? {};
+  const adjustedEffects: GameEvent['effects'] = {};
+
+  Object.entries(effects).forEach(([key, value]) => {
+    if (typeof value !== 'number') return;
+
+    if (key in gameState.attributes && value > 0) {
+      const attrKey = key as keyof Attributes;
+      const remaining = cap - gameState.attributes[attrKey];
+      if (remaining <= 0) return;
+      (adjustedEffects as Record<string, number>)[key] = Math.min(value, remaining);
+      return;
+    }
+
+    (adjustedEffects as Record<string, number>)[key] = value;
+  });
+
+  return adjustedEffects;
+}
+
+function scaleEventEffectsForChoice(effects: GameEvent['effects'], choice: EventChoice): GameEvent['effects'] {
+  const scaledEffects: GameEvent['effects'] = {};
+
+  Object.entries(effects).forEach(([key, value]) => {
+    if (typeof value !== 'number') {
+      (scaledEffects as Record<string, typeof value>)[key] = value;
+      return;
+    }
+
+    const scale = value >= 0
+      ? choice.positiveScale ?? 1
+      : choice.negativeScale ?? 1;
+    const scaledValue = value >= 0
+      ? Math.floor(value * scale)
+      : Math.ceil(value * scale);
+
+    if (scaledValue !== 0) {
+      (scaledEffects as Record<string, number>)[key] = scaledValue;
+    }
+  });
+
+  return scaledEffects;
+}
+
+function mergeEffects(...effectsList: GameEvent['effects'][]): GameEvent['effects'] {
+  return effectsList.reduce<GameEvent['effects']>((merged, effects) => {
+    Object.entries(effects).forEach(([key, value]) => {
+      if (typeof value !== 'number') {
+        (merged as Record<string, typeof value>)[key] = value;
+        return;
+      }
+
+      (merged as Record<string, number>)[key] = ((merged as Record<string, number | undefined>)[key] ?? 0) + value;
+    });
+
+    return merged;
+  }, {});
+}
+
+function getPreparationAction(actionId: string): PreparationAction | undefined {
+  const actions: PreparationAction[] = [
+    {
+      id: 'stabilize',
+      name: '稳固根基',
+      description: '你暂缓冲境，回头打磨根基与悟法。修为略退，但突破门槛更容易补齐。',
+      cost: 6,
+      effects: () => ({ 根骨: 6, 悟性: 4, 修为: -8 })
+    },
+    {
+      id: 'elixir',
+      name: '购置丹药',
+      description: '你以灵石换来上好丹药，淬炼筋骨并稍延寿元。',
+      cost: 18,
+      effects: () => ({ 根骨: 12, 寿命: 3 })
+    },
+    {
+      id: 'master',
+      name: '请教高人',
+      description: '你奉上厚礼，请高人为自己点破修行关窍。',
+      cost: 16,
+      effects: () => ({ 悟性: 12, 修为: 4 })
+    },
+    {
+      id: 'ward',
+      name: '布置护阵',
+      description: '你修缮洞府阵法，凝聚气运，也让心神更安定。',
+      cost: 12,
+      effects: () => ({ 气运: 10, 颜值: 3 })
+    }
+  ];
+
+  return actions.find(action => action.id === actionId);
 }
 
 function clampAttribute(value: number, cap = ATTRIBUTE_MAX): number {
@@ -606,7 +907,7 @@ function scaleNumericEffects(effects: GameEvent['effects'], factor: number): Gam
 }
 
 function canBreakthrough(gameState: GameState): boolean {
-  return gameState.cultivationProgress >= getRequiredCultivationProgress(gameState) && canAdvanceRealm(gameState);
+  return !gameState.pendingEvent && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState) && canAdvanceRealm(gameState);
 }
 
 function canAdvanceRealm(gameState: GameState): boolean {
@@ -664,7 +965,11 @@ function getAttributeCap(realm: GameState['currentRealm']): number {
 }
 
 function getCombinedModifiers(gameState: GameState): GrowthModifiers {
-  return mergeModifiers(gameState.spiritRoot?.modifiers, gameState.talent?.modifiers);
+  return mergeModifiers(
+    gameState.spiritRoot?.modifiers,
+    gameState.talent?.modifiers,
+    getCultivationStrategy(gameState.strategy).modifiers
+  );
 }
 
 function mergeModifiers(...modifiersList: Array<GrowthModifiers | undefined>): GrowthModifiers {
@@ -701,4 +1006,31 @@ function mergeEventWeights(
 
 function getDisasterResistance(gameState: GameState): number {
   return Math.max(-0.25, Math.min(0.5, getCombinedModifiers(gameState).灾劫抗性 ?? 0));
+}
+
+function clampRate(value: number): number {
+  return Math.max(0.05, Math.min(0.98, value));
+}
+
+function unlockAchievements(gameState: GameState): GameState {
+  const achievements = new Set(gameState.achievements);
+
+  if (gameState.events.length >= 1) achievements.add('初历世事');
+  if (gameState.events.length >= 30) achievements.add('三十年风雨');
+  if (gameState.currentRealm.level >= 2) achievements.add('筑基有成');
+  if (gameState.currentRealm.level >= 3) achievements.add('金丹大道');
+  if (gameState.currentRealm.level >= 4) achievements.add('元婴出窍');
+  if (gameState.currentRealm.level >= 5) achievements.add('化神问道');
+  if (gameState.currentRealm.level >= 8) achievements.add('大乘在望');
+  if (gameState.currentRealm.name === '渡劫期') achievements.add('渡劫之身');
+  if (Object.values(gameState.attributes).some(value => value >= 300)) achievements.add('一项通玄');
+  if (Object.values(gameState.attributes).every(value => value >= 120)) achievements.add('五维均衡');
+  if (gameState.attributes.家境 >= 200) achievements.add('富甲仙门');
+  if (gameState.talent?.rarity === '传说') achievements.add('传说命格');
+  if (gameState.spiritRoot?.rarity === '神话') achievements.add('神话灵根');
+
+  return {
+    ...gameState,
+    achievements: Array.from(achievements)
+  };
 }

@@ -4,6 +4,16 @@ export type Rarity = '凡品' | '下品' | '中品' | '上品' | '极品' | '神
 
 export type AttributeEffect = Partial<Attributes>;
 
+export type CultivationStrategyId = 'balanced' | 'body' | 'insight' | 'roaming' | 'business' | 'seclusion';
+
+export interface CultivationStrategy {
+  id: CultivationStrategyId;
+  name: string;
+  description: string;
+  focus: string;
+  modifiers: GrowthModifiers;
+}
+
 export interface GrowthModifiers {
   修为倍率?: number;
   属性倍率?: number;
@@ -65,8 +75,10 @@ export interface GameState {
   attributes: Attributes;
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
+  strategy: CultivationStrategyId;
   lifespan: number;
   cultivationProgress: number;
+  pendingEvent: GameEvent | null;
   events: GameEvent[];
   achievements: string[];
   endReason?: 'lifespan' | 'meditation' | 'ascended';

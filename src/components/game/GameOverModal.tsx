@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
+import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 
 interface GameOverModalProps {
   onRestart: () => void;
@@ -131,6 +132,39 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
               </div>
             </motion.div>
           )}
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.55 }}
+            className="mb-6 rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-4 text-left"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <p className="ink-muted text-sm">本世成就</p>
+              <p className="text-sm font-semibold text-[#9a5b2f]">
+                {gameState.achievements.length}/{achievementCatalog.length}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {gameState.achievements.length > 0 ? (
+                gameState.achievements.map(id => {
+                  const achievement = getAchievementInfo(id);
+
+                  return (
+                    <span
+                      key={id}
+                      title={achievement.description}
+                      className="rounded-full border border-[#a9823c]/30 bg-[#f0dfad]/55 px-3 py-1 text-xs font-semibold text-[#6f4d24]"
+                    >
+                      {achievement.name}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-sm text-[#66766e]">未解锁成就</span>
+              )}
+            </div>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
