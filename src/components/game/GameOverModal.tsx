@@ -33,12 +33,12 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#17201d]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#17201d]/60 p-4 backdrop-blur-sm"
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="ink-panel rounded-lg p-8 max-w-lg w-full"
+        className="ink-panel my-auto max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg p-8"
       >
         <div className="text-center">
           <motion.div

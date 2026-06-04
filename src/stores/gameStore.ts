@@ -1071,39 +1071,33 @@ function applyAttributeModifiers(
 }
 
 function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['effects'] {
-  const isHarmful = isHarmfulEvent(event);
+  const resolvedEffects: GameEvent['effects'] = {};
 
-  if (isSuccess) {
-    return isHarmful ? scaleNumericEffects(event.effects, 0.5) : event.effects;
-  }
+  Object.entries(event.effects).forEach(([key, value]) => {
+    if (typeof value !== 'number') {
+      (resolvedEffects as Record<string, typeof value>)[key] = value;
+      return;
+    }
 
-  return isHarmful ? event.effects : scaleNumericEffects(event.effects, 0.5);
-}
+    const shouldReduce = isSuccess ? value < 0 : value > 0;
+    const resolvedValue = shouldReduce ? scaleNumericValue(value, 0.5) : value;
 
-function isHarmfulEvent(event: GameEvent): boolean {
-  return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
+    if (resolvedValue !== 0) {
+      (resolvedEffects as Record<string, number>)[key] = resolvedValue;
+    }
+  });
+
+  return resolvedEffects;
 }
 
 function hasNegativeNumericEffect(event: GameEvent): boolean {
   return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
 }
 
-function scaleNumericEffects(effects: GameEvent['effects'], factor: number): GameEvent['effects'] {
-  const scaledEffects: GameEvent['effects'] = {};
-
-  Object.entries(effects).forEach(([key, value]) => {
-    if (typeof value !== 'number') return;
-
-    const scaledValue = value > 0
-      ? Math.floor(value * factor)
-      : Math.ceil(value * factor);
-
-    if (scaledValue !== 0) {
-      (scaledEffects as Record<string, number>)[key] = scaledValue;
-    }
-  });
-
-  return scaledEffects;
+function scaleNumericValue(value: number, factor: number): number {
+  return value > 0
+    ? Math.floor(value * factor)
+    : Math.ceil(value * factor);
 }
 
 function canBreakthrough(gameState: GameState): boolean {
