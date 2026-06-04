@@ -36,6 +36,7 @@ export interface Realm {
   name: string;
   level: number;
   maxAge: number;
+  attributeCap: number;
   cultivationRequired: number;
   description: string;
   requirements: {

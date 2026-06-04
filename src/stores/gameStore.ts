@@ -21,7 +21,7 @@ interface GameStore {
   resetGame: () => void;
 }
 
-const ATTRIBUTE_MAX = 100;
+const ATTRIBUTE_MAX = 500;
 const STARTING_AGE = 10;
 
 const initialState: GameState = {
@@ -49,12 +49,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   startNewGame: (selectedSpiritRoot, selectedTalent) => {
     const spiritRoot = selectedSpiritRoot ?? get().drawSpiritRoot();
     const talent = selectedTalent ?? get().drawTalent();
+    const startingAttributeCap = getAttributeCap(realms[0]);
     const initialAttributes: Attributes = {
-      根骨: clampAttribute((spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0)),
-      悟性: clampAttribute((spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0)),
-      气运: clampAttribute((spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0)),
-      颜值: clampAttribute((spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0)),
-      家境: clampAttribute((spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0))
+      根骨: clampAttribute((spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0), startingAttributeCap),
+      悟性: clampAttribute((spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0), startingAttributeCap),
+      气运: clampAttribute((spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0), startingAttributeCap),
+      颜值: clampAttribute((spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0), startingAttributeCap),
+      家境: clampAttribute((spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0), startingAttributeCap)
     };
 
     set({
@@ -108,7 +109,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (gameState.status !== 'playing') return;
 
-    const { age, attributes } = gameState;
+    const { age } = gameState;
 
     const event = selectAvailableEvent(gameState);
     const isNeutralEvent = event.result === 'neutral';
@@ -122,7 +123,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const lifespanDelta = calculateLifespanDelta(gameState, event, resolvedEffects);
     const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
 
-    const newAttributes = applyAttributeEffects(attributes, adjustedEffects);
+    const newAttributes = applyAttributeEffects(gameState, adjustedEffects);
     const newLifespan = lifespanDelta
       ? Math.max(1, gameState.lifespan + lifespanDelta)
       : gameState.lifespan;
@@ -293,11 +294,13 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
   return true;
 }
 
-function clampAttribute(value: number): number {
-  return Math.max(0, Math.min(ATTRIBUTE_MAX, Math.round(value)));
+function clampAttribute(value: number, cap = ATTRIBUTE_MAX): number {
+  return Math.max(0, Math.min(cap, Math.round(value)));
 }
 
-function applyAttributeEffects(attributes: Attributes, effects: GameEvent['effects']): Attributes {
+function applyAttributeEffects(gameState: GameState, effects: GameEvent['effects']): Attributes {
+  const attributeCap = getAttributeCap(gameState.currentRealm);
+  const { attributes } = gameState;
   const newAttributes = { ...attributes };
   const effectsRecord = effects as Record<string, number | undefined>;
 
@@ -311,7 +314,7 @@ function applyAttributeEffects(attributes: Attributes, effects: GameEvent['effec
       && key !== '修为'
       && effectValue !== undefined
     ) {
-      newAttributes[attrKey] = clampAttribute(newAttributes[attrKey] + effectValue);
+      newAttributes[attrKey] = clampAttribute(newAttributes[attrKey] + effectValue, attributeCap);
     }
   });
 
@@ -608,6 +611,10 @@ function getRealmLifespanGain(currentIndex: number): number {
   }
 
   return Math.max(0, nextRealm.maxAge - currentRealm.maxAge);
+}
+
+function getAttributeCap(realm: GameState['currentRealm']): number {
+  return Math.min(ATTRIBUTE_MAX, realm.attributeCap);
 }
 
 function getCombinedModifiers(gameState: GameState): GrowthModifiers {

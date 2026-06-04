@@ -80,9 +80,12 @@ export default function StatusPanel() {
       />
 
       <div className="space-y-3">
-        <div className="ink-muted text-xs mb-2">属性</div>
+        <div className="mb-2 flex items-center justify-between text-xs">
+          <span className="ink-muted">属性</span>
+          <span className="text-[#66766e]">当前上限 {currentRealm.attributeCap}</span>
+        </div>
         {Object.entries(attributes).map(([key, value]) => (
-          <AttributeBar key={key} name={key} value={value} />
+          <AttributeBar key={key} name={key} value={value} cap={currentRealm.attributeCap} />
         ))}
       </div>
     </motion.div>
@@ -210,17 +213,19 @@ function getRequirementItems(
   });
 }
 
-function AttributeBar({ name, value }: { name: string; value: number }) {
+function AttributeBar({ name, value, cap }: { name: string; value: number; cap: number }) {
+  const percent = Math.min(100, value / cap * 100);
+
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="ink-muted">{name}</span>
-        <span className="font-semibold text-[#263832]">{value}</span>
+        <span className="font-semibold text-[#263832]">{value}/{cap}</span>
       </div>
       <div className="relative h-1.5 bg-[#c8c2a9] rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
+          animate={{ width: `${percent}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#355d58] to-[#88a876]"
         />
