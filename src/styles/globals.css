@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-[#f4ead2] text-[#24302e];
+  font-family: 'Noto Serif SC', 'SimSun', serif;
+}
+
+.ink-panel {
+  @apply border shadow-xl backdrop-blur-sm;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 238, 0.92), rgba(236, 224, 196, 0.86)),
+    #f7efd9;
+  border-color: rgba(54, 78, 70, 0.3);
+  box-shadow: 0 18px 48px rgba(32, 42, 38, 0.18);
+}
+
+.ink-panel-dark {
+  @apply border shadow-2xl backdrop-blur-sm;
+  background:
+    linear-gradient(135deg, rgba(33, 45, 42, 0.92), rgba(62, 78, 63, 0.84)),
+    #25322e;
+  border-color: rgba(210, 188, 126, 0.35);
+  box-shadow: 0 18px 54px rgba(20, 28, 25, 0.28);
+}
+
+.ink-button-primary {
+  @apply rounded-md px-8 py-3 font-bold text-[#fff9e8] shadow-lg transition-all;
+  background: linear-gradient(135deg, #273f39, #66825f);
+  box-shadow: 0 10px 24px rgba(39, 63, 57, 0.26);
+}
+
+.ink-button-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 12px 28px rgba(39, 63, 57, 0.34);
+}
+
+.ink-button-secondary {
+  @apply rounded-md border px-8 py-3 font-semibold transition-all;
+  background: rgba(255, 250, 232, 0.76);
+  border-color: rgba(54, 78, 70, 0.28);
+  color: #273f39;
+}
+
+.ink-button-secondary:hover {
+  background: rgba(255, 250, 232, 0.95);
+}
+
+.ink-title {
+  color: #263832;
+  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.7);
+}
+
+.ink-accent {
+  color: #9a5b2f;
+}
+
+.ink-muted {
+  color: #59645f;
+}
+
+.xuan-particle {
+  @apply absolute w-2 h-2 bg-white rounded-full opacity-50;
+  animation: float-particle 8s ease-in-out infinite;
+}
+
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+.scroll-container {
+  @apply relative text-stone-950 rounded-md p-6;
+  background:
+    linear-gradient(to bottom, rgba(255, 249, 225, 0.76), rgba(238, 222, 181, 0.68)),
+    rgba(245, 231, 190, 0.72);
+  border-color: rgba(89, 100, 79, 0.46);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(128, 105, 63, 0.08);
+}
