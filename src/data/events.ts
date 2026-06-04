@@ -48,7 +48,7 @@ export const events: GameEvent[] = [
     title: '一念顿悟',
     description: '你忽然看懂了功法中反复困扰自己的几句隐语，心中豁然开朗。',
     weight: 0.65,
-    effects: { 悟性: 4, 修为: 12 },
+    effects: { 悟性: 6, 修为: 12 },
     result: 'success'
   },
   {
@@ -70,7 +70,7 @@ export const events: GameEvent[] = [
     description: '水行灵息化作清凉月影，洗去杂念，让你对道法有了新的体会。',
     weight: 0.45,
     conditions: { spiritRootIds: ['water-root', 'chaos-root'] },
-    effects: { 悟性: 4, 修为: 12 },
+    effects: { 悟性: 6, 修为: 12 },
     result: 'success'
   },
   {
@@ -134,7 +134,7 @@ export const events: GameEvent[] = [
     title: '残卷秘笈',
     description: '你在山洞石缝中发现半卷古旧功法，虽然残缺，却字字有灵。',
     weight: 0.8,
-    effects: { 悟性: 4, 修为: 7 },
+    effects: { 悟性: 6, 修为: 7 },
     result: 'success'
   },
   {
@@ -154,7 +154,7 @@ export const events: GameEvent[] = [
     title: '古修遗迹',
     description: '荒山深处露出一角石门，你从古修遗迹中带回了灵材与旧闻。',
     weight: 0.55,
-    effects: { 气运: 5, 家境: 5, 修为: 6 },
+    effects: { 气运: 5, 家境: 4, 修为: 6 },
     result: 'success'
   },
   {
@@ -165,7 +165,7 @@ export const events: GameEvent[] = [
     description: '一只灵兽幼崽主动靠近你，似乎认定你身上有它愿意追随的气机。',
     weight: 0.55,
     conditions: { attributes: { 气运: 20 } },
-    effects: { 气运: 4, 颜值: 2, 修为: 5 },
+    effects: { 气运: 4, 颜值: 3, 修为: 5 },
     result: 'success'
   },
   {
@@ -186,7 +186,7 @@ export const events: GameEvent[] = [
     title: '山路救人',
     description: '你救下误入深山的孩童，虽耽误修炼，却为自己积下一点善缘。',
     weight: 0.8,
-    effects: { 气运: 3, 颜值: 2, 修为: -2 },
+    effects: { 气运: 3, 颜值: 3, 修为: -2 },
     result: 'neutral'
   },
   {
@@ -196,7 +196,7 @@ export const events: GameEvent[] = [
     title: '清名远扬',
     description: '你行事端正，被路过修士记下一段佳话，外人提起你时也多了几分好感。',
     weight: 0.7,
-    effects: { 颜值: 3, 气运: 1 },
+    effects: { 颜值: 5, 气运: 1 },
     result: 'success'
   },
   {
@@ -217,7 +217,7 @@ export const events: GameEvent[] = [
     title: '遇见知己',
     description: '修仙路上难得遇到志同道合之人，一番长谈后心境舒展。',
     weight: 0.9,
-    effects: { 气运: 3, 颜值: 2, 修为: 3 },
+    effects: { 气运: 3, 颜值: 3, 修为: 3 },
     result: 'success'
   },
   {
@@ -227,7 +227,7 @@ export const events: GameEvent[] = [
     title: '结义同修',
     description: '几位同道与你结义相扶，往后行走坊市与宗门都多了照应。',
     weight: 0.7,
-    effects: { 气运: 2, 颜值: 2, 家境: 4 },
+    effects: { 气运: 2, 颜值: 3, 家境: 3 },
     result: 'success'
   },
   {
@@ -248,7 +248,7 @@ export const events: GameEvent[] = [
     description: '你受邀参加世家法会，席间资源往来、人情暗线都悄然改变。',
     weight: 0.55,
     conditions: { attributes: { 家境: 25 } },
-    effects: { 家境: 5, 气运: 2, 颜值: 3 },
+    effects: { 家境: 4, 气运: 2, 颜值: 4 },
     result: 'success'
   },
   {
@@ -258,7 +258,7 @@ export const events: GameEvent[] = [
     title: '茶会论道',
     description: '你在小茶会上从容应答，谈吐与气度都给同道留下了不错印象。',
     weight: 0.9,
-    effects: { 颜值: 3, 悟性: 1, 修为: 2 },
+    effects: { 颜值: 4, 悟性: 2, 修为: 2 },
     result: 'success'
   },
   {
@@ -385,7 +385,7 @@ export const events: GameEvent[] = [
     title: '坊市淘宝',
     description: '你在坊市角落淘到一件不起眼的小物，细看才知并非凡品。',
     weight: 1,
-    effects: { 家境: 3, 气运: 2 },
+    effects: { 家境: 2, 气运: 2 },
     result: 'success'
   },
   {
@@ -395,7 +395,7 @@ export const events: GameEvent[] = [
     title: '炉火微明',
     description: '你守着丹炉反复试错，终于炼出一炉可用的丹药。',
     weight: 0.8,
-    effects: { 悟性: 3, 家境: 2, 修为: 4 },
+    effects: { 悟性: 4, 家境: 1, 修为: 4 },
     result: 'success'
   },
   {
@@ -405,7 +405,7 @@ export const events: GameEvent[] = [
     title: '回望凡尘',
     description: '你回到旧日故乡，凡尘牵挂让心神柔软，也让脚步慢了半拍。',
     weight: 0.7,
-    effects: { 颜值: 2, 气运: 1, 修为: -2 },
+    effects: { 颜值: 3, 气运: 1, 修为: -2 },
     result: 'neutral'
   },
   {
@@ -415,7 +415,7 @@ export const events: GameEvent[] = [
     title: '整肃仪容',
     description: '你整理衣冠、收敛浮躁，虽不是什么大机缘，却让气质更清朗。',
     weight: 1,
-    effects: { 颜值: 2 },
+    effects: { 颜值: 4 },
     result: 'neutral'
   },
   {
@@ -446,7 +446,7 @@ export const events: GameEvent[] = [
     title: '发现灵脉',
     description: '你在荒岭下发现一条细小灵脉，虽不能独占，却足够换来许多资源。',
     weight: 0.55,
-    effects: { 家境: 8, 气运: 2, 修为: 5 },
+    effects: { 家境: 5, 气运: 2, 修为: 5 },
     result: 'success'
   },
   {
@@ -489,7 +489,7 @@ export const events: GameEvent[] = [
     description: '有人看重你的潜力，愿意供给一批修炼资源，只求日后结个善缘。',
     weight: 0.35,
     conditions: { attributes: { 气运: 30 } },
-    effects: { 家境: 7, 修为: 7 },
+    effects: { 家境: 5, 修为: 7 },
     result: 'success'
   },
   {
@@ -500,7 +500,7 @@ export const events: GameEvent[] = [
     description: '一件无人能催动的旧器在你手中忽然发亮，混沌灵机与它遥相呼应。',
     weight: 0.28,
     conditions: { spiritRootIds: ['chaos-root'] },
-    effects: { 悟性: 5, 家境: 6, 修为: 12 },
+    effects: { 悟性: 6, 家境: 4, 修为: 12 },
     result: 'success'
   },
 
@@ -511,7 +511,7 @@ export const events: GameEvent[] = [
     title: '抄经养心',
     description: '你每日抄写道经，笔画从浮躁渐渐落到沉静。',
     weight: 0.9,
-    effects: { 悟性: 3, 修为: 4 },
+    effects: { 悟性: 5, 修为: 4 },
     result: 'success'
   },
   {
@@ -521,7 +521,7 @@ export const events: GameEvent[] = [
     title: '道心澄明',
     description: '一场纷争后，你没有随怒意走偏，反而看清了自己的修行所求。',
     weight: 0.65,
-    effects: { 悟性: 4, 气运: 2, 修为: 6 },
+    effects: { 悟性: 5, 气运: 2, 修为: 6 },
     result: 'success'
   },
   {
@@ -564,7 +564,7 @@ export const events: GameEvent[] = [
     title: '宗门任务',
     description: '你接下宗门任务，奔走数月后换回了丹药、灵石和一点评价。',
     weight: 0.9,
-    effects: { 家境: 4, 气运: 2, 修为: 4 },
+    effects: { 家境: 3, 气运: 2, 修为: 4 },
     result: 'success'
   },
   {
@@ -575,7 +575,7 @@ export const events: GameEvent[] = [
     description: '宗门考校中，你以扎实根基赢得长老点头，修行资源也随之增加。',
     weight: 0.55,
     conditions: { attributes: { 根骨: 25, 悟性: 20 } },
-    effects: { 根骨: 6, 家境: 5, 修为: 8 },
+    effects: { 根骨: 6, 家境: 4, 修为: 8 },
     result: 'success'
   },
   {
@@ -585,7 +585,7 @@ export const events: GameEvent[] = [
     title: '礼仪课业',
     description: '宗门长辈教你收束言行与仪态，繁琐归繁琐，却让你更容易被人接纳。',
     weight: 0.75,
-    effects: { 颜值: 3, 家境: 1 },
+    effects: { 颜值: 5 },
     result: 'success'
   },
   {
@@ -596,7 +596,7 @@ export const events: GameEvent[] = [
     description: '你获准入藏经阁翻阅旧卷，许多零碎见闻终于串成一线。',
     weight: 0.65,
     conditions: { minRealmLevel: 2 },
-    effects: { 悟性: 5, 修为: 6 },
+    effects: { 悟性: 6, 修为: 6 },
     result: 'success'
   },
   {
@@ -618,7 +618,7 @@ export const events: GameEvent[] = [
     description: '家族旧识替你打通了一层关节，宗门资源分配时你得了先机。',
     weight: 0.35,
     conditions: { talentIds: ['rich-clan'] },
-    effects: { 家境: 6, 修为: 9 },
+    effects: { 家境: 4, 修为: 9 },
     result: 'success'
   },
   {
@@ -629,7 +629,7 @@ export const events: GameEvent[] = [
     description: '几场机缘之后，宗门上下都觉得你前途不可限量，愿意向你倾斜资源。',
     weight: 0.25,
     conditions: { talentIds: ['destined-one'], minRealmLevel: 3 },
-    effects: { 气运: 5, 家境: 6, 修为: 12 },
+    effects: { 气运: 5, 家境: 4, 修为: 12 },
     result: 'success'
   }
 ];
