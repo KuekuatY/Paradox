@@ -166,7 +166,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
-    const requiredProgress = getRequiredCultivationProgress(gameState);
     const lifespanGain = getRealmLifespanGain(currentIndex);
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
@@ -174,8 +173,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       type: 'cultivation',
       title: '突破瓶颈',
       description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
-      effects: { 境界: 'advance', 修为: -100, 寿命: lifespanGain },
-      appliedEffects: { 境界: 'advance', 修为: -requiredProgress, 寿命: lifespanGain },
+      effects: { 境界: 'advance', 寿命: lifespanGain },
+      appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
       result: 'success'
     };
 
