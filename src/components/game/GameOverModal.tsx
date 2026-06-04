@@ -18,9 +18,9 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
     const avgAttr = (attributes.根骨 + attributes.悟性 + attributes.气运) / 3;
     
     if (isAscended) return { text: '神话', color: '#9a5b2f', icon: '仙' };
-    if (realmLevel >= 7 && avgAttr >= 80) return { text: '传奇', color: '#9a5b2f', icon: '玄' };
-    if (realmLevel >= 5 && avgAttr >= 60) return { text: '天骄', color: '#7f3f2e', icon: '魁' };
-    if (realmLevel >= 3 && avgAttr >= 40) return { text: '强者', color: '#355d58', icon: '道' };
+    if (realmLevel >= 7 && avgAttr >= 520) return { text: '传奇', color: '#9a5b2f', icon: '玄' };
+    if (realmLevel >= 5 && avgAttr >= 300) return { text: '天骄', color: '#7f3f2e', icon: '魁' };
+    if (realmLevel >= 3 && avgAttr >= 120) return { text: '强者', color: '#355d58', icon: '道' };
     if (realmLevel >= 2) return { text: '普通', color: '#5f7c64', icon: '修' };
     return { text: '废柴', color: '#6f746d', icon: '凡' };
   };

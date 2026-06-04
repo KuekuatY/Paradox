@@ -21,19 +21,20 @@ interface GameStore {
   resetGame: () => void;
 }
 
-const ATTRIBUTE_MAX = 500;
+const ATTRIBUTE_MAX = 800;
 const STARTING_AGE = 10;
+const BASE_ATTRIBUTE_VALUE = 10;
 
 const initialState: GameState = {
   status: 'idle',
   age: STARTING_AGE,
   currentRealm: realms[0],
   attributes: {
-    根骨: 0,
-    悟性: 0,
-    气运: 0,
-    颜值: 0,
-    家境: 0
+    根骨: BASE_ATTRIBUTE_VALUE,
+    悟性: BASE_ATTRIBUTE_VALUE,
+    气运: BASE_ATTRIBUTE_VALUE,
+    颜值: BASE_ATTRIBUTE_VALUE,
+    家境: BASE_ATTRIBUTE_VALUE
   },
   spiritRoot: null,
   talent: null,
@@ -51,11 +52,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const talent = selectedTalent ?? get().drawTalent();
     const startingAttributeCap = getAttributeCap(realms[0]);
     const initialAttributes: Attributes = {
-      根骨: clampAttribute((spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0), startingAttributeCap),
-      悟性: clampAttribute((spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0), startingAttributeCap),
-      气运: clampAttribute((spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0), startingAttributeCap),
-      颜值: clampAttribute((spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0), startingAttributeCap),
-      家境: clampAttribute((spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0), startingAttributeCap)
+      根骨: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0), startingAttributeCap),
+      悟性: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0), startingAttributeCap),
+      气运: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0), startingAttributeCap),
+      颜值: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0), startingAttributeCap),
+      家境: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0), startingAttributeCap)
     };
 
     set({
