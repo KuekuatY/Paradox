@@ -18,7 +18,17 @@ export const events: GameEvent[] = [
     title: '瓶颈松动',
     description: '灵气在经脉中流转圆融，境界瓶颈出现一丝可贵的裂隙。',
     weight: 0.9,
-    effects: { 修为: 14 },
+    effects: { 修为: 14, 根骨: 1 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-body-tempering',
+    age: 0,
+    type: 'cultivation',
+    title: '淬体炼骨',
+    description: '你以灵气反复冲刷筋骨，过程苦涩漫长，却让肉身根基更能承载灵机。',
+    weight: 1.05,
+    effects: { 根骨: 3, 修为: 5 },
     result: 'success'
   },
   {
@@ -105,6 +115,17 @@ export const events: GameEvent[] = [
     effects: { 修为: 9, 寿命: -4 },
     result: 'neutral'
   },
+  {
+    id: 'cultivation-marrow-washing',
+    age: 0,
+    type: 'cultivation',
+    title: '洗髓小成',
+    description: '你用数月时间调整呼吸与药浴，体内杂质渐渐排出，根骨有了实打实的进益。',
+    weight: 0.7,
+    conditions: { minRealmLevel: 2 },
+    effects: { 根骨: 5, 修为: 6, 家境: -2 },
+    result: 'success'
+  },
 
   {
     id: 'encounter-secret-manual',
@@ -123,7 +144,7 @@ export const events: GameEvent[] = [
     title: '高人指路',
     description: '云游高人见你还算诚恳，点破了你修炼中最大的误区。',
     weight: 0.65,
-    effects: { 根骨: 3, 悟性: 3, 修为: 9 },
+    effects: { 根骨: 4, 悟性: 3, 修为: 9 },
     result: 'success'
   },
   {
@@ -165,8 +186,18 @@ export const events: GameEvent[] = [
     title: '山路救人',
     description: '你救下误入深山的孩童，虽耽误修炼，却为自己积下一点善缘。',
     weight: 0.8,
-    effects: { 气运: 3, 修为: -2 },
+    effects: { 气运: 3, 颜值: 2, 修为: -2 },
     result: 'neutral'
+  },
+  {
+    id: 'encounter-beauty-repute',
+    age: 0,
+    type: 'encounter',
+    title: '清名远扬',
+    description: '你行事端正，被路过修士记下一段佳话，外人提起你时也多了几分好感。',
+    weight: 0.7,
+    effects: { 颜值: 3, 气运: 1 },
+    result: 'success'
   },
   {
     id: 'encounter-false-map',
@@ -196,7 +227,7 @@ export const events: GameEvent[] = [
     title: '结义同修',
     description: '几位同道与你结义相扶，往后行走坊市与宗门都多了照应。',
     weight: 0.7,
-    effects: { 气运: 2, 家境: 4 },
+    effects: { 气运: 2, 颜值: 2, 家境: 4 },
     result: 'success'
   },
   {
@@ -217,7 +248,17 @@ export const events: GameEvent[] = [
     description: '你受邀参加世家法会，席间资源往来、人情暗线都悄然改变。',
     weight: 0.55,
     conditions: { attributes: { 家境: 25 } },
-    effects: { 家境: 5, 气运: 2 },
+    effects: { 家境: 5, 气运: 2, 颜值: 3 },
+    result: 'success'
+  },
+  {
+    id: 'social-tea-gathering',
+    age: 0,
+    type: 'social',
+    title: '茶会论道',
+    description: '你在小茶会上从容应答，谈吐与气度都给同道留下了不错印象。',
+    weight: 0.9,
+    effects: { 颜值: 3, 悟性: 1, 修为: 2 },
     result: 'success'
   },
   {
@@ -324,7 +365,17 @@ export const events: GameEvent[] = [
     title: '静室打坐',
     description: '这一年没有大事，你安静打坐，慢慢把零散灵气归入丹田。',
     weight: 1.4,
-    effects: { 修为: 6, 悟性: 1 },
+    effects: { 修为: 6, 悟性: 1, 根骨: 1 },
+    result: 'success'
+  },
+  {
+    id: 'daily-morning-exercise',
+    age: 0,
+    type: 'daily',
+    title: '晨起练形',
+    description: '你每日天未亮便在山前练形，动作看似朴拙，却一点点打磨筋骨。',
+    weight: 1.1,
+    effects: { 根骨: 2, 修为: 3 },
     result: 'success'
   },
   {
@@ -355,6 +406,16 @@ export const events: GameEvent[] = [
     description: '你回到旧日故乡，凡尘牵挂让心神柔软，也让脚步慢了半拍。',
     weight: 0.7,
     effects: { 颜值: 2, 气运: 1, 修为: -2 },
+    result: 'neutral'
+  },
+  {
+    id: 'daily-grooming',
+    age: 0,
+    type: 'daily',
+    title: '整肃仪容',
+    description: '你整理衣冠、收敛浮躁，虽不是什么大机缘，却让气质更清朗。',
+    weight: 1,
+    effects: { 颜值: 2 },
     result: 'neutral'
   },
   {
@@ -396,7 +457,18 @@ export const events: GameEvent[] = [
     description: '坊市拍卖会上，你用积攒的灵石换来一枚品相不错的灵丹。',
     weight: 0.55,
     conditions: { attributes: { 家境: 20 } },
-    effects: { 家境: -4, 根骨: 4, 修为: 8 },
+    effects: { 家境: -4, 根骨: 5, 修为: 8 },
+    result: 'success'
+  },
+  {
+    id: 'resource-tempering-medicine',
+    age: 0,
+    type: 'resource',
+    title: '购得淬骨药',
+    description: '你花去一笔灵石换来淬骨药材，药性猛烈，但确实能补足肉身短板。',
+    weight: 0.75,
+    conditions: { attributes: { 家境: 12 } },
+    effects: { 家境: -3, 根骨: 4 },
     result: 'success'
   },
   {
@@ -503,7 +575,17 @@ export const events: GameEvent[] = [
     description: '宗门考校中，你以扎实根基赢得长老点头，修行资源也随之增加。',
     weight: 0.55,
     conditions: { attributes: { 根骨: 25, 悟性: 20 } },
-    effects: { 家境: 5, 修为: 8 },
+    effects: { 根骨: 3, 家境: 5, 修为: 8 },
+    result: 'success'
+  },
+  {
+    id: 'sect-etiquette',
+    age: 0,
+    type: 'sect',
+    title: '礼仪课业',
+    description: '宗门长辈教你收束言行与仪态，繁琐归繁琐，却让你更容易被人接纳。',
+    weight: 0.75,
+    effects: { 颜值: 3, 家境: 1 },
     result: 'success'
   },
   {
