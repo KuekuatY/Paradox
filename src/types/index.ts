@@ -125,11 +125,21 @@ export interface GameState {
   cultivationProgress: number;
   pendingEvent: GameEvent | null;
   pendingPathChoice: boolean;
+  pendingTribulation: TribulationState | null;
   activeGoal: ActiveLifeGoal | null;
   completedGoals: string[];
   events: GameEvent[];
   achievements: string[];
   endReason?: 'lifespan' | 'meditation' | 'ascended';
+}
+
+export interface TribulationState {
+  targetRealmName: string;
+  targetRealmLevel: number;
+  strikesRequired: number;
+  strikesResolved: number;
+  successes: number;
+  failures: number;
 }
 
 export interface GameEvent {

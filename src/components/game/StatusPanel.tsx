@@ -117,7 +117,7 @@ export default function StatusPanel({
           {gameState.status === 'playing' && (
             <InventoryPanel
               inventory={gameState.inventory}
-              canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+              canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
             />
           )}
         </div>
@@ -352,6 +352,7 @@ function TechniqueCard({
   const isMaxLevel = learnedTechnique.level >= technique.maxLevel;
   const canTrain = !gameState.pendingEvent
     && !gameState.pendingPathChoice
+    && !gameState.pendingTribulation
     && gameState.currentRealm.level >= technique.minRealmLevel
     && !isMaxLevel
     && gameState.cultivationProgress >= cost.progressCost

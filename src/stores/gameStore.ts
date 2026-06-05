@@ -24,7 +24,8 @@ import type {
   InventoryEntry,
   InventoryReward,
   LearnedTechnique,
-  TechniqueDefinition
+  TechniqueDefinition,
+  TribulationState
 } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
@@ -45,6 +46,7 @@ interface GameStore {
   checkRealmAdvancement: () => boolean;
   canBreakthrough: () => boolean;
   breakthroughRealm: () => void;
+  resolveTribulationStrike: (success: boolean) => void;
   checkGameEnd: () => void;
   endGame: (result: 'died' | 'ascended', reason?: GameState['endReason']) => void;
   resetGame: () => void;
@@ -84,6 +86,7 @@ const initialState: GameState = {
   cultivationProgress: 0,
   pendingEvent: null,
   pendingPathChoice: false,
+  pendingTribulation: null,
   activeGoal: null,
   completedGoals: [],
   events: [],
@@ -125,6 +128,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cultivationProgress: 0,
       pendingEvent: null,
       pendingPathChoice: false,
+      pendingTribulation: null,
       activeGoal: null,
       completedGoals: [],
       events: [],
@@ -213,7 +217,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   useInventoryItem: (itemId) => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
 
     const item = getItem(itemId);
     const inventoryEntry = gameState.inventory.find(entry => entry.itemId === itemId);
@@ -269,7 +273,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   trainTechnique: (techniqueId) => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
 
     const learnedTechnique = gameState.techniques.find(technique => technique.techniqueId === techniqueId);
     const technique = getTechnique(techniqueId);
@@ -320,7 +324,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   useBreakthroughPreparation: (actionId) => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
 
     const action = getPreparationAction(actionId, gameState.currentRealm.level);
     if (!action) return;
@@ -387,7 +391,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   advanceAge: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
 
     const newAge = gameState.age + getCultivationYearStep(gameState.currentRealm.level);
     const agedState: GameState = {
@@ -414,7 +418,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   processEvent: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
     const event = {
       ...selectAvailableEvent(gameState),
       age: gameState.age
@@ -449,7 +453,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   breakthroughRealm: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingPathChoice || !canBreakthrough(gameState)) return;
+    if (gameState.status !== 'playing' || gameState.pendingPathChoice || gameState.pendingTribulation || !canBreakthrough(gameState)) return;
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
@@ -495,30 +499,63 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const lifespanGain = getRealmLifespanGain(currentIndex);
-    const breakthroughEvent: GameEvent = {
-      id: `breakthrough-${Date.now()}`,
-      age: gameState.age,
-      type: 'cultivation',
-      title: '突破瓶颈',
-      description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
-      effects: { 境界: 'advance', 寿命: lifespanGain },
-      appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
-      result: 'neutral'
-    };
-
-    const stateAfterBreakthrough: GameState = {
-      ...gameState,
-      currentRealm: nextRealm,
-      lifespan: addLifespan(gameState.lifespan, lifespanGain),
-      cultivationProgress: 0,
-      events: [...gameState.events, breakthroughEvent]
-    };
+    if (requiresTribulation(nextRealm)) {
+      set({
+        gameState: {
+          ...gameState,
+          pendingTribulation: createTribulationState(nextRealm)
+        }
+      });
+      return;
+    }
 
     set({
-      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterBreakthrough, breakthroughEvent))
+      gameState: completeBreakthrough(gameState, nextRealm, currentIndex)
     });
 
+    get().checkGameEnd();
+  },
+
+  resolveTribulationStrike: (success) => {
+    const { gameState } = get();
+    const tribulation = gameState.pendingTribulation;
+    if (gameState.status !== 'playing' || !tribulation) return;
+
+    const resolvedTribulation: TribulationState = {
+      ...tribulation,
+      strikesResolved: tribulation.strikesResolved + 1,
+      successes: tribulation.successes + (success ? 1 : 0),
+      failures: tribulation.failures + (success ? 0 : 1)
+    };
+
+    if (resolvedTribulation.strikesResolved < resolvedTribulation.strikesRequired) {
+      set({
+        gameState: {
+          ...gameState,
+          pendingTribulation: resolvedTribulation
+        }
+      });
+      return;
+    }
+
+    const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
+    const nextRealm = realms[currentIndex + 1];
+    if (!nextRealm || nextRealm.name !== resolvedTribulation.targetRealmName) {
+      set({
+        gameState: {
+          ...gameState,
+          pendingTribulation: null
+        }
+      });
+      return;
+    }
+
+    const passed = resolvedTribulation.successes >= getTribulationSuccessThreshold(resolvedTribulation.strikesRequired);
+    const resolvedState = passed
+      ? completeTribulationSuccess(gameState, nextRealm, currentIndex, resolvedTribulation)
+      : completeTribulationFailure(gameState, resolvedTribulation);
+
+    set({ gameState: resolvedState });
     get().checkGameEnd();
   },
 
@@ -545,6 +582,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...gameState,
         status: 'ended',
         pendingEvent: null,
+        pendingTribulation: null,
         endReason
       }
     });
@@ -567,6 +605,177 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ gameState: initialState });
   }
 }));
+
+function completeBreakthrough(
+  gameState: GameState,
+  nextRealm: GameState['currentRealm'],
+  currentIndex: number
+): GameState {
+  const lifespanGain = getRealmLifespanGain(currentIndex);
+  const breakthroughEvent: GameEvent = {
+    id: `breakthrough-${Date.now()}`,
+    age: gameState.age,
+    type: 'cultivation',
+    title: '突破瓶颈',
+    description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
+    effects: { 境界: 'advance', 寿命: lifespanGain },
+    appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
+    result: 'neutral'
+  };
+
+  const stateAfterBreakthrough: GameState = {
+    ...gameState,
+    currentRealm: nextRealm,
+    lifespan: addLifespan(gameState.lifespan, lifespanGain),
+    cultivationProgress: 0,
+    pendingTribulation: null,
+    events: [...gameState.events, breakthroughEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterBreakthrough, breakthroughEvent));
+}
+
+function requiresTribulation(nextRealm: GameState['currentRealm']): boolean {
+  return nextRealm.level >= 5 && nextRealm.level <= 9;
+}
+
+function createTribulationState(nextRealm: GameState['currentRealm']): TribulationState {
+  return {
+    targetRealmName: nextRealm.name,
+    targetRealmLevel: nextRealm.level,
+    strikesRequired: getTribulationStrikeCount(nextRealm.level),
+    strikesResolved: 0,
+    successes: 0,
+    failures: 0
+  };
+}
+
+function getTribulationStrikeCount(targetRealmLevel: number): number {
+  switch (targetRealmLevel) {
+    case 5:
+      return 1;
+    case 6:
+      return 3;
+    case 7:
+      return 5;
+    case 8:
+      return 7;
+    case 9:
+      return 9;
+    default:
+      return 0;
+  }
+}
+
+function getTribulationSuccessThreshold(strikesRequired: number): number {
+  return Math.ceil(strikesRequired * 0.6);
+}
+
+function completeTribulationSuccess(
+  gameState: GameState,
+  nextRealm: GameState['currentRealm'],
+  currentIndex: number,
+  tribulation: TribulationState
+): GameState {
+  const lifespanGain = getRealmLifespanGain(currentIndex);
+  const rootGain = getTribulationRootGain(tribulation);
+  const progressPercent = getTribulationProgressBonusPercent(tribulation);
+  const stateAtNewRealm: GameState = {
+    ...gameState,
+    currentRealm: nextRealm,
+    lifespan: addLifespan(gameState.lifespan, lifespanGain),
+    cultivationProgress: 0,
+    pendingTribulation: null
+  };
+  const requiredProgress = getRequiredCultivationProgress(stateAtNewRealm);
+  const progressGain = Math.trunc(requiredProgress * progressPercent / 100);
+  const effects: GameEvent['effects'] = {
+    境界: 'advance',
+    寿命: lifespanGain,
+    根骨: rootGain,
+    修为: progressPercent
+  };
+  const newAttributes = applyAttributeEffects(stateAtNewRealm, effects);
+  const appliedEffects: GameEvent['effects'] = {
+    境界: 'advance',
+    寿命: lifespanGain,
+    根骨: newAttributes.根骨 - gameState.attributes.根骨,
+    ...(progressGain > 0 ? { 修为: progressGain } : {})
+  };
+  const tribulationEvent: GameEvent = {
+    id: `tribulation-success-${Date.now()}`,
+    age: gameState.age,
+    type: 'cultivation',
+    title: `渡劫功成：${nextRealm.name}`,
+    description: `瓶颈破开后，天雷接踵而至。你接下 ${tribulation.successes}/${tribulation.strikesRequired} 道关键雷劫，雷意反炼筋骨，终成${nextRealm.name}。`,
+    effects,
+    appliedEffects,
+    result: 'great-success'
+  };
+  const stateAfterTribulation: GameState = {
+    ...stateAtNewRealm,
+    attributes: newAttributes,
+    cultivationProgress: clampProgress(progressGain, requiredProgress),
+    events: [...gameState.events, tribulationEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterTribulation, tribulationEvent));
+}
+
+function completeTribulationFailure(
+  gameState: GameState,
+  tribulation: TribulationState
+): GameState {
+  const rootLoss = getTribulationRootLoss(tribulation);
+  const lifespanLossPercent = getTribulationLifespanLossPercent(tribulation);
+  const effects: GameEvent['effects'] = {
+    根骨: -rootLoss,
+    寿命: -lifespanLossPercent
+  };
+  const tribulationEvent: GameEvent = {
+    id: `tribulation-failed-${Date.now()}`,
+    age: gameState.age,
+    type: 'disaster',
+    title: '渡劫失利',
+    description: `瓶颈虽破，雷劫却来得更凶。你只稳住 ${tribulation.successes}/${tribulation.strikesRequired} 道关键雷劫，劫雷反噬，升境功败垂成。`,
+    effects,
+    result: 'great-failure'
+  };
+  const lifespanDelta = calculateLifespanDelta(gameState, tribulationEvent, effects);
+  const newAttributes = applyAttributeEffects(gameState, effects);
+  const resolvedEvent: GameEvent = {
+    ...tribulationEvent,
+    appliedEffects: {
+      根骨: newAttributes.根骨 - gameState.attributes.根骨,
+      寿命: lifespanDelta
+    }
+  };
+  const stateAfterTribulation: GameState = {
+    ...gameState,
+    pendingTribulation: null,
+    attributes: newAttributes,
+    lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+    events: [...gameState.events, resolvedEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterTribulation, resolvedEvent));
+}
+
+function getTribulationRootGain(tribulation: TribulationState): number {
+  return Math.max(2, Math.round(tribulation.strikesRequired * 1.2 + tribulation.successes * 0.8));
+}
+
+function getTribulationProgressBonusPercent(tribulation: TribulationState): number {
+  return Math.min(18, 4 + tribulation.strikesRequired + tribulation.successes);
+}
+
+function getTribulationRootLoss(tribulation: TribulationState): number {
+  return Math.max(3, Math.round(tribulation.strikesRequired * 1.2 + tribulation.failures));
+}
+
+function getTribulationLifespanLossPercent(tribulation: TribulationState): number {
+  return Math.min(18, 4 + tribulation.strikesRequired + tribulation.failures);
+}
 
 interface PreparationAction {
   id: string;
@@ -2197,6 +2406,7 @@ function canBreakthrough(gameState: GameState): boolean {
     && hasNextRealm
     && !gameState.pendingPathChoice
     && !gameState.pendingEvent
+    && !gameState.pendingTribulation
     && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState);
 }
 

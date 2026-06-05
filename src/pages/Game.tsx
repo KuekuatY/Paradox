@@ -20,6 +20,7 @@ import StatusPanel, {
 import EventDisplay, { PreparationPanel } from '@/components/game/EventDisplay';
 import TalentDraw from '@/components/game/TalentDraw';
 import GameOverModal from '@/components/game/GameOverModal';
+import TribulationQte from '@/components/game/TribulationQte';
 
 type MobileTab = 'event' | 'status' | 'goal' | 'technique' | 'inventory' | 'breakthrough' | 'records';
 
@@ -30,6 +31,7 @@ export default function Game() {
     resetGame,
     canBreakthrough,
     breakthroughRealm,
+    resolveTribulationStrike,
     endGame,
     useBreakthroughPreparation
   } = useGameStore();
@@ -44,10 +46,10 @@ export default function Game() {
   }, [gameState.status]);
 
   useEffect(() => {
-    if (gameState.status === 'idle' || gameState.pendingEvent) {
+    if (gameState.status === 'idle' || gameState.pendingEvent || gameState.pendingTribulation) {
       setMobileTab('event');
     }
-  }, [gameState.status, gameState.pendingEvent]);
+  }, [gameState.status, gameState.pendingEvent, gameState.pendingTribulation]);
 
   const handleContinue = () => {
     const { advanceAge } = useGameStore.getState();
@@ -88,7 +90,7 @@ export default function Game() {
                 <StatusPanel />
                 {gameState.status === 'playing' && (
                   <PreparationPanel
-                    canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+                    canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
                     familyWealth={gameState.familyWealth}
                     realmLevel={gameState.currentRealm.level}
                     shouldPrepare={gameState.cultivationProgress > 0 && !canBreak}
@@ -114,6 +116,18 @@ export default function Game() {
                       exit={{ opacity: 0, scale: 0.9 }}
                     >
                       <TalentDraw />
+                    </motion.div>
+                  ) : gameState.pendingTribulation ? (
+                    <motion.div
+                      key="tribulation-qte"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                    >
+                      <TribulationQte
+                        tribulation={gameState.pendingTribulation}
+                        onResolveStrike={resolveTribulationStrike}
+                      />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -170,13 +184,20 @@ export default function Game() {
                         className="space-y-3"
                       >
                         <MobileCultivationPanel />
-                        <EventDisplay
-                          canBreakthrough={canBreak}
-                          onBreakthrough={handleBreakthrough}
-                          onContinue={handleContinue}
-                          onMeditationEnd={handleMeditationEnd}
-                          showBreakthroughControls={false}
-                        />
+                        {gameState.pendingTribulation ? (
+                          <TribulationQte
+                            tribulation={gameState.pendingTribulation}
+                            onResolveStrike={resolveTribulationStrike}
+                          />
+                        ) : (
+                          <EventDisplay
+                            canBreakthrough={canBreak}
+                            onBreakthrough={handleBreakthrough}
+                            onContinue={handleContinue}
+                            onMeditationEnd={handleMeditationEnd}
+                            showBreakthroughControls={false}
+                          />
+                        )}
                       </motion.div>
                     )}
 
@@ -242,7 +263,7 @@ export default function Game() {
                       >
                         <InventoryPanel
                           inventory={gameState.inventory}
-                          canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+                          canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
                         />
                       </motion.div>
                     )}
@@ -400,7 +421,7 @@ function MobileBreakthroughPanel({
   onPrepare: (actionId: string) => void;
 }) {
   const { gameState } = useGameStore();
-  const isBlockedByChoice = !!gameState.pendingEvent || gameState.pendingPathChoice;
+  const isBlockedByChoice = !!gameState.pendingEvent || gameState.pendingPathChoice || !!gameState.pendingTribulation;
 
   return (
     <div className="ink-panel space-y-3 rounded-lg p-4">
@@ -432,6 +453,8 @@ function MobileBreakthroughPanel({
         <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
           {gameState.pendingPathChoice
             ? '需先在修行页立定流派，方可继续筹备突破。'
+            : gameState.pendingTribulation
+            ? '天雷正在临身，需先完成渡劫。'
             : isBlockedByChoice
             ? '需先处理当前抉择，方可闭关冲境。'
             : canBreakthrough
