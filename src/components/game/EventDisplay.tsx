@@ -198,6 +198,10 @@ export default function EventDisplay({
           <ItemRewardPanel rewards={currentEvent.itemRewards} />
         )}
 
+        {!isPendingChoice && currentEvent?.itemLosses && currentEvent.itemLosses.length > 0 && (
+          <ItemLossPanel losses={currentEvent.itemLosses} />
+        )}
+
         {!isPendingChoice && currentEvent?.techniqueRewards && currentEvent.techniqueRewards.length > 0 && (
           <TechniqueRewardPanel techniqueIds={currentEvent.techniqueRewards} />
         )}
@@ -358,6 +362,27 @@ function ItemRewardPanel({ rewards }: { rewards: InventoryReward[] }) {
   );
 }
 
+function ItemLossPanel({ losses }: { losses: InventoryReward[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-[#b98678]/25 bg-[#f2d9d2]/45 px-3 py-2">
+      <span className="text-xs font-semibold text-[#9d3d2f]">储物戒遗失</span>
+      {losses.map(loss => {
+        const item = getItem(loss.itemId);
+        if (!item) return null;
+
+        return (
+          <span
+            key={loss.itemId}
+            className="rounded-full bg-[#fffdf2]/75 px-3 py-1 text-xs font-bold text-[#9d3d2f]"
+          >
+            {item.name} x{loss.quantity}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function CombatReportPanel({ report }: { report: CombatReport }) {
   const playerPercent = Math.min(100, Math.round(report.playerPower / Math.max(1, report.enemyPower) * 50));
   const enemyPercent = Math.min(100, Math.round(report.enemyPower / Math.max(1, report.playerPower) * 50));
@@ -384,7 +409,7 @@ function CombatReportPanel({ report }: { report: CombatReport }) {
         <CombatPowerBar label="我方战力" value={report.playerPower} percent={playerPercent} tone="player" />
         <CombatPowerBar label="敌方战力" value={report.enemyPower} percent={enemyPercent} tone="enemy" />
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs min-[420px]:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-2 text-xs min-[420px]:grid-cols-3">
         <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
           <span className="block text-[#66766e]">战法</span>
           <span className="font-semibold text-[#45564f]">{report.styleText}</span>
@@ -393,12 +418,6 @@ function CombatReportPanel({ report }: { report: CombatReport }) {
           <span className="block text-[#66766e]">修为收益</span>
           <span className={report.cultivationPercent >= 0 ? 'font-semibold text-[#355d58]' : 'font-semibold text-[#9d3d2f]'}>
             {report.cultivationPercent > 0 ? '+' : ''}{report.cultivationPercent}%
-          </span>
-        </div>
-        <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
-          <span className="block text-[#66766e]">战利品</span>
-          <span className={report.loot >= 0 ? 'font-semibold text-[#355d58]' : 'font-semibold text-[#9d3d2f]'}>
-            {report.loot > 0 ? '+' : ''}{report.loot}
           </span>
         </div>
         <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">

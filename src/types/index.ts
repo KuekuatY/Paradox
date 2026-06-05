@@ -162,6 +162,7 @@ export interface GameEvent {
   appliedEffects?: GameEvent['effects'];
   combat?: CombatReport;
   itemRewards?: InventoryReward[];
+  itemLosses?: InventoryReward[];
   techniqueRewards?: string[];
   result: 'success' | 'failure' | 'neutral' | 'great-success' | 'great-failure';
   isEnding?: boolean;
@@ -213,7 +214,6 @@ export interface CombatStats {
   victories: number;
   defeats: number;
   injury: number;
-  loot: number;
   bestStreak: number;
   currentStreak: number;
 }
@@ -226,7 +226,6 @@ export interface CombatReport {
   winRate: number;
   injuryChange: number;
   injuryAfter: number;
-  loot: number;
   cultivationPercent: number;
   resultText: string;
   styleText: string;

@@ -58,7 +58,6 @@ const initialCombatStats: CombatStats = {
   victories: 0,
   defeats: 0,
   injury: 0,
-  loot: 0,
   bestStreak: 0,
   currentStreak: 0
 };
@@ -741,7 +740,6 @@ interface CombatEncounter {
   enemyName: string;
   enemyRank: string;
   difficulty: number;
-  loot: number;
   cultivationPercent: number;
   injury: number;
   primary: Array<keyof Attributes>;
@@ -771,6 +769,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
   const itemRewards = generateCombatItemRewards(event, combatResult.result);
+  const itemLosses = generateCombatItemLosses(gameState, combatResult.result);
   const techniqueRewards = generateEventTechniqueRewards(gameState, event, combatResult.result);
   const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
   const newEvent: GameEvent = {
@@ -780,6 +779,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     appliedEffects,
     combat: combatResult.report,
     ...(itemRewards.length > 0 ? { itemRewards } : {}),
+    ...(itemLosses.length > 0 ? { itemLosses } : {}),
     ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
     result: combatResult.result
   };
@@ -791,7 +791,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.result),
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-    inventory: addInventoryRewards(gameState.inventory, itemRewards),
+    inventory: removeInventoryRewards(addInventoryRewards(gameState.inventory, itemRewards), itemLosses),
     techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
     events: [...gameState.events, newEvent]
   };
@@ -823,9 +823,6 @@ function calculateCombatResult(
         ? 1.45
         : 1;
   const injuryChange = calculateCombatInjuryChange(gameState, encounter, result, outcomeScale);
-  const loot = isWin
-    ? Math.max(0, Math.round(encounter.loot * getCombatLootMultiplier(gameState) * (result === 'great-success' ? 1.6 : 1)))
-    : -Math.max(0, Math.ceil(encounter.loot * (result === 'great-failure' ? 0.8 : 0.45)));
   const cultivationPercent = isWin
     ? Math.round(encounter.cultivationPercent * (result === 'great-success' ? 1.45 : 1))
     : -Math.max(3, Math.ceil(encounter.cultivationPercent * (result === 'great-failure' ? 0.65 : 0.35)));
@@ -838,7 +835,6 @@ function calculateCombatResult(
     winRate: Math.round(winRate * 100),
     injuryChange,
     injuryAfter,
-    loot,
     cultivationPercent,
     resultText: getCombatResultText(result, encounter.enemyName),
     styleText: `${getCombatPathStyle(gameState)} · ${encounter.styleText}`
@@ -853,7 +849,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '山魈妖兽',
       enemyRank: '同阶下位',
       difficulty: 0.88,
-      loot: 2,
       cultivationPercent: 7,
       injury: 5,
       primary: ['根骨', '神识'],
@@ -863,7 +858,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '劫道散修',
       enemyRank: '同阶',
       difficulty: 0.95,
-      loot: 3,
       cultivationPercent: 7,
       injury: 6,
       primary: ['根骨', '气运'],
@@ -873,7 +867,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '同门劲敌',
       enemyRank: '同阶',
       difficulty: 1,
-      loot: 1,
       cultivationPercent: 8,
       injury: 4,
       primary: ['根骨', '神识', '悟性'],
@@ -883,7 +876,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '血法邪修',
       enemyRank: '同阶上位',
       difficulty: 1.12,
-      loot: 4,
       cultivationPercent: 9,
       injury: 8,
       primary: ['根骨', '神识', '气运'],
@@ -893,7 +885,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '试剑修士',
       enemyRank: '同阶上位',
       difficulty: 1.08,
-      loot: 2,
       cultivationPercent: 10,
       injury: 7,
       primary: ['根骨', '神识'],
@@ -903,7 +894,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '古兽遗种',
       enemyRank: '越阶强敌',
       difficulty: 1.32,
-      loot: 7,
       cultivationPercent: 12,
       injury: 12,
       primary: ['根骨', '神识', '气运'],
@@ -913,7 +903,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '伏杀散修',
       enemyRank: '同阶上位',
       difficulty: 1.08,
-      loot: 3,
       cultivationPercent: 8,
       injury: 9,
       primary: ['神识', '气运'],
@@ -923,7 +912,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       enemyName: '识海心魔',
       enemyRank: '心劫',
       difficulty: 1.18,
-      loot: 1,
       cultivationPercent: 9,
       injury: 10,
       primary: ['神识', '悟性', '气运'],
@@ -935,7 +923,6 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
     enemyName: event.title,
     enemyRank: '同阶',
     difficulty: 1,
-    loot: 2,
     cultivationPercent: 8,
     injury: 6,
     primary: ['根骨', '神识'],
@@ -1009,19 +996,6 @@ function getTechniqueCombatMultiplier(gameState: GameState): number {
   }, 0);
 
   return Math.min(1.85, 1 + bonus);
-}
-
-function getCombatLootMultiplier(gameState: GameState): number {
-  switch (gameState.cultivationPath) {
-    case 'demonic':
-      return 1.35;
-    case 'sword':
-      return 1.12;
-    case 'spell':
-      return 1.05;
-    default:
-      return 1;
-  }
 }
 
 function getCombatPathStyle(gameState: GameState): string {
@@ -1108,7 +1082,6 @@ function getCombatRewardEffects(
 
   return {
     修为: report.cultivationPercent,
-    家境: report.loot,
     ...(!isWin && injuryLifespanLoss > 0 ? { 寿命: -injuryLifespanLoss } : {}),
     ...(focusGain > 0 ? { 根骨: focusGain, 神识: Math.max(1, focusGain - 1) } : {})
   };
@@ -1126,7 +1099,6 @@ function updateCombatStats(
     victories: combatStats.victories + (isWin ? 1 : 0),
     defeats: combatStats.defeats + (isWin ? 0 : 1),
     injury: report.injuryAfter,
-    loot: Math.max(0, combatStats.loot + report.loot),
     currentStreak,
     bestStreak: Math.max(combatStats.bestStreak, currentStreak)
   };
@@ -1297,6 +1269,17 @@ function removeInventoryItem(
     .filter(entry => entry.quantity > 0);
 }
 
+function removeInventoryRewards(
+  inventory: InventoryEntry[],
+  losses: InventoryReward[]
+): InventoryEntry[] {
+  if (losses.length === 0) return inventory;
+
+  return losses.reduce((currentInventory, loss) => {
+    return removeInventoryItem(currentInventory, loss.itemId, loss.quantity);
+  }, inventory);
+}
+
 function generateEventItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
   if (event.type === 'childhood' || result === 'great-failure' || result === 'failure') return [];
 
@@ -1345,7 +1328,10 @@ function generateEventItemRewards(event: GameEvent, result: GameEvent['result'])
 
 function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
   const isWin = result === 'success' || result === 'great-success';
-  if (!isWin && Math.random() > 0.12) return [];
+  if (!isWin) return [];
+
+  const rewardChance = result === 'great-success' ? 0.82 : 0.48;
+  if (Math.random() > rewardChance) return [];
 
   const quantity = result === 'great-success' ? 2 : 1;
   switch (event.id) {
@@ -1388,6 +1374,17 @@ function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']
         ['qi-gathering-pill', 0.25]
       ], quantity);
   }
+}
+
+function generateCombatItemLosses(gameState: GameState, result: GameEvent['result']): InventoryReward[] {
+  const isLoss = result === 'failure' || result === 'great-failure';
+  if (!isLoss || gameState.inventory.length === 0) return [];
+
+  const availableItems = gameState.inventory.filter(entry => entry.quantity > 0);
+  if (availableItems.length === 0) return [];
+
+  const pickedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+  return [{ itemId: pickedItem.itemId, quantity: 1 }];
 }
 
 function generateEventTechniqueRewards(

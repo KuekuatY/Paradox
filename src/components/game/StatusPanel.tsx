@@ -528,7 +528,7 @@ export function CombatStatsPanel({ combatStats }: { combatStats: CombatStats }) 
         <CombatStatItem label="胜场" value={combatStats.victories} />
         <CombatStatItem label="败场" value={combatStats.defeats} />
         <CombatStatItem label="连胜" value={combatStats.currentStreak} />
-        <CombatStatItem label="战利品" value={combatStats.loot} />
+        <CombatStatItem label="最佳" value={combatStats.bestStreak} />
       </div>
       <div className="mt-3">
         <div className="mb-1 flex justify-between text-xs">
