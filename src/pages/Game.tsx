@@ -80,8 +80,18 @@ export default function Game() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
+                className="space-y-4"
               >
                 <StatusPanel />
+                {gameState.status === 'playing' && (
+                  <PreparationPanel
+                    canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+                    familyWealth={gameState.familyWealth}
+                    realmLevel={gameState.currentRealm.level}
+                    shouldPrepare={gameState.cultivationProgress > 0 && !canBreak}
+                    onPrepare={useBreakthroughPreparation}
+                  />
+                )}
               </motion.div>
             </div>
 

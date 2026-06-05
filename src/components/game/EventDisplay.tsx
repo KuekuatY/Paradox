@@ -23,8 +23,7 @@ export default function EventDisplay({
     gameState,
     chooseCultivationPath,
     chooseEventOption,
-    getCurrentEventChoices,
-    useBreakthroughPreparation
+    getCurrentEventChoices
   } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
   const [isConfirmingMeditationEnd, setIsConfirmingMeditationEnd] = useState(false);
@@ -221,15 +220,6 @@ export default function EventDisplay({
         <PathChoices onChoose={chooseCultivationPath} />
       ) : (
         <>
-          {showBreakthroughControls && (
-            <PreparationPanel
-              canUse={!isPendingChoice}
-              familyWealth={gameState.familyWealth}
-              realmLevel={gameState.currentRealm.level}
-              shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
-              onPrepare={useBreakthroughPreparation}
-            />
-          )}
           {showBreakthroughControls && canBreakthrough && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
