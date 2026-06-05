@@ -1271,8 +1271,7 @@ function canBreakthrough(gameState: GameState): boolean {
   return !isChildhood(gameState)
     && !gameState.pendingPathChoice
     && !gameState.pendingEvent
-    && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState)
-    && canAdvanceRealm(gameState);
+    && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState);
 }
 
 function canAdvanceRealm(gameState: GameState): boolean {
@@ -1302,10 +1301,20 @@ function calculateBreakthroughSuccessRate(
       return sum + Math.min(0.35, Math.max(0, (current - requiredValue) / requiredValue));
     }, 0) / requirements.length
     : 0;
+  const averageDeficit = requirements.length > 0
+    ? requirements.reduce((sum, [key, required]) => {
+      const requiredValue = required ?? 1;
+      const current = gameState.attributes[key as keyof Attributes];
+      return sum + Math.min(0.85, Math.max(0, (requiredValue - current) / requiredValue));
+    }, 0) / requirements.length
+    : 0;
   const fortuneBonus = getAttributePower(gameState.attributes.气运) * 0.006;
   const realmPressure = Math.max(0, gameState.currentRealm.level - 3) * 0.02;
 
-  return Math.max(0.55, Math.min(0.92, 0.74 + averageSurplus * 0.45 + fortuneBonus - realmPressure));
+  return Math.max(
+    0.12,
+    Math.min(0.92, 0.74 + averageSurplus * 0.45 + fortuneBonus - realmPressure - averageDeficit * 0.75)
+  );
 }
 
 function getBreakthroughFailureProgressPercent(gameState: GameState): number {

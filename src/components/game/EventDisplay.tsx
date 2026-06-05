@@ -236,7 +236,7 @@ export default function EventDisplay({
               className="mb-4 rounded-md border border-[#a9823c]/45 bg-[#f0dfad]/70 px-4 py-3 text-center shadow-sm"
             >
               <div className="text-sm font-semibold text-[#7a5426] sm:text-base">
-                瓶颈已松动，可以尝试突破
+                修为已满，可以尝试突破
               </div>
             </motion.div>
           )}
