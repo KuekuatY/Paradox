@@ -226,7 +226,7 @@ export const talents: Talent[] = [
     name: '天生剑体',
     description: '身与剑意相合，修炼杀伐之道极快，劫数也更凌厉。',
     rarity: '极品',
-    effect: { 根骨: 22, 悟性: 12 },
+    effect: { 根骨: 18, 悟性: 10 },
     modifiers: { 修为倍率: 1.18, 属性倍率: 1.1, 事件权重: { cultivation: 1.25, disaster: 1.12 } },
     probability: 0.05
   },
@@ -263,7 +263,7 @@ export const talents: Talent[] = [
     name: '万法归藏',
     description: '你似乎能把不同法门纳入一炉，越到后期越显出惊人潜力。',
     rarity: '神话',
-    effect: { 根骨: 18, 悟性: 18, 气运: 12 },
+    effect: { 根骨: 14, 悟性: 14, 气运: 10 },
     modifiers: { 修为倍率: 1.22, 属性倍率: 1.16, 事件权重: { cultivation: 1.32, mind: 1.25, encounter: 1.18 } },
     probability: 0.018
   },
@@ -282,7 +282,7 @@ export const talents: Talent[] = [
     name: '转世仙人',
     description: '旧日道果未尽，修炼更快，突破门槛也更容易越过。',
     rarity: '传说',
-    effect: { 根骨: 28, 悟性: 28, 气运: 18 },
+    effect: { 根骨: 22, 悟性: 22, 气运: 14 },
     modifiers: { 修为倍率: 1.35, 属性倍率: 1.12, 寿命倍率: 1.12, 灾劫抗性: 0.12 },
     probability: 0.018
   },
@@ -291,7 +291,7 @@ export const talents: Talent[] = [
     name: '天命主角',
     description: '天道似乎格外偏爱你，机缘、贵人和绝境逢生都会更频繁。',
     rarity: '传说',
-    effect: { 根骨: 24, 悟性: 24, 气运: 36, 颜值: 18, 家境: 18 },
+    effect: { 根骨: 20, 悟性: 20, 气运: 28, 颜值: 14, 家境: 14 },
     modifiers: {
       修为倍率: 1.2,
       属性倍率: 1.15,

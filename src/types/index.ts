@@ -4,8 +4,6 @@ export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极
 
 export type AttributeEffect = Partial<Attributes>;
 
-export type CultivationStrategyId = 'balanced' | 'body' | 'insight' | 'roaming' | 'business' | 'seclusion';
-
 export type CultivationPathId = 'sword' | 'body' | 'spell' | 'demonic';
 
 export interface CultivationPath {
@@ -16,14 +14,6 @@ export interface CultivationPath {
   effect: AttributeEffect;
   modifiers: GrowthModifiers;
   build: string[];
-}
-
-export interface CultivationStrategy {
-  id: CultivationStrategyId;
-  name: string;
-  description: string;
-  focus: string;
-  modifiers: GrowthModifiers;
 }
 
 export type LifeGoalProgressKind = 'effectGain' | 'eventCount' | 'breakthrough';
@@ -121,7 +111,6 @@ export interface GameState {
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
-  strategy: CultivationStrategyId;
   lifespan: number;
   cultivationProgress: number;
   pendingEvent: GameEvent | null;

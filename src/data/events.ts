@@ -172,7 +172,7 @@ export const events: GameEvent[] = [
         'chaos-root'
       ]
     },
-    effects: { 修为: 18, 根骨: 5, 寿命: -2 },
+    effects: { 修为: 16, 根骨: 5, 寿命: -1 },
     result: 'success'
   },
   {
@@ -215,7 +215,7 @@ export const events: GameEvent[] = [
         'chaos-root'
       ]
     },
-    effects: { 根骨: 4, 寿命: 3, 修为: 9 },
+    effects: { 根骨: 4, 寿命: 1, 修为: 9 },
     result: 'success'
   },
   {
@@ -300,7 +300,7 @@ export const events: GameEvent[] = [
     title: '闭关过久',
     description: '连续闭关让你精神枯竭，修为虽有所得，身体却难免受损。',
     weight: 0.65,
-    effects: { 修为: 9, 寿命: -4 },
+    effects: { 修为: 8, 寿命: -2 },
     result: 'neutral'
   },
   {
@@ -311,7 +311,7 @@ export const events: GameEvent[] = [
     description: '你用数月时间调整呼吸与药浴，体内杂质渐渐排出，根骨有了实打实的进益。',
     weight: 0.85,
     conditions: { minRealmLevel: 2 },
-    effects: { 根骨: 8, 修为: 6, 家境: -2 },
+    effects: { 根骨: 6, 气运: 2, 修为: 6, 家境: -2 },
     result: 'success'
   },
 
@@ -322,7 +322,7 @@ export const events: GameEvent[] = [
     title: '残卷秘笈',
     description: '你在山洞石缝中发现半卷古旧功法，虽然残缺，却字字有灵。',
     weight: 0.8,
-    effects: { 悟性: 6, 修为: 7 },
+    effects: { 悟性: 5, 气运: 1, 修为: 7 },
     result: 'success'
   },
   {
@@ -467,7 +467,7 @@ export const events: GameEvent[] = [
     description: '你遇到愿意并肩修行的人，彼此扶持，孤独的长路多了一分暖意。',
     weight: 0.35,
     conditions: { attributes: { 颜值: 35 }, minRealmLevel: 2 },
-    effects: { 气运: 5, 修为: 8, 寿命: 3 },
+    effects: { 气运: 5, 修为: 8, 寿命: 1 },
     result: 'success'
   },
 
@@ -478,7 +478,7 @@ export const events: GameEvent[] = [
     title: '妖兽袭山',
     description: '妖兽趁夜袭来，你拼命突围，身上留下了难以轻易消去的伤痕。',
     weight: 0.75,
-    effects: { 寿命: -8, 根骨: -4, 修为: -6 },
+    effects: { 寿命: -3, 根骨: -4, 修为: -6 },
     result: 'failure'
   },
   {
@@ -489,7 +489,7 @@ export const events: GameEvent[] = [
     description: '多年执念趁虚而入，你一时分不清幻象与本心。',
     weight: 0.65,
     conditions: { minRealmLevel: 2 },
-    effects: { 悟性: -5, 修为: -10, 寿命: -5 },
+    effects: { 悟性: -5, 修为: -10, 寿命: -2 },
     result: 'failure'
   },
   {
@@ -500,7 +500,7 @@ export const events: GameEvent[] = [
     description: '天机异动，一道劫雷落在洞府附近，余威仍震得你气血翻涌。',
     weight: 0.45,
     conditions: { minRealmLevel: 4 },
-    effects: { 寿命: -18, 根骨: -6, 修为: -12 },
+    effects: { 寿命: -6, 根骨: -6, 修为: -12 },
     result: 'failure'
   },
   {
@@ -520,7 +520,7 @@ export const events: GameEvent[] = [
     title: '瘴雾入体',
     description: '山谷瘴雾来得突然，你虽逃了出来，却被毒息侵入经脉。',
     weight: 0.65,
-    effects: { 寿命: -10, 根骨: -3, 悟性: -2 },
+    effects: { 寿命: -4, 根骨: -3, 悟性: -2 },
     result: 'failure'
   },
   {
@@ -542,7 +542,7 @@ export const events: GameEvent[] = [
     description: '剑意太盛，反噬心神，你不得不花很久压住体内锋芒。',
     weight: 0.35,
     conditions: { talentIds: ['sword-body'] },
-    effects: { 寿命: -8, 悟性: -4, 修为: -8 },
+    effects: { 寿命: -3, 悟性: -4, 修为: -8 },
     result: 'failure'
   },
 
@@ -623,7 +623,7 @@ export const events: GameEvent[] = [
     title: '小病缠身',
     description: '寒湿之气入体，你虽不至于伤筋动骨，却被拖慢了修炼。',
     weight: 0.7,
-    effects: { 寿命: -3, 修为: -3 },
+    effects: { 寿命: -1, 修为: -3 },
     result: 'failure'
   },
 
@@ -645,7 +645,7 @@ export const events: GameEvent[] = [
     description: '坊市拍卖会上，你用积攒的灵石换来一枚品相不错的灵丹。',
     weight: 0.55,
     conditions: { attributes: { 家境: 20 } },
-    effects: { 家境: -4, 根骨: 7, 修为: 8 },
+    effects: { 家境: -4, 根骨: 6, 气运: 1, 修为: 8 },
     result: 'success'
   },
   {
@@ -656,7 +656,7 @@ export const events: GameEvent[] = [
     description: '你花去一笔灵石换来淬骨药材，药性猛烈，但确实能补足肉身短板。',
     weight: 0.75,
     conditions: { attributes: { 家境: 12 } },
-    effects: { 家境: -3, 根骨: 7 },
+    effects: { 家境: -3, 根骨: 6, 颜值: 1 },
     result: 'success'
   },
   {
@@ -720,7 +720,7 @@ export const events: GameEvent[] = [
     description: '一件无人能催动的旧器在你手中忽然发亮，混沌灵机与它遥相呼应。',
     weight: 0.28,
     conditions: { spiritRootIds: ['chaos-root'] },
-    effects: { 悟性: 6, 家境: 4, 修为: 12 },
+    effects: { 悟性: 5, 家境: 4, 气运: 1, 修为: 12 },
     result: 'success'
   },
 
@@ -773,7 +773,7 @@ export const events: GameEvent[] = [
     description: '你以澄明道心观照万念，杂念如潮来去，却不能动摇根本。',
     weight: 0.35,
     conditions: { talentIds: ['calm-heart'] },
-    effects: { 悟性: 5, 修为: 9, 寿命: 2 },
+    effects: { 悟性: 5, 修为: 9, 寿命: 1 },
     result: 'success'
   },
 
@@ -795,7 +795,7 @@ export const events: GameEvent[] = [
     description: '宗门考校中，你以扎实根基赢得长老点头，修行资源也随之增加。',
     weight: 0.55,
     conditions: { attributes: { 根骨: 25, 悟性: 20 } },
-    effects: { 根骨: 6, 家境: 4, 修为: 8 },
+    effects: { 根骨: 5, 家境: 4, 气运: 1, 修为: 8 },
     result: 'success'
   },
   {

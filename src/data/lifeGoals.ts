@@ -66,7 +66,7 @@ export const lifeGoals: LifeGoalDefinition[] = [
     targetLabel: '经历灾劫',
     eventTypes: ['disaster'],
     minRealmLevel: 2,
-    reward: { 根骨: 8, 气运: 4, 寿命: 2 },
+    reward: { 根骨: 7, 气运: 4, 寿命: 1 },
     completionText: '苦厄退去后，肉身与心气都更沉得住。'
   },
   {

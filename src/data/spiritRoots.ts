@@ -291,7 +291,7 @@ export const spiritRoots: SpiritRoot[] = [
     name: '天道灵根',
     description: '天道垂青，灵机近乎自成法度，修行一日千里，也更容易触动天机。',
     rarity: '极品',
-    effect: { 根骨: 36, 悟性: 32, 气运: 24 },
+    effect: { 根骨: 30, 悟性: 28, 气运: 20 },
     modifiers: {
       修为倍率: 1.55,
       属性倍率: 1.1,
@@ -305,7 +305,7 @@ export const spiritRoots: SpiritRoot[] = [
     name: '混沌灵根',
     description: '传说中可纳万法的灵根，万象归一，几乎无路不通。',
     rarity: '神话',
-    effect: { 根骨: 42, 悟性: 38, 气运: 30, 家境: 10 },
+    effect: { 根骨: 34, 悟性: 30, 气运: 24, 家境: 8 },
     modifiers: {
       修为倍率: 1.8,
       属性倍率: 1.15,

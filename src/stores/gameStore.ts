@@ -3,7 +3,6 @@ import { talents } from '@/data/talents';
 import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
 import { childhoodEvents, events } from '@/data/events';
-import { getCultivationStrategy } from '@/data/strategies';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
@@ -17,7 +16,6 @@ import type {
   SpiritRoot,
   GrowthModifiers,
   CultivationPathId,
-  CultivationStrategyId,
   LifeGoalDefinition
 } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
@@ -29,7 +27,6 @@ interface GameStore {
   drawTalent: () => Talent;
   drawTalentOptions: (count?: number) => Talent[];
   chooseCultivationPath: (pathId: CultivationPathId) => void;
-  setStrategy: (strategyId: CultivationStrategyId) => void;
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
@@ -62,7 +59,6 @@ const initialState: GameState = {
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
-  strategy: 'balanced',
   lifespan: 100,
   cultivationProgress: 0,
   pendingEvent: null,
@@ -96,7 +92,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       spiritRoot,
       talent,
       cultivationPath: null,
-      strategy: 'balanced',
       lifespan: 100,
       cultivationProgress: 0,
       pendingEvent: null,
@@ -157,18 +152,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       gameState: unlockAchievements(applyLifeGoalProgress(stateAfterPath, pathEvent))
-    });
-  },
-
-  setStrategy: (strategyId) => {
-    const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingPathChoice) return;
-
-    set({
-      gameState: {
-        ...gameState,
-        strategy: strategyId
-      }
     });
   },
 
@@ -284,9 +267,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const stateAfterStrategyOutcome = applyAnnualStrategyOutcome(agedState);
-
-    set({ gameState: stateAfterStrategyOutcome });
+    set({ gameState: agedState });
 
     get().processEvent();
   },
@@ -461,41 +442,6 @@ function enterQiCondensingRealm(gameState: GameState): GameState {
   };
 
   return unlockAchievements(applyLifeGoalProgress(stateAfterTransition, transitionEvent));
-}
-
-function applyAnnualStrategyOutcome(gameState: GameState): GameState {
-  if (isChildhood(gameState) || gameState.strategy !== 'business') return gameState;
-
-  const event: GameEvent = {
-    id: `strategy-business-${gameState.age}`,
-    age: gameState.age,
-    type: 'resource',
-    title: '洞府经营',
-    description: '你留心打理洞府、坊市门路与宗门往来，年终清点时手中资源宽裕了些。',
-    weight: 0,
-    effects: { 家境: 4, 修为: -2 },
-    result: 'success'
-  };
-  const adjustedEffects = applyAttributeModifiers(gameState, event, event.effects);
-  const progressDelta = calculateCultivationProgressDelta(gameState, event, adjustedEffects);
-  const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, 0);
-  const stateAfterOutcome: GameState = {
-    ...gameState,
-    attributes: applyAttributeEffects(gameState, adjustedEffects),
-    cultivationProgress: clampProgress(
-      gameState.cultivationProgress + progressDelta,
-      getRequiredCultivationProgress(gameState)
-    ),
-    events: [
-      ...gameState.events,
-      {
-        ...event,
-        appliedEffects
-      }
-    ]
-  };
-
-  return unlockAchievements(applyLifeGoalProgress(stateAfterOutcome, event));
 }
 
 function selectAvailableEvent(gameState: GameState): GameEvent {
@@ -707,7 +653,7 @@ function getPreparationAction(actionId: string): PreparationAction | undefined {
       name: '购置丹药',
       description: '你以灵石换来上好丹药，淬炼筋骨并稍延寿元。',
       cost: 18,
-      effects: () => ({ 根骨: 12, 寿命: 3 })
+      effects: () => ({ 根骨: 10, 寿命: 1 })
     },
     {
       id: 'master',
@@ -933,7 +879,24 @@ function calculateCultivationProgressDelta(
     percentDelta *= cultivationMultiplier * realmProgressMultiplier * realmProgressPace;
   }
 
-  return toProgressDelta(Math.max(-35, Math.min(40, percentDelta)));
+  return toProgressDelta(Math.max(-35, Math.min(getProgressPercentCap(gameState), percentDelta)));
+}
+
+function getProgressPercentCap(gameState: GameState): number {
+  switch (gameState.currentRealm.level) {
+    case 4:
+      return 24;
+    case 5:
+      return 20;
+    case 6:
+      return 17;
+    case 7:
+      return 14;
+    case 8:
+      return 12;
+    default:
+      return 40;
+  }
 }
 
 function getRealmProgressMultiplier(gameState: GameState): number {
@@ -1051,6 +1014,13 @@ function clampProgress(progress: number, requiredProgress: number): number {
 function calculateEventSuccessRate(event: GameEvent, gameState: GameState): number {
   const { attributes } = gameState;
   const disasterResistance = getDisasterResistance(gameState);
+  const attributePower = {
+    根骨: getAttributePower(attributes.根骨),
+    悟性: getAttributePower(attributes.悟性),
+    气运: getAttributePower(attributes.气运),
+    颜值: getAttributePower(attributes.颜值),
+    家境: getAttributePower(attributes.家境)
+  };
   let baseRate = 0.5;
 
   switch (event.type) {
@@ -1058,68 +1028,74 @@ function calculateEventSuccessRate(event: GameEvent, gameState: GameState): numb
       baseRate = 1;
       break;
     case 'cultivation':
-      baseRate = 0.2
-        + (attributes.根骨 * 0.003)
-        + (attributes.悟性 * 0.003)
-        + (attributes.家境 * 0.001);
+      baseRate = 0.24
+        + (attributePower.根骨 * 0.01)
+        + (attributePower.悟性 * 0.01)
+        + (attributePower.家境 * 0.003);
       break;
     case 'encounter':
-      baseRate = 0.25
-        + (attributes.气运 * 0.004)
-        + (attributes.家境 * 0.0015);
+      baseRate = 0.24
+        + (attributePower.气运 * 0.013)
+        + (attributePower.家境 * 0.004);
       break;
     case 'social':
-      baseRate = 0.25
-        + (attributes.颜值 * 0.0035)
-        + (attributes.家境 * 0.0015);
+      baseRate = 0.24
+        + (attributePower.颜值 * 0.012)
+        + (attributePower.家境 * 0.004);
       break;
     case 'disaster':
-      baseRate = 0.25
-        + (attributes.根骨 * 0.003)
-        + (attributes.家境 * 0.0015)
+      baseRate = 0.22
+        + (attributePower.根骨 * 0.01)
+        + (attributePower.家境 * 0.004)
         + disasterResistance;
       break;
     case 'daily':
-      baseRate = 0.35
-        + (attributes.悟性 * 0.002)
-        + (attributes.家境 * 0.002);
+      baseRate = 0.36
+        + (attributePower.悟性 * 0.007)
+        + (attributePower.家境 * 0.006);
       break;
     case 'resource':
       baseRate = 0.26
-        + (attributes.家境 * 0.004)
-        + (attributes.气运 * 0.0015);
+        + (attributePower.家境 * 0.014)
+        + (attributePower.气运 * 0.004);
       break;
     case 'mind':
       baseRate = 0.28
-        + (attributes.悟性 * 0.0035)
-        + (attributes.气运 * 0.001);
+        + (attributePower.悟性 * 0.012)
+        + (attributePower.气运 * 0.003);
       break;
     case 'sect':
       baseRate = 0.27
-        + (attributes.家境 * 0.0025)
-        + (attributes.颜值 * 0.0015)
-        + (attributes.悟性 * 0.001);
+        + (attributePower.家境 * 0.008)
+        + (attributePower.颜值 * 0.005)
+        + (attributePower.悟性 * 0.003);
       break;
   }
 
   baseRate += getEventSpecificModifier(event, attributes);
 
-  return Math.max(0.1, Math.min(0.95, baseRate));
+  return Math.max(0.1, Math.min(0.9, baseRate));
+}
+
+function getAttributePower(value: number): number {
+  return Math.sqrt(Math.max(0, value));
 }
 
 function getEventSpecificModifier(event: GameEvent, attributes: Attributes): number {
+  const familyPower = getAttributePower(attributes.家境);
+
   switch (event.id) {
     case 'daily-merchant':
     case 'resource-auction':
-      return attributes.家境 * 0.0015;
+      return familyPower * 0.006;
     case 'daily-sect-mission':
     case 'sect-inner-test':
-      return attributes.家境 * 0.001;
+      return familyPower * 0.004;
     case 'encounter-master':
-      return attributes.家境 * 0.001;
+      return familyPower * 0.004;
     case 'social-partner':
     case 'social-brother':
-      return attributes.家境 * 0.001;
+      return familyPower * 0.004;
     default:
       return 0;
   }
@@ -1261,8 +1237,7 @@ function getCombinedModifiers(gameState: GameState): GrowthModifiers {
   return mergeModifiers(
     gameState.spiritRoot?.modifiers,
     gameState.talent?.modifiers,
-    getCultivationPath(gameState.cultivationPath)?.modifiers,
-    getCultivationStrategy(gameState.strategy).modifiers
+    getCultivationPath(gameState.cultivationPath)?.modifiers
   );
 }
 

@@ -1,22 +1,19 @@
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { realms } from '@/data/realms';
-import { cultivationStrategies } from '@/data/strategies';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
-import type { ActiveLifeGoal, Attributes, CultivationPathId, CultivationStrategyId, GameEvent, Realm } from '@/types';
+import type { ActiveLifeGoal, Attributes, CultivationPathId, GameEvent, Realm } from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
-  showStrategy?: boolean;
 }
 
 export default function StatusPanel({
-  showLifeGoal = true,
-  showStrategy = true
+  showLifeGoal = true
 }: StatusPanelProps = {}) {
-  const { gameState, setStrategy } = useGameStore();
+  const { gameState } = useGameStore();
   const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationPath, cultivationProgress } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
@@ -96,12 +93,6 @@ export default function StatusPanel({
             />
           )}
 
-          {showStrategy && gameState.status === 'playing' && (
-            <StrategyPanel
-              selectedStrategy={gameState.strategy}
-              onSelect={setStrategy}
-            />
-          )}
         </div>
       </div>
     </motion.div>
@@ -282,48 +273,6 @@ export function BreakthroughRequirements({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-export function StrategyPanel({
-  selectedStrategy,
-  onSelect
-}: {
-  selectedStrategy: CultivationStrategyId;
-  onSelect: (strategyId: CultivationStrategyId) => void;
-}) {
-  const selected = cultivationStrategies.find(strategy => strategy.id === selectedStrategy) ?? cultivationStrategies[0];
-
-  return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="font-semibold text-[#45564f]">修炼策略</span>
-        <span className="text-xs text-[#66766e]">当前偏向 {selected.focus}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {cultivationStrategies.map(strategy => {
-          const isSelected = strategy.id === selectedStrategy;
-
-          return (
-            <button
-              key={strategy.id}
-              onClick={() => onSelect(strategy.id)}
-              className={`min-h-[44px] rounded border px-2 py-2 text-left text-xs transition-all sm:min-h-[46px] sm:text-sm ${
-                isSelected
-                  ? 'border-[#355d58]/55 bg-[#e7eddd] text-[#263832]'
-                  : 'border-[#738275]/20 bg-[#fffdf2]/55 text-[#59645f] hover:border-[#9a5b2f]/40'
-              }`}
-            >
-              <span className="block font-semibold leading-tight">{strategy.name}</span>
-              <span className="block text-xs leading-tight opacity-80">{strategy.focus}</span>
-            </button>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
-        {selected.description}
-      </p>
     </div>
   );
 }
