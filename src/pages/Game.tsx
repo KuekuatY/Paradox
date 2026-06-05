@@ -197,7 +197,10 @@ export default function Game() {
                         exit={{ opacity: 0, y: -10 }}
                         className="space-y-3"
                       >
-                        <MobileCultivationPanel />
+                        <MobileCultivationPanel
+                          canBreakthrough={canBreak}
+                          onGoBreakthrough={() => setMobileTab('breakthrough')}
+                        />
                         {gameState.pendingTribulation ? (
                           <TribulationQte
                             tribulation={gameState.pendingTribulation}
@@ -389,7 +392,13 @@ function MobileGameNav({
   );
 }
 
-function MobileCultivationPanel() {
+function MobileCultivationPanel({
+  canBreakthrough,
+  onGoBreakthrough
+}: {
+  canBreakthrough: boolean;
+  onGoBreakthrough: () => void;
+}) {
   const { gameState } = useGameStore();
   const { age, lifespan } = gameState;
   const lifespanPercent = lifespan === Infinity ? 100 : Math.min(100, age / lifespan * 100);
@@ -418,6 +427,17 @@ function MobileCultivationPanel() {
         currentRealmName={gameState.currentRealm.name}
         progress={gameState.cultivationProgress}
       />
+      {canBreakthrough && (
+        <motion.button
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          type="button"
+          onClick={onGoBreakthrough}
+          className="mt-3 w-full rounded-md border border-[#a9823c]/60 bg-[#f0dfad] px-4 py-3 text-sm font-bold text-[#7a5426] shadow-md transition hover:brightness-105"
+        >
+          修为圆满，前往突破
+        </motion.button>
+      )}
     </div>
   );
 }
