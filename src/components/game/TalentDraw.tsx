@@ -220,9 +220,9 @@ function StepButton({
       onClick={onClick}
       className={`min-h-[44px] rounded-md border px-2 py-2 font-semibold transition sm:px-4 ${
         active
-          ? 'border-[#9a5b2f]/50 bg-[#f0dfad]/45 text-[#7a5426] shadow-sm'
+          ? 'border-[#355d58]/55 bg-[#e7eddd] text-[#263832] shadow-sm'
           : done
-            ? 'border-[#7f9a78]/40 bg-[#eef3df]/70 text-[#46694f]'
+            ? 'border-[#9a5b2f]/35 bg-[#f0dfad]/35 text-[#7a5426]'
             : 'border-[#738275]/25 bg-[#fff9e8]/45 text-[#66766e]'
       } ${disabled ? 'cursor-default' : 'hover:border-[#9a5b2f]/45 hover:bg-[#fffdf2]'}`}
       animate={{ scale: active && !done ? [1, 1.02, 1] : 1 }}
