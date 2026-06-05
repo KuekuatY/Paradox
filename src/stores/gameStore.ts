@@ -819,8 +819,8 @@ function calculateCombatResult(
   );
   const roll = Math.random();
   const rawResult = roll <= winRate
-    ? roll <= winRate * 0.12 ? 'great-success' : 'success'
-    : roll >= 1 - ((1 - winRate) * 0.12) ? 'great-failure' : 'failure';
+    ? roll <= winRate * 0.07 ? 'great-success' : 'success'
+    : roll >= 1 - ((1 - winRate) * 0.07) ? 'great-failure' : 'failure';
   const result = rawResult === 'great-success' || rawResult === 'great-failure' ? rawResult : 'neutral';
   const isWin = rawResult === 'success' || rawResult === 'great-success';
   const outcomeScale = rawResult === 'great-success'
@@ -1048,19 +1048,19 @@ function scaleCombatBaseEffects(
   result: GameEvent['result']
 ): GameEvent['effects'] {
   const positiveScale = result === 'great-success'
-    ? 1.35
+    ? 1.75
     : result === 'success'
       ? 1
       : result === 'great-failure'
-        ? 0.15
-        : 0.35;
+        ? 0.35
+        : 1;
   const negativeScale = result === 'great-success'
-    ? 0.25
+    ? 0.35
     : result === 'success'
-      ? 0.45
+      ? 1
       : result === 'great-failure'
-        ? 1.55
-        : 1.15;
+        ? 1.75
+        : 1;
   const scaledEffects: GameEvent['effects'] = {};
 
   Object.entries(effects).forEach(([key, value]) => {
@@ -1139,8 +1139,8 @@ function getCombatResultText(result: GameEvent['result'], enemyName: string): st
 function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): GameEvent['result'] {
   if (isNeutralEvent) return 'neutral';
 
-  const greatSuccessChance = Math.max(0.04, Math.min(0.1, 0.04 + successRate * 0.06));
-  const greatFailureChance = Math.max(0.04, Math.min(0.1, 0.04 + (1 - successRate) * 0.06));
+  const greatSuccessChance = Math.max(0.02, Math.min(0.06, 0.02 + successRate * 0.04));
+  const greatFailureChance = Math.max(0.02, Math.min(0.06, 0.02 + (1 - successRate) * 0.04));
   const roll = Math.random();
 
   if (roll < greatFailureChance) return 'great-failure';
@@ -2021,16 +2021,14 @@ function resolveEventEffects(event: GameEvent, result: GameEvent['result']): Gam
 function scaleEffectByOutcome(value: number, result: GameEvent['result']): number {
   switch (result) {
     case 'great-success':
-      return scaleNumericValue(value, value > 0 ? 1.35 : 0.5);
+      return scaleNumericValue(value, value > 0 ? 1.75 : 0.35);
     case 'great-failure':
-      return scaleNumericValue(value, value > 0 ? 0.5 : 1.35);
+      return scaleNumericValue(value, value > 0 ? 0.35 : 1.75);
     case 'success':
-      return scaleNumericValue(value, value > 0 ? 1.15 : 0.7);
     case 'failure':
-      return scaleNumericValue(value, value > 0 ? 0.7 : 1.15);
     case 'neutral':
     default:
-      return scaleNumericValue(value, 0.75);
+      return value;
   }
 }
 
