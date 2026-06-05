@@ -368,6 +368,7 @@ function MobileBreakthroughPanel({
       <PreparationPanel
         canUse={!isBlockedByChoice}
         familyWealth={gameState.familyWealth}
+        realmLevel={gameState.currentRealm.level}
         shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
         onPrepare={onPrepare}
       />

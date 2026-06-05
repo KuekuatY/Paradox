@@ -188,7 +188,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
 
-    const action = getPreparationAction(actionId);
+    const action = getPreparationAction(actionId, gameState.currentRealm.level);
     if (!action) return;
 
     if (gameState.familyWealth < action.cost) return;
@@ -318,6 +318,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
+    const breakthroughDeficit = calculateBreakthroughAverageDeficit(gameState, nextRealm);
     const breakthroughSuccessRate = calculateBreakthroughSuccessRate(gameState, nextRealm);
 
     if (Math.random() > breakthroughSuccessRate) {
@@ -328,8 +329,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         title: '冲关失利',
         description: '你强行冲击瓶颈，灵机却在关口前散乱反噬，寿元与修为都折损了不少。',
         effects: {
-          修为: -getBreakthroughFailureProgressPercent(gameState),
-          寿命: -getBreakthroughFailureLifespanPercent(gameState)
+          修为: -getBreakthroughFailureProgressPercent(gameState, breakthroughDeficit),
+          寿命: -getBreakthroughFailureLifespanPercent(gameState, breakthroughDeficit)
         },
         result: 'failure'
       };
@@ -699,7 +700,7 @@ function mergeEffects(...effectsList: GameEvent['effects'][]): GameEvent['effect
   }, {});
 }
 
-function getPreparationAction(actionId: string): PreparationAction | undefined {
+function getPreparationAction(actionId: string, realmLevel: number): PreparationAction | undefined {
   const actions: PreparationAction[] = [
     {
       id: 'stabilize',
@@ -731,7 +732,20 @@ function getPreparationAction(actionId: string): PreparationAction | undefined {
     }
   ];
 
-  return actions.find(action => action.id === actionId);
+  const action = actions.find(item => item.id === actionId);
+  if (!action) return undefined;
+
+  return {
+    ...action,
+    cost: getPreparationCost(action.cost, realmLevel)
+  };
+}
+
+function getPreparationCost(baseCost: number, realmLevel: number): number {
+  if (realmLevel >= 7) return Math.ceil(baseCost * 4);
+  if (realmLevel >= 5) return Math.ceil(baseCost * 2.5);
+  if (realmLevel >= 3) return Math.ceil(baseCost * 1.5);
+  return baseCost;
 }
 
 function createActiveLifeGoal(gameState: GameState): ActiveLifeGoal | null {
@@ -947,7 +961,8 @@ function calculateCultivationProgressDelta(
     percentDelta *= cultivationMultiplier * realmProgressMultiplier * realmProgressPace;
   }
 
-  return toProgressDelta(Math.max(-35, Math.min(getProgressPercentCap(gameState), percentDelta)));
+  const negativeProgressCap = event.id.startsWith('breakthrough-failed') ? -45 : -35;
+  return toProgressDelta(Math.max(negativeProgressCap, Math.min(getProgressPercentCap(gameState), percentDelta)));
 }
 
 function getProgressPercentCap(gameState: GameState): number {
@@ -1301,30 +1316,44 @@ function calculateBreakthroughSuccessRate(
       return sum + Math.min(0.35, Math.max(0, (current - requiredValue) / requiredValue));
     }, 0) / requirements.length
     : 0;
-  const averageDeficit = requirements.length > 0
-    ? requirements.reduce((sum, [key, required]) => {
-      const requiredValue = required ?? 1;
-      const current = gameState.attributes[key as keyof Attributes];
-      return sum + Math.min(0.85, Math.max(0, (requiredValue - current) / requiredValue));
-    }, 0) / requirements.length
-    : 0;
+  const averageDeficit = calculateBreakthroughAverageDeficit(gameState, nextRealm);
   const fortuneBonus = getAttributePower(gameState.attributes.气运) * 0.006;
   const realmPressure = Math.max(0, gameState.currentRealm.level - 3) * 0.02;
+  const minimumRate = averageDeficit >= 0.5 ? 0.05 : averageDeficit >= 0.3 ? 0.07 : 0.1;
 
   return Math.max(
-    0.12,
+    minimumRate,
     Math.min(0.92, 0.74 + averageSurplus * 0.45 + fortuneBonus - realmPressure - averageDeficit * 0.75)
   );
 }
 
-function getBreakthroughFailureProgressPercent(gameState: GameState): number {
-  if (gameState.currentRealm.level >= 6) return 35;
-  if (gameState.currentRealm.level >= 4) return 30;
-  return 25;
+function calculateBreakthroughAverageDeficit(
+  gameState: GameState,
+  nextRealm: GameState['currentRealm']
+): number {
+  const requirements = Object.entries(nextRealm.requirements.attributes);
+
+  if (requirements.length === 0) return 0;
+
+  return requirements.reduce((sum, [key, required]) => {
+    const requiredValue = required ?? 1;
+    const current = gameState.attributes[key as keyof Attributes];
+    return sum + Math.min(0.85, Math.max(0, (requiredValue - current) / requiredValue));
+  }, 0) / requirements.length;
 }
 
-function getBreakthroughFailureLifespanPercent(gameState: GameState): number {
-  return Math.min(8, Math.max(1, gameState.currentRealm.level));
+function getBreakthroughFailureProgressPercent(gameState: GameState, averageDeficit: number): number {
+  const basePercent = gameState.currentRealm.level >= 6 ? 35 : gameState.currentRealm.level >= 4 ? 30 : 25;
+  if (averageDeficit >= 0.5) return Math.min(45, basePercent + 10);
+  if (averageDeficit >= 0.3) return Math.min(42, basePercent + 6);
+  return basePercent;
+}
+
+function getBreakthroughFailureLifespanPercent(gameState: GameState, averageDeficit: number): number {
+  const basePercent = Math.min(8, Math.max(1, gameState.currentRealm.level));
+  if (averageDeficit >= 0.5) return Math.min(12, basePercent + 4);
+  if (averageDeficit >= 0.3) return Math.min(10, basePercent + 2);
+  return basePercent;
 }
 
 function meetsAttributeRequirements(

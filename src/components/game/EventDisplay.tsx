@@ -225,6 +225,7 @@ export default function EventDisplay({
             <PreparationPanel
               canUse={!isPendingChoice}
               familyWealth={gameState.familyWealth}
+              realmLevel={gameState.currentRealm.level}
               shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
               onPrepare={useBreakthroughPreparation}
             />
@@ -381,11 +382,13 @@ function EventChoices({
 export function PreparationPanel({
   canUse,
   familyWealth,
+  realmLevel,
   shouldPrepare,
   onPrepare
 }: {
   canUse: boolean;
   familyWealth: number;
+  realmLevel: number;
   shouldPrepare: boolean;
   onPrepare: (actionId: string) => void;
 }) {
@@ -406,7 +409,8 @@ export function PreparationPanel({
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {actions.map(action => {
-          const disabled = !canUse || familyWealth < action.cost;
+          const cost = getPreparationCost(action.cost, realmLevel);
+          const disabled = !canUse || familyWealth < cost;
           return (
             <button
               key={action.id}
@@ -419,11 +423,18 @@ export function PreparationPanel({
               }`}
             >
               {action.label}
-              <span className="block text-xs font-normal">家境 {action.cost}</span>
+              <span className="block text-xs font-normal">家境 {cost}</span>
             </button>
           );
         })}
       </div>
     </div>
   );
+}
+
+function getPreparationCost(baseCost: number, realmLevel: number): number {
+  if (realmLevel >= 7) return Math.ceil(baseCost * 4);
+  if (realmLevel >= 5) return Math.ceil(baseCost * 2.5);
+  if (realmLevel >= 3) return Math.ceil(baseCost * 1.5);
+  return baseCost;
 }
