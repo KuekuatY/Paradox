@@ -5,19 +5,30 @@ import { useGameStore } from '@/stores/gameStore';
 import Background from '@/components/layout/Background';
 import StatusPanel, {
   AchievementPanel,
+  AttributePanel,
+  BreakthroughRequirements,
+  CultivationProgress,
+  CurrentRealmSummary,
+  FateSummary,
   LifeGoalPanel,
-  RecentEvents,
-  StrategyPanel
+  RecentEvents
 } from '@/components/game/StatusPanel';
-import EventDisplay from '@/components/game/EventDisplay';
+import EventDisplay, { PreparationPanel } from '@/components/game/EventDisplay';
 import TalentDraw from '@/components/game/TalentDraw';
 import GameOverModal from '@/components/game/GameOverModal';
 
-type MobileTab = 'event' | 'status' | 'goal' | 'strategy' | 'records';
+type MobileTab = 'event' | 'status' | 'goal' | 'breakthrough' | 'records';
 
 export default function Game() {
   const navigate = useNavigate();
-  const { gameState, resetGame, canBreakthrough, breakthroughRealm, endGame, setStrategy } = useGameStore();
+  const {
+    gameState,
+    resetGame,
+    canBreakthrough,
+    breakthroughRealm,
+    endGame,
+    useBreakthroughPreparation
+  } = useGameStore();
   const [showGameOver, setShowGameOver] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('event');
   const canBreak = canBreakthrough();
@@ -142,12 +153,15 @@ export default function Game() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        className="space-y-3"
                       >
+                        <MobileCultivationPanel />
                         <EventDisplay
                           canBreakthrough={canBreak}
                           onBreakthrough={handleBreakthrough}
                           onContinue={handleContinue}
                           onMeditationEnd={handleMeditationEnd}
+                          showBreakthroughControls={false}
                         />
                       </motion.div>
                     )}
@@ -159,7 +173,7 @@ export default function Game() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                       >
-                        <StatusPanel showLifeGoal={false} showStrategy={false} />
+                        <MobileStatusPanel />
                       </motion.div>
                     )}
 
@@ -169,24 +183,27 @@ export default function Game() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        className="space-y-3"
                       >
                         <LifeGoalPanel
                           activeGoal={gameState.activeGoal}
                           completedCount={gameState.completedGoals.length}
                         />
+                        <RecentEvents events={gameState.events} />
                       </motion.div>
                     )}
 
-                    {mobileTab === 'strategy' && (
+                    {mobileTab === 'breakthrough' && (
                       <motion.div
-                        key="mobile-strategy"
+                        key="mobile-breakthrough"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                       >
-                        <StrategyPanel
-                          selectedStrategy={gameState.strategy}
-                          onSelect={setStrategy}
+                        <MobileBreakthroughPanel
+                          canBreakthrough={canBreak}
+                          onBreakthrough={handleBreakthrough}
+                          onPrepare={useBreakthroughPreparation}
                         />
                       </motion.div>
                     )}
@@ -197,10 +214,8 @@ export default function Game() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="space-y-3"
                       >
                         <AchievementPanel achievements={gameState.achievements} />
-                        <RecentEvents events={gameState.events} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -234,7 +249,7 @@ function MobileGameNav({
     { id: 'event', label: '修行' },
     { id: 'status', label: '状态' },
     { id: 'goal', label: '道途' },
-    { id: 'strategy', label: '策略' },
+    { id: 'breakthrough', label: '突破' },
     { id: 'records', label: '成就' }
   ];
 
@@ -259,6 +274,101 @@ function MobileGameNav({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function MobileCultivationPanel() {
+  const { gameState } = useGameStore();
+
+  return (
+    <div className="ink-panel rounded-lg p-4">
+      <CurrentRealmSummary currentRealm={gameState.currentRealm} />
+      <CultivationProgress
+        currentRealmName={gameState.currentRealm.name}
+        progress={gameState.cultivationProgress}
+      />
+    </div>
+  );
+}
+
+function MobileStatusPanel() {
+  const { gameState } = useGameStore();
+  const { spiritRoot, talent, attributes, currentRealm } = gameState;
+
+  return (
+    <div className="ink-panel space-y-3 rounded-lg p-4">
+      {(spiritRoot || talent) && (
+        <div className="grid grid-cols-1 gap-3">
+          {spiritRoot && (
+            <FateSummary
+              label="灵根"
+              name={spiritRoot.name}
+              rarity={spiritRoot.rarity}
+              description={spiritRoot.description}
+            />
+          )}
+          {talent && (
+            <FateSummary
+              label="天赋"
+              name={talent.name}
+              rarity={talent.rarity}
+              description={talent.description}
+            />
+          )}
+        </div>
+      )}
+      <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
+    </div>
+  );
+}
+
+function MobileBreakthroughPanel({
+  canBreakthrough,
+  onBreakthrough,
+  onPrepare
+}: {
+  canBreakthrough: boolean;
+  onBreakthrough: () => void;
+  onPrepare: (actionId: string) => void;
+}) {
+  const { gameState } = useGameStore();
+  const isBlockedByChoice = !!gameState.pendingEvent;
+
+  return (
+    <div className="ink-panel space-y-3 rounded-lg p-4">
+      <BreakthroughRequirements
+        currentRealmName={gameState.currentRealm.name}
+        attributes={gameState.attributes}
+      />
+      <PreparationPanel
+        canUse={!isBlockedByChoice}
+        familyWealth={gameState.attributes.家境}
+        shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
+        onPrepare={onPrepare}
+      />
+      <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-center">
+        <div className="mb-3 text-sm font-semibold text-[#45564f]">突破瓶颈</div>
+        <button
+          type="button"
+          disabled={!canBreakthrough}
+          onClick={onBreakthrough}
+          className={`w-full rounded-md px-6 py-3 text-lg font-bold transition ${
+            canBreakthrough
+              ? 'border border-[#a9823c]/45 bg-[#f0dfad] text-[#7a5426] shadow-lg hover:brightness-105'
+              : 'border border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
+          }`}
+        >
+          突破瓶颈
+        </button>
+        <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
+          {isBlockedByChoice
+            ? '需先处理当前抉择，方可闭关冲境。'
+            : canBreakthrough
+              ? '修为圆满，门槛已足，可以尝试突破。'
+              : '修炼进度圆满且突破门槛满足后，便可在此突破。'}
+        </p>
       </div>
     </div>
   );

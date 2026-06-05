@@ -4,7 +4,7 @@ import { realms } from '@/data/realms';
 import { cultivationStrategies } from '@/data/strategies';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
-import type { ActiveLifeGoal, Attributes, CultivationStrategyId, GameEvent } from '@/types';
+import type { ActiveLifeGoal, Attributes, CultivationStrategyId, GameEvent, Realm } from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
@@ -28,18 +28,7 @@ export default function StatusPanel({
     >
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div>
-          <div className="mb-4 text-center sm:mb-5">
-            <div className="mb-2 text-sm text-[#66766e]">当前境界</div>
-            <motion.div
-              key={currentRealm.name}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="ink-title text-2xl font-bold sm:text-3xl"
-            >
-              {currentRealm.name}
-            </motion.div>
-            <p className="ink-muted mt-1 text-xs">{currentRealm.description}</p>
-          </div>
+          <CurrentRealmSummary currentRealm={currentRealm} />
 
           <div className="mb-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -109,23 +98,30 @@ export default function StatusPanel({
       </div>
 
       <div className="mt-3 sm:mt-5">
-        <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-          <div className="mb-3 flex items-center justify-between text-xs">
-            <span className="font-semibold text-[#45564f]">属性</span>
-            <span className="text-[#66766e]">当前上限 {currentRealm.attributeCap}</span>
-          </div>
-          <div className="space-y-2.5 sm:space-y-3">
-            {Object.entries(attributes).map(([key, value]) => (
-              <AttributeBar key={key} name={key} value={value} cap={currentRealm.attributeCap} />
-            ))}
-          </div>
-        </div>
+        <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
       </div>
     </motion.div>
   );
 }
 
-function FateSummary({
+export function CurrentRealmSummary({ currentRealm }: { currentRealm: Realm }) {
+  return (
+    <div className="mb-4 text-center sm:mb-5">
+      <div className="mb-2 text-sm text-[#66766e]">当前境界</div>
+      <motion.div
+        key={currentRealm.name}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="ink-title text-2xl font-bold sm:text-3xl"
+      >
+        {currentRealm.name}
+      </motion.div>
+      <p className="ink-muted mt-1 text-xs">{currentRealm.description}</p>
+    </div>
+  );
+}
+
+export function FateSummary({
   label,
   name,
   rarity,
@@ -147,7 +143,7 @@ function FateSummary({
   );
 }
 
-function CultivationProgress({
+export function CultivationProgress({
   currentRealmName,
   progress
 }: {
@@ -184,7 +180,7 @@ function CultivationProgress({
   );
 }
 
-function BreakthroughRequirements({
+export function BreakthroughRequirements({
   currentRealmName,
   attributes
 }: {
@@ -388,28 +384,32 @@ export function AchievementPanel({ achievements }: { achievements: string[] }) {
 export function RecentEvents({ events }: { events: GameEvent[] }) {
   const recentEvents = events.slice(-4).reverse();
 
-  if (recentEvents.length === 0) return null;
-
   return (
     <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="font-semibold text-[#45564f]">最近年表</span>
         <span className="text-xs text-[#66766e]">{events.length} 事</span>
       </div>
-      <div className="space-y-2">
-        {recentEvents.map(event => (
-          <div
-            key={`${event.id}-${event.age}`}
-            className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-2"
-          >
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-[#355d58]">第 {event.age} 年</span>
-              <span className={getEventResultClass(event.result)}>{getEventResultText(event.result)}</span>
+      {recentEvents.length === 0 ? (
+        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-3 text-sm text-[#66766e]">
+          此世年表尚未落笔。
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {recentEvents.map(event => (
+            <div
+              key={`${event.id}-${event.age}`}
+              className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-2"
+            >
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-semibold text-[#355d58]">第 {event.age} 年</span>
+                <span className={getEventResultClass(event.result)}>{getEventResultText(event.result)}</span>
+              </div>
+              <div className="mt-1 truncate text-sm font-semibold text-[#45564f]">{event.title}</div>
             </div>
-            <div className="mt-1 truncate text-sm font-semibold text-[#45564f]">{event.title}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -442,6 +442,22 @@ function getRequirementItems(
       met: current >= requiredValue
     };
   });
+}
+
+export function AttributePanel({ attributes, cap }: { attributes: Attributes; cap: number }) {
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-3 flex items-center justify-between text-xs">
+        <span className="font-semibold text-[#45564f]">五维属性</span>
+        <span className="text-[#66766e]">当前上限 {cap}</span>
+      </div>
+      <div className="space-y-2.5 sm:space-y-3">
+        {Object.entries(attributes).map(([key, value]) => (
+          <AttributeBar key={key} name={key} value={value} cap={cap} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function AttributeBar({ name, value, cap }: { name: string; value: number; cap: number }) {

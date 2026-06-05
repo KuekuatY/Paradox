@@ -8,13 +8,15 @@ interface EventDisplayProps {
   onBreakthrough: () => void;
   onContinue: () => void;
   onMeditationEnd: () => void;
+  showBreakthroughControls?: boolean;
 }
 
 export default function EventDisplay({
   canBreakthrough,
   onBreakthrough,
   onContinue,
-  onMeditationEnd
+  onMeditationEnd,
+  showBreakthroughControls = true
 }: EventDisplayProps) {
   const { gameState, chooseEventOption, getCurrentEventChoices, useBreakthroughPreparation } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
@@ -200,14 +202,16 @@ export default function EventDisplay({
         />
       ) : (
         <>
-          <PreparationPanel
-            canUse={!isPendingChoice}
-            familyWealth={gameState.attributes.家境}
-            shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
-            onPrepare={useBreakthroughPreparation}
-          />
+          {showBreakthroughControls && (
+            <PreparationPanel
+              canUse={!isPendingChoice}
+              familyWealth={gameState.attributes.家境}
+              shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
+              onPrepare={useBreakthroughPreparation}
+            />
+          )}
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-            {canBreakthrough && (
+            {showBreakthroughControls && canBreakthrough && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -290,7 +294,7 @@ function EventChoices({
   );
 }
 
-function PreparationPanel({
+export function PreparationPanel({
   canUse,
   familyWealth,
   shouldPrepare,
