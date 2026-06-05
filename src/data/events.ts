@@ -100,6 +100,36 @@ export const childhoodEvents: GameEvent[] = [
     weight: 0.55,
     effects: { 家境: 1, 神识: 1, 气运: 1, 颜值: 1 },
     result: 'success'
+  },
+  {
+    id: 'childhood-bamboo-sword',
+    age: 0,
+    type: 'childhood',
+    title: '竹剑嬉戏',
+    description: '你削了一柄竹剑，在院中反复挥舞，招式稚嫩，却练出一点胆气。',
+    weight: 0.85,
+    effects: { 根骨: 1, 神识: 1 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-listen-thunder',
+    age: 0,
+    type: 'childhood',
+    title: '檐下听雷',
+    description: '夏夜雷声滚过山脊，你没有害怕，反而静静听见心神深处的回响。',
+    weight: 0.7,
+    effects: { 神识: 2 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-clay-altar',
+    age: 0,
+    type: 'childhood',
+    title: '泥坛祈愿',
+    description: '你用泥土垒了小小祭坛，认真许下愿望，童心竟也牵来一缕善缘。',
+    weight: 0.65,
+    effects: { 气运: 1, 悟性: 1 },
+    result: 'success'
   }
 ];
 
@@ -314,6 +344,59 @@ export const events: GameEvent[] = [
     effects: { 根骨: 6, 气运: 2, 修为: 6, 家境: -2 },
     result: 'success'
   },
+  {
+    id: 'cultivation-breath-counting',
+    age: 0,
+    type: 'cultivation',
+    title: '数息入定',
+    description: '你一呼一吸数过千遍，杂念渐少，灵息也不再四处散乱。',
+    weight: 0.95,
+    effects: { 神识: 4, 悟性: 2, 修为: 6 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-meridian-knot',
+    age: 0,
+    type: 'cultivation',
+    title: '经脉郁结',
+    description: '一段灵气卡在关窍之间，反复冲开无果，连心神都被磨得焦躁。',
+    weight: 0.6,
+    effects: { 神识: -2, 修为: -6, 寿命: -1 },
+    result: 'failure'
+  },
+  {
+    id: 'cultivation-star-chart',
+    age: 0,
+    type: 'cultivation',
+    title: '观星参诀',
+    description: '你对照星图推演功法脉络，许多原本散乱的术理渐渐归位。',
+    weight: 0.45,
+    conditions: { minRealmLevel: 3 },
+    effects: { 神识: 4, 悟性: 6, 修为: 9 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-thunder-root-quench',
+    age: 0,
+    type: 'cultivation',
+    title: '雷息锻脉',
+    description: '雷行灵机在经脉里炸开细碎电光，痛得彻骨，却把根基锤炼得更硬。',
+    weight: 0.35,
+    conditions: { spiritRootIds: ['thunder-root', 'tiandao-root', 'chaos-root'] },
+    effects: { 根骨: 6, 神识: 3, 修为: 11, 寿命: -1 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-void-tide',
+    age: 0,
+    type: 'cultivation',
+    title: '虚潮洗神',
+    description: '入夜之后虚空潮声隐隐，你以神识相迎，几乎被卷入无边空寂。',
+    weight: 0.3,
+    conditions: { minRealmLevel: 5 },
+    effects: { 神识: 7, 悟性: 4, 修为: 15, 寿命: -1 },
+    result: 'success'
+  },
 
   {
     id: 'combat-beast-hunt',
@@ -402,6 +485,49 @@ export const events: GameEvent[] = [
     effects: { 神识: -5, 悟性: -2, 修为: -8, 寿命: -1 },
     result: 'failure'
   },
+  {
+    id: 'combat-bandit-camp',
+    age: 0,
+    type: 'combat',
+    title: '清剿山匪',
+    description: '山匪借修士名头盘踞险道，你接下悬赏，趁夜破开寨门。',
+    weight: 0.75,
+    effects: { 根骨: 2, 家境: 2, 修为: 10 },
+    result: 'success'
+  },
+  {
+    id: 'combat-mine-fiend',
+    age: 0,
+    type: 'combat',
+    title: '矿洞妖影',
+    description: '灵矿深处有妖影出没，矿工不敢下井，你提灯入洞，听见爪声贴壁而来。',
+    weight: 0.55,
+    conditions: { minRealmLevel: 2 },
+    effects: { 根骨: 3, 神识: 3, 家境: 2, 修为: 13 },
+    result: 'success'
+  },
+  {
+    id: 'combat-ghost-market-raid',
+    age: 0,
+    type: 'combat',
+    title: '夜市缉凶',
+    description: '鬼市散场时有人夺宝遁走，你循着残香追入长街阴影。',
+    weight: 0.45,
+    conditions: { minRealmLevel: 3 },
+    effects: { 神识: 4, 气运: 2, 家境: 2, 修为: 14 },
+    result: 'success'
+  },
+  {
+    id: 'combat-tribulation-beast',
+    age: 0,
+    type: 'combat',
+    title: '劫兽窥关',
+    description: '一头沾染雷劫气息的异兽盯上你的洞府，若不击退，闭关必受其扰。',
+    weight: 0.3,
+    conditions: { minRealmLevel: 5 },
+    effects: { 根骨: 6, 神识: 5, 气运: 3, 修为: 18, 寿命: -1 },
+    result: 'success'
+  },
 
   {
     id: 'encounter-secret-manual',
@@ -485,6 +611,49 @@ export const events: GameEvent[] = [
     effects: { 家境: -4, 修为: -5 },
     result: 'failure'
   },
+  {
+    id: 'encounter-hidden-spring',
+    age: 0,
+    type: 'encounter',
+    title: '幽泉洗尘',
+    description: '你在石壁后发现一眼幽泉，泉水清寒，能洗去经脉里的细小浊气。',
+    weight: 0.6,
+    effects: { 根骨: 4, 神识: 2, 修为: 6 },
+    result: 'success'
+  },
+  {
+    id: 'encounter-starry-ferry',
+    age: 0,
+    type: 'encounter',
+    title: '星河渡舟',
+    description: '夜半河上飘来无人小舟，你登舟片刻，仿佛看见漫天星斗倒流。',
+    weight: 0.38,
+    conditions: { attributes: { 气运: 28 } },
+    effects: { 气运: 4, 悟性: 4, 修为: 8 },
+    result: 'success'
+  },
+  {
+    id: 'encounter-merchant-legacy',
+    age: 0,
+    type: 'encounter',
+    title: '故商遗赠',
+    description: '一位曾受你照拂的老商人托人送来遗物，匣中灵石不多，情义却重。',
+    weight: 0.5,
+    conditions: { attributes: { 颜值: 18 } },
+    effects: { 家境: 2, 气运: 2, 颜值: 1 },
+    result: 'success'
+  },
+  {
+    id: 'encounter-ruined-altar',
+    age: 0,
+    type: 'encounter',
+    title: '荒坛低语',
+    description: '废弃祭坛下传来若有若无的低语，像是在许诺机缘，也像是在索取代价。',
+    weight: 0.42,
+    conditions: { minRealmLevel: 2 },
+    effects: { 神识: 5, 气运: 3, 修为: 8, 寿命: -1 },
+    result: 'neutral'
+  },
 
   {
     id: 'social-partner',
@@ -557,6 +726,37 @@ export const events: GameEvent[] = [
     conditions: { attributes: { 颜值: 35 }, minRealmLevel: 2 },
     effects: { 气运: 5, 修为: 8, 寿命: 1 },
     result: 'success'
+  },
+  {
+    id: 'social-old-friend',
+    age: 0,
+    type: 'social',
+    title: '故友来访',
+    description: '多年未见的故友带酒登门，两人谈起旧事，也交换了近来的修行见闻。',
+    weight: 0.75,
+    effects: { 神识: 2, 颜值: 2, 修为: 3 },
+    result: 'success'
+  },
+  {
+    id: 'social-debt-of-gratitude',
+    age: 0,
+    type: 'social',
+    title: '人情回响',
+    description: '昔日一句援手如今有了回音，有人替你引荐了一条不错的门路。',
+    weight: 0.55,
+    conditions: { attributes: { 气运: 18 } },
+    effects: { 家境: 1, 气运: 2, 颜值: 2 },
+    result: 'success'
+  },
+  {
+    id: 'social-misread-intent',
+    age: 0,
+    type: 'social',
+    title: '会错人意',
+    description: '一次本该简单的寒暄被人误解，场面尴尬，你也平白添了些口舌。',
+    weight: 0.55,
+    effects: { 颜值: -3, 气运: -1, 修为: -2 },
+    result: 'failure'
   },
 
   {
@@ -631,6 +831,49 @@ export const events: GameEvent[] = [
     weight: 0.35,
     conditions: { talentIds: ['sword-body'] },
     effects: { 寿命: -3, 神识: -3, 悟性: -3, 修为: -8 },
+    result: 'failure'
+  },
+  {
+    id: 'disaster-meridian-backlash',
+    age: 0,
+    type: 'disaster',
+    title: '灵气逆冲',
+    description: '闭关时灵气忽然逆冲上行，几处经脉如被针火同时刺穿。',
+    weight: 0.6,
+    effects: { 根骨: -3, 神识: -2, 修为: -8, 寿命: -2 },
+    result: 'failure'
+  },
+  {
+    id: 'disaster-spirit-stone-collapse',
+    age: 0,
+    type: 'disaster',
+    title: '灵矿塌陷',
+    description: '你投下资源的灵矿忽然塌陷，账面亏损之外，还牵出不少麻烦。',
+    weight: 0.42,
+    conditions: { attributes: { 家境: 18 } },
+    effects: { 家境: -7, 气运: -2, 修为: -3 },
+    result: 'failure'
+  },
+  {
+    id: 'disaster-beauty-jealousy',
+    age: 0,
+    type: 'disaster',
+    title: '风评招妒',
+    description: '你的清名惹来旁人嫉恨，几句恶言传开，连合作都变得迟疑。',
+    weight: 0.4,
+    conditions: { attributes: { 颜值: 35 } },
+    effects: { 颜值: -4, 气运: -3, 家境: -2 },
+    result: 'failure'
+  },
+  {
+    id: 'disaster-old-wound',
+    age: 0,
+    type: 'disaster',
+    title: '旧伤复发',
+    description: '多年前留下的暗伤在阴雨夜复发，你不得不提前结束闭关。',
+    weight: 0.45,
+    conditions: { minRealmLevel: 3 },
+    effects: { 寿命: -3, 根骨: -3, 修为: -9 },
     result: 'failure'
   },
 
@@ -713,6 +956,36 @@ export const events: GameEvent[] = [
     weight: 0.7,
     effects: { 寿命: -1, 修为: -3 },
     result: 'failure'
+  },
+  {
+    id: 'daily-clean-altar',
+    age: 0,
+    type: 'daily',
+    title: '洒扫香案',
+    description: '你把洞府香案擦拭干净，换上清水与新香，心境也跟着清爽几分。',
+    weight: 1,
+    effects: { 神识: 1, 气运: 1, 修为: 2 },
+    result: 'neutral'
+  },
+  {
+    id: 'daily-letter-home',
+    age: 0,
+    type: 'daily',
+    title: '寄信归家',
+    description: '你写信问候旧日亲友，凡尘牵挂未必拖累修行，也能让人心安定。',
+    weight: 0.75,
+    effects: { 家境: 1, 颜值: 2, 修为: -1 },
+    result: 'neutral'
+  },
+  {
+    id: 'daily-market-rain',
+    age: 0,
+    type: 'daily',
+    title: '雨中坊市',
+    description: '细雨里坊市人少，你慢慢逛过摊位，竟发现几样合用的小物。',
+    weight: 0.75,
+    effects: { 家境: 1, 悟性: 1, 气运: 1 },
+    result: 'success'
   },
 
   {
@@ -811,6 +1084,49 @@ export const events: GameEvent[] = [
     effects: { 神识: 4, 悟性: 4, 家境: 2, 气运: 1, 修为: 12 },
     result: 'success'
   },
+  {
+    id: 'resource-spirit-field-harvest',
+    age: 0,
+    type: 'resource',
+    title: '灵田收成',
+    description: '租来的小片灵田终于有了收成，虽称不上暴富，也够支撑一段清修。',
+    weight: 0.75,
+    effects: { 家境: 2, 根骨: 1, 修为: 3 },
+    result: 'success'
+  },
+  {
+    id: 'resource-alchemy-contract',
+    age: 0,
+    type: 'resource',
+    title: '丹房短契',
+    description: '丹房缺人照看火候，你接下一纸短契，辛苦几月换来丹药分润。',
+    weight: 0.6,
+    conditions: { attributes: { 神识: 18 } },
+    effects: { 家境: 2, 神识: 2, 修为: 4 },
+    result: 'success'
+  },
+  {
+    id: 'resource-mine-share',
+    age: 0,
+    type: 'resource',
+    title: '灵矿分润',
+    description: '你入股的小矿脉出了几块好料，分到手的灵石让修行安排宽裕许多。',
+    weight: 0.4,
+    conditions: { attributes: { 家境: 28 }, minRealmLevel: 2 },
+    effects: { 家境: 4, 气运: 2, 修为: 5 },
+    result: 'success'
+  },
+  {
+    id: 'resource-failed-investment',
+    age: 0,
+    type: 'resource',
+    title: '投错门路',
+    description: '你轻信一桩看似稳妥的买卖，等回过神来，对方早已卷走灵石。',
+    weight: 0.5,
+    conditions: { attributes: { 家境: 15 } },
+    effects: { 家境: -6, 悟性: 1, 修为: -3 },
+    result: 'failure'
+  },
 
   {
     id: 'mind-script-copying',
@@ -863,6 +1179,37 @@ export const events: GameEvent[] = [
     conditions: { talentIds: ['calm-heart'] },
     effects: { 神识: 4, 悟性: 4, 修为: 9, 寿命: 1 },
     result: 'success'
+  },
+  {
+    id: 'mind-sutra-debate',
+    age: 0,
+    type: 'mind',
+    title: '经义辩难',
+    description: '你与同道围绕一句经义争论到深夜，言辞往复间反而照见盲点。',
+    weight: 0.65,
+    effects: { 神识: 3, 悟性: 4, 修为: 4 },
+    result: 'success'
+  },
+  {
+    id: 'mind-old-vow',
+    age: 0,
+    type: 'mind',
+    title: '旧誓在心',
+    description: '你想起踏上修仙路时许下的誓愿，躁动心绪慢慢沉回原处。',
+    weight: 0.55,
+    effects: { 神识: 2, 气运: 2, 修为: 5 },
+    result: 'success'
+  },
+  {
+    id: 'mind-nightmare-script',
+    age: 0,
+    type: 'mind',
+    title: '梦魇残文',
+    description: '梦里反复出现一篇残缺经文，醒来后你头痛欲裂，却记住了几处玄妙。',
+    weight: 0.42,
+    conditions: { minRealmLevel: 3 },
+    effects: { 神识: -2, 悟性: 5, 修为: 6, 寿命: -1 },
+    result: 'neutral'
   },
 
   {
@@ -939,5 +1286,48 @@ export const events: GameEvent[] = [
     conditions: { talentIds: ['destined-one'], minRealmLevel: 3 },
     effects: { 气运: 5, 家境: 2, 神识: 2, 修为: 12 },
     result: 'success'
+  },
+  {
+    id: 'sect-outer-help',
+    age: 0,
+    type: 'sect',
+    title: '外门助役',
+    description: '你帮外门弟子处理杂务，事情琐碎，却让宗门上下对你多了几分好感。',
+    weight: 0.75,
+    effects: { 颜值: 2, 家境: 1, 修为: 2 },
+    result: 'success'
+  },
+  {
+    id: 'sect-elder-private-lesson',
+    age: 0,
+    type: 'sect',
+    title: '长老小课',
+    description: '长老临时开了一场小课，只讲破境时最容易被忽略的细节。',
+    weight: 0.45,
+    conditions: { attributes: { 悟性: 25 }, minRealmLevel: 2 },
+    effects: { 悟性: 4, 神识: 3, 修为: 7 },
+    result: 'success'
+  },
+  {
+    id: 'sect-refined-register',
+    age: 0,
+    type: 'sect',
+    title: '名册进阶',
+    description: '你的名字被挪入更高一档的宗门名册，月例资源也随之略有提升。',
+    weight: 0.4,
+    conditions: { attributes: { 根骨: 35, 气运: 25 }, minRealmLevel: 2 },
+    effects: { 家境: 2, 颜值: 2, 修为: 6 },
+    result: 'success'
+  },
+  {
+    id: 'sect-mission-failure',
+    age: 0,
+    type: 'sect',
+    title: '任务失手',
+    description: '一次宗门任务出了纰漏，你虽无大错，却不得不承担一部分责罚。',
+    weight: 0.55,
+    conditions: { minRealmLevel: 2 },
+    effects: { 家境: -3, 颜值: -2, 修为: -5 },
+    result: 'failure'
   }
 ];

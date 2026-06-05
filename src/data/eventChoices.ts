@@ -224,6 +224,134 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       negativeScale: 0.8,
       effects: { 气运: 1 }
     }
+  ],
+  'encounter-ruined-altar': [
+    {
+      id: 'read-runes',
+      label: '细读坛纹',
+      description: '用神识解析祭坛纹路，悟道收益更高，但容易受低语侵扰。',
+      outcome: '你强忍耳边低语，一笔一画辨认坛纹，终于看出其中残缺的法意。',
+      successModifier: -0.02,
+      positiveScale: 1.25,
+      negativeScale: 1.15,
+      effects: { 悟性: 3, 神识: -1 }
+    },
+    {
+      id: 'offer-incense',
+      label: '焚香镇念',
+      description: '以香火平稳心神，收益较稳，代价较轻。',
+      outcome: '你点燃清香压住杂念，没有贪求祭坛深处的诡异许诺。',
+      successModifier: 0.1,
+      positiveScale: 0.8,
+      negativeScale: 0.55,
+      effects: { 气运: 1, 家境: -1 }
+    },
+    {
+      id: 'break-altar',
+      label: '破坛离去',
+      description: '斩断隐患，可能失去机缘，但能换来心神清明。',
+      outcome: '你一掌震碎祭坛，低语随尘土散开，心头反倒轻了一些。',
+      successModifier: 0.04,
+      positiveScale: 0.45,
+      negativeScale: 0.4,
+      effects: { 神识: 2, 修为: -2 }
+    }
+  ],
+  'resource-failed-investment': [
+    {
+      id: 'audit-ledger',
+      label: '追查账册',
+      description: '花时间查账，可能追回损失，也会拖慢修行。',
+      outcome: '你翻遍往来凭据，终于从几处假账里找出线索。',
+      successModifier: 0.08,
+      positiveScale: 0.85,
+      negativeScale: 0.75,
+      effects: { 悟性: 2, 修为: -2 }
+    },
+    {
+      id: 'accept-loss',
+      label: '认亏止损',
+      description: '不再深追，把损失压住，换取心境稳定。',
+      outcome: '你把这笔亏损记下，不再让懊恼继续吞掉修行时间。',
+      successModifier: 0.12,
+      positiveScale: 0.45,
+      negativeScale: 0.45,
+      effects: { 神识: 1, 气运: 1 }
+    },
+    {
+      id: 'pressure-broker',
+      label: '逼问掮客',
+      description: '强硬讨债，风险更高，若成则追回更多资源。',
+      outcome: '你堵住牵线的掮客，逼他给出一个交代。',
+      successModifier: -0.05,
+      positiveScale: 1.25,
+      negativeScale: 1.3,
+      effects: { 颜值: -1, 家境: 1 }
+    }
+  ],
+  'sect-elder-private-lesson': [
+    {
+      id: 'ask-breakthrough',
+      label: '请教破境',
+      description: '专注突破细节，修为和悟性收益更高。',
+      outcome: '你抓住机会请教破境关窍，长老几句话正点在你的短板上。',
+      successModifier: 0.04,
+      positiveScale: 1.18,
+      negativeScale: 0.9,
+      effects: { 悟性: 2 }
+    },
+    {
+      id: 'ask-spirit',
+      label: '请教神识',
+      description: '转向神识打磨，收益更偏中后期门槛。',
+      outcome: '你没有急着问修为，而是追问神识凝练之法。',
+      successModifier: 0.02,
+      positiveScale: 0.9,
+      negativeScale: 0.8,
+      effects: { 神识: 3, 修为: -1 }
+    },
+    {
+      id: 'serve-tea',
+      label: '奉茶结缘',
+      description: '少问法，多结善缘，资源收益更稳。',
+      outcome: '你恭敬奉茶，把小课之外的人情也照顾周全。',
+      successModifier: 0.08,
+      positiveScale: 0.7,
+      negativeScale: 0.65,
+      effects: { 家境: 1, 颜值: 2 }
+    }
+  ],
+  'sect-mission-failure': [
+    {
+      id: 'take-blame',
+      label: '主动担责',
+      description: '名声损失较小，但会承受更多惩戒。',
+      outcome: '你主动揽下该担的责任，执事脸色稍缓，责罚却仍免不了。',
+      successModifier: 0.08,
+      positiveScale: 0.55,
+      negativeScale: 0.85,
+      effects: { 颜值: 1, 修为: -1 }
+    },
+    {
+      id: 'argue-details',
+      label: '据理分辩',
+      description: '有机会减轻处罚，也可能惹来更多反感。',
+      outcome: '你把任务经过逐条说清，试图证明问题并不全在自己。',
+      successModifier: -0.02,
+      positiveScale: 1.05,
+      negativeScale: 1.2,
+      effects: { 悟性: 1, 颜值: -1 }
+    },
+    {
+      id: 'make-amends',
+      label: '补交资源',
+      description: '用家底补救失误，名声和修行损失都更可控。',
+      outcome: '你拿出一笔资源补上缺口，事情总算没有继续扩大。',
+      successModifier: 0.12,
+      positiveScale: 0.7,
+      negativeScale: 0.5,
+      effects: { 家境: -2, 气运: 1 }
+    }
   ]
 };
 

@@ -924,6 +924,42 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       injury: 10,
       primary: ['神识', '悟性', '气运'],
       styleText: '心神交锋'
+    },
+    'combat-bandit-camp': {
+      enemyName: '山寨匪首',
+      enemyRank: '同阶下位',
+      difficulty: 0.9,
+      cultivationPercent: 6,
+      injury: 5,
+      primary: ['根骨', '气运'],
+      styleText: '夜袭破寨'
+    },
+    'combat-mine-fiend': {
+      enemyName: '矿洞妖影',
+      enemyRank: '同阶',
+      difficulty: 1,
+      cultivationPercent: 8,
+      injury: 7,
+      primary: ['根骨', '神识'],
+      styleText: '狭洞缠斗'
+    },
+    'combat-ghost-market-raid': {
+      enemyName: '夺宝遁修',
+      enemyRank: '同阶上位',
+      difficulty: 1.1,
+      cultivationPercent: 9,
+      injury: 8,
+      primary: ['神识', '气运', '悟性'],
+      styleText: '长街追袭'
+    },
+    'combat-tribulation-beast': {
+      enemyName: '劫纹异兽',
+      enemyRank: '越阶强敌',
+      difficulty: 1.28,
+      cultivationPercent: 12,
+      injury: 12,
+      primary: ['根骨', '神识', '气运'],
+      styleText: '雷痕鏖战'
     }
   };
 
@@ -1341,22 +1377,31 @@ function generateCombatItemRewards(
       ], quantity);
     case 'combat-demonic-cultivator':
     case 'combat-heart-devil':
+    case 'combat-ghost-market-raid':
       return rollOneReward([
         ['blood-jade', 0.45],
         ['fortune-talisman', 0.25],
         ['soul-nourishing-pill', 0.3]
       ], quantity);
     case 'combat-ancient-beast':
+    case 'combat-tribulation-beast':
       return rollOneReward([
         ['ancient-scale', 0.55],
         ['blood-jade', 0.25],
         ['bone-tempering-pill', 0.2]
       ], quantity);
     case 'combat-caravan-escort':
+    case 'combat-bandit-camp':
       return rollOneReward([
         ['spirit-stone-pouch', 0.55],
         ['qi-gathering-pill', 0.3],
         ['spirit-herb', 0.15]
+      ], quantity);
+    case 'combat-mine-fiend':
+      return rollOneReward([
+        ['beast-core', 0.35],
+        ['spirit-stone-pouch', 0.35],
+        ['spirit-herb', 0.3]
       ], quantity);
     case 'combat-sword-contest':
     case 'combat-arena-duel':
