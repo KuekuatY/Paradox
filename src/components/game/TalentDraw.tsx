@@ -11,6 +11,7 @@ export default function TalentDraw() {
   const [currentSpiritRoot, setCurrentSpiritRoot] = useState<SpiritRoot | null>(null);
   const [currentTalent, setCurrentTalent] = useState<Talent | null>(null);
   const [talentOptions, setTalentOptions] = useState<Talent[]>([]);
+  const [characterName, setCharacterName] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
   const canDrawTalent = !!currentSpiritRoot;
   const canStartGame = !!currentSpiritRoot && !!currentTalent;
@@ -41,7 +42,7 @@ export default function TalentDraw() {
   const handleConfirm = () => {
     if (!currentSpiritRoot || !currentTalent) return;
 
-    startNewGame(currentSpiritRoot, currentTalent);
+    startNewGame(currentSpiritRoot, currentTalent, characterName);
   };
 
   return (
@@ -57,6 +58,20 @@ export default function TalentDraw() {
             exit={{ opacity: 0, scale: 0.94 }}
             className="w-full max-w-3xl px-0 sm:px-4"
           >
+            <div className="mb-4 rounded-md border border-[#738275]/25 bg-[#fff9e8]/55 px-4 py-3 sm:mb-6">
+              <label className="mb-2 block text-sm font-semibold text-[#45564f]" htmlFor="character-name">
+                名讳
+              </label>
+              <input
+                id="character-name"
+                value={characterName}
+                maxLength={12}
+                onChange={(event) => setCharacterName(event.target.value)}
+                placeholder="无名"
+                className="w-full rounded-md border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-2 text-base font-semibold text-[#263832] outline-none transition focus:border-[#355d58]/55 focus:bg-[#fffdf2]"
+              />
+            </div>
+
             <div className="mb-4 grid grid-cols-2 gap-2 text-center text-sm sm:mb-6 sm:gap-3">
               <StepButton
                 active={activeView === 'spiritRoot'}

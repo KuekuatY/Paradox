@@ -39,7 +39,7 @@ export default function StatusPanel({
     >
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div>
-          <CurrentRealmSummary currentRealm={currentRealm} />
+          <CurrentRealmSummary currentRealm={currentRealm} characterName={gameState.characterName} />
 
           <div className="mb-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -126,10 +126,16 @@ export default function StatusPanel({
   );
 }
 
-export function CurrentRealmSummary({ currentRealm }: { currentRealm: Realm }) {
+export function CurrentRealmSummary({
+  currentRealm,
+  characterName
+}: {
+  currentRealm: Realm;
+  characterName?: string;
+}) {
   return (
     <div className="mb-4 text-center sm:mb-5">
-      <div className="mb-2 text-sm text-[#66766e]">当前境界</div>
+      <div className="mb-2 text-sm text-[#66766e]">{characterName || '无名'}</div>
       <motion.div
         key={currentRealm.name}
         initial={{ scale: 0.8, opacity: 0 }}

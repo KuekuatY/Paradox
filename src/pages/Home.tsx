@@ -1,12 +1,22 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Background from '@/components/layout/Background';
+import { hasSavedGame } from '@/utils/storage';
+import { useGameStore } from '@/stores/gameStore';
 
 export default function Home() {
   const navigate = useNavigate();
+  const hasSave = hasSavedGame();
 
   const handleStart = () => {
     navigate('/game');
+  };
+
+  const handleContinue = () => {
+    const loaded = useGameStore.getState().loadSavedGame();
+    if (loaded) {
+      navigate('/game');
+    }
   };
 
   const handleHistory = () => {
@@ -47,6 +57,17 @@ export default function Home() {
           transition={{ delay: 0.6 }}
           className="space-y-3 sm:space-y-4"
         >
+          {hasSave && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleContinue}
+              className="ink-button-primary w-full text-lg sm:w-80 sm:text-xl"
+            >
+              继续存档
+            </motion.button>
+          )}
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

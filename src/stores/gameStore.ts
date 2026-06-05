@@ -27,11 +27,11 @@ import type {
   TechniqueDefinition,
   TribulationState
 } from '@/types';
-import { saveGameRecord } from '@/utils/storage';
+import { getSavedGame, hasSavedGame, saveGameRecord, saveGameState } from '@/utils/storage';
 
 interface GameStore {
   gameState: GameState;
-  startNewGame: (selectedSpiritRoot?: SpiritRoot, selectedTalent?: Talent) => void;
+  startNewGame: (selectedSpiritRoot?: SpiritRoot, selectedTalent?: Talent, characterName?: string) => void;
   drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
   drawTalentOptions: (count?: number) => Talent[];
@@ -47,6 +47,9 @@ interface GameStore {
   canBreakthrough: () => boolean;
   breakthroughRealm: () => void;
   resolveTribulationStrike: (success: boolean) => void;
+  saveCurrentGame: () => void;
+  loadSavedGame: () => boolean;
+  hasSavedGame: () => boolean;
   checkGameEnd: () => void;
   endGame: (result: 'died' | 'ascended', reason?: GameState['endReason']) => void;
   resetGame: () => void;
@@ -66,6 +69,7 @@ const initialCombatStats: CombatStats = {
 
 const initialState: GameState = {
   status: 'idle',
+  characterName: '无名',
   age: STARTING_AGE,
   currentRealm: realms[0],
   attributes: {
@@ -96,9 +100,10 @@ const initialState: GameState = {
 export const useGameStore = create<GameStore>((set, get) => ({
   gameState: initialState,
 
-  startNewGame: (selectedSpiritRoot, selectedTalent) => {
+  startNewGame: (selectedSpiritRoot, selectedTalent, characterName) => {
     const spiritRoot = selectedSpiritRoot ?? get().drawSpiritRoot();
     const talent = selectedTalent ?? get().drawTalent();
+    const normalizedCharacterName = normalizeCharacterName(characterName);
     const startingAttributeCap = getAttributeCap(realms[0]);
     const initialAttributes: Attributes = {
       根骨: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0), startingAttributeCap),
@@ -114,6 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const newGameState: GameState = {
       status: 'playing',
+      characterName: normalizedCharacterName,
       age: STARTING_AGE,
       currentRealm: realms[0],
       attributes: initialAttributes,
@@ -590,6 +596,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     saveGameRecord({
       id: Date.now().toString(),
       date: new Date().toISOString(),
+      characterName: gameState.characterName,
       finalRealm: gameState.currentRealm.name,
       age: gameState.age,
       spiritRoot: gameState.spiritRoot?.name || '',
@@ -603,6 +610,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resetGame: () => {
     set({ gameState: initialState });
+  },
+
+  saveCurrentGame: () => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing') return;
+
+    saveGameState(gameState);
+  },
+
+  loadSavedGame: () => {
+    const saveSlot = getSavedGame();
+    if (!saveSlot) return false;
+
+    set({
+      gameState: normalizeLoadedGameState(saveSlot.gameState)
+    });
+    return true;
+  },
+
+  hasSavedGame: () => {
+    return hasSavedGame();
   }
 }));
 
@@ -810,6 +838,28 @@ function pickManyByProbability<T extends { probability: number }>(items: T[], co
   }
 
   return pickedItems;
+}
+
+function normalizeCharacterName(characterName: string | undefined): string {
+  const trimmed = characterName?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed.slice(0, 12) : '无名';
+}
+
+function normalizeLoadedGameState(gameState: GameState): GameState {
+  return {
+    ...gameState,
+    status: gameState.status === 'ended' ? 'playing' : gameState.status,
+    characterName: normalizeCharacterName(gameState.characterName),
+    pendingEvent: gameState.pendingEvent ?? null,
+    pendingPathChoice: !!gameState.pendingPathChoice,
+    pendingTribulation: gameState.pendingTribulation ?? null,
+    combatStats: gameState.combatStats ?? initialCombatStats,
+    inventory: Array.isArray(gameState.inventory) ? gameState.inventory : [],
+    techniques: Array.isArray(gameState.techniques) ? gameState.techniques : [],
+    events: Array.isArray(gameState.events) ? gameState.events : [],
+    achievements: Array.isArray(gameState.achievements) ? gameState.achievements : [],
+    completedGoals: Array.isArray(gameState.completedGoals) ? gameState.completedGoals : []
+  };
 }
 
 function enterQiCondensingRealm(gameState: GameState): GameState {

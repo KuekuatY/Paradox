@@ -57,6 +57,10 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
           >
             {isAscended ? '飞升成仙' : isMeditationEnd ? '散功坐化' : '寿元耗尽'}
           </motion.h2>
+
+          <p className="mb-2 text-lg font-semibold text-[#45564f] sm:text-xl">
+            {gameState.characterName || '无名'}
+          </p>
           
           <motion.div
             initial={{ opacity: 0 }}

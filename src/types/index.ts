@@ -111,6 +111,7 @@ export interface Attributes {
 
 export interface GameState {
   status: 'idle' | 'creating' | 'playing' | 'ended';
+  characterName: string;
   age: number;
   currentRealm: Realm;
   attributes: Attributes;
@@ -244,6 +245,7 @@ export interface CombatReport {
 export interface GameRecord {
   id: string;
   date: string;
+  characterName: string;
   finalRealm: string;
   age: number;
   spiritRoot?: string;
@@ -252,4 +254,10 @@ export interface GameRecord {
   stats: Attributes;
   familyWealth: number;
   achievements: string[];
+}
+
+export interface SavedGameSlot {
+  version: 1;
+  savedAt: string;
+  gameState: GameState;
 }

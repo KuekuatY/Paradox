@@ -51,10 +51,10 @@ export default function History() {
                     </span>
                     <div>
                       <h3 className="text-lg font-bold text-[#355d58] sm:text-xl">
-                        {record.finalRealm}
+                        {record.characterName || '无名'}
                       </h3>
                       <p className="ink-muted text-sm">
-                        {new Date(record.date).toLocaleDateString('zh-CN')}
+                        {record.finalRealm} · {new Date(record.date).toLocaleDateString('zh-CN')}
                       </p>
                     </div>
                   </div>

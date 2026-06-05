@@ -32,11 +32,13 @@ export default function Game() {
     canBreakthrough,
     breakthroughRealm,
     resolveTribulationStrike,
+    saveCurrentGame,
     endGame,
     useBreakthroughPreparation
   } = useGameStore();
   const [showGameOver, setShowGameOver] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('event');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const canBreak = canBreakthrough();
 
   useEffect(() => {
@@ -69,6 +71,11 @@ export default function Game() {
     endGame('died', 'meditation');
   };
 
+  const handleSaveGame = () => {
+    saveCurrentGame();
+    setLastSavedAt(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+  };
+
   const handleGoHome = () => {
     navigate('/');
   };
@@ -89,13 +96,20 @@ export default function Game() {
               >
                 <StatusPanel />
                 {gameState.status === 'playing' && (
-                  <PreparationPanel
-                    canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
-                    familyWealth={gameState.familyWealth}
-                    realmLevel={gameState.currentRealm.level}
-                    shouldPrepare={gameState.cultivationProgress > 0 && !canBreak}
-                    onPrepare={useBreakthroughPreparation}
-                  />
+                  <>
+                    <SaveGamePanel
+                      characterName={gameState.characterName}
+                      lastSavedAt={lastSavedAt}
+                      onSave={handleSaveGame}
+                    />
+                    <PreparationPanel
+                      canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
+                      familyWealth={gameState.familyWealth}
+                      realmLevel={gameState.currentRealm.level}
+                      shouldPrepare={gameState.cultivationProgress > 0 && !canBreak}
+                      onPrepare={useBreakthroughPreparation}
+                    />
+                  </>
                 )}
               </motion.div>
             </div>
@@ -208,6 +222,11 @@ export default function Game() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                       >
+                        <SaveGamePanel
+                          characterName={gameState.characterName}
+                          lastSavedAt={lastSavedAt}
+                          onSave={handleSaveGame}
+                        />
                         <MobileStatusPanel />
                       </motion.div>
                     )}
@@ -298,6 +317,35 @@ export default function Game() {
   );
 }
 
+function SaveGamePanel({
+  characterName,
+  lastSavedAt,
+  onSave
+}: {
+  characterName: string;
+  lastSavedAt: string | null;
+  onSave: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="font-semibold text-[#45564f]">存档</span>
+        <span className="text-xs text-[#66766e]">{characterName || '无名'}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onSave}
+        className="w-full rounded-md border border-[#738275]/30 bg-[#eef3df] px-4 py-2 text-sm font-bold text-[#355d58] transition hover:border-[#9a5b2f]/45 hover:bg-[#fffdf2]"
+      >
+        保存进度
+      </button>
+      <div className="mt-2 min-h-[18px] text-right text-xs text-[#66766e]">
+        {lastSavedAt ? `已保存 ${lastSavedAt}` : '尚未保存'}
+      </div>
+    </div>
+  );
+}
+
 function MobileGameNav({
   activeTab,
   onSelect
@@ -348,7 +396,7 @@ function MobileCultivationPanel() {
 
   return (
     <div className="ink-panel rounded-lg p-4">
-      <CurrentRealmSummary currentRealm={gameState.currentRealm} />
+      <CurrentRealmSummary currentRealm={gameState.currentRealm} characterName={gameState.characterName} />
       <div className="mb-4 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="ink-muted">年龄</span>
