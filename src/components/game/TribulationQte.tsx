@@ -28,7 +28,7 @@ export default function TribulationQte({
     if (locked) return undefined;
 
     const startedAt = performance.now();
-    const speed = 0.7 + tribulation.targetRealmLevel * 0.08 + tribulation.strikesResolved * 0.06;
+    const speed = 0.36 + tribulation.targetRealmLevel * 0.035 + tribulation.strikesResolved * 0.025;
     const animate = (now: number) => {
       const elapsed = (now - startedAt) / 1000;
       const nextMarker = (Math.sin(elapsed * Math.PI * 2 * speed) + 1) * 50;
