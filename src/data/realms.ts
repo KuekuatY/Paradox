@@ -17,7 +17,7 @@ export const realms: Realm[] = [
     name: '炼气期',
     level: 1,
     maxAge: 100,
-    attributeCap: 40,
+    attributeCap: 80,
     cultivationRequired: 0,
     description: '吸纳灵气，引气入体',
     requirements: {
