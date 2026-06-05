@@ -46,7 +46,7 @@ export default function TalentDraw() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-12">
+    <div className="flex flex-col items-center justify-center py-6 sm:py-12">
       <AnimatePresence mode="wait">
         {isDrawing ? (
           <DrawingState key="drawing" label={step === 'spiritRoot' ? '正在观测灵根...' : '正在推演天赋...'} />
@@ -56,14 +56,14 @@ export default function TalentDraw() {
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
-            className="w-full max-w-3xl px-4"
+            className="w-full max-w-3xl px-0 sm:px-4"
           >
-            <div className="mb-6 grid grid-cols-2 gap-3 text-center text-sm">
+            <div className="mb-4 grid grid-cols-2 gap-2 text-center text-sm sm:mb-6 sm:gap-3">
               <StepBadge active={step === 'spiritRoot'} done={!!currentSpiritRoot} label="一观灵根" />
               <StepBadge active={step !== 'spiritRoot' && !currentTalent} done={!!currentTalent} label="二择天赋" />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
               {currentSpiritRoot ? (
                 <FateCard
                   title="灵根"
@@ -95,20 +95,20 @@ export default function TalentDraw() {
               )}
             </div>
 
-            <div className="mt-8 text-center">
+            <div className="mt-6 text-center sm:mt-8">
               {step === 'spiritRoot' && (
                 <>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleDrawSpiritRoot}
-                    className="ink-button-primary px-12 py-5 text-2xl"
+                    className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
                     animate={{ scale: [1, 1.02, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
                     抽取灵根
                   </motion.button>
-                  <p className="mt-6 text-[#4f5d55]">灵根定其路，天赋定其势</p>
+                  <p className="mt-4 text-sm text-[#4f5d55] sm:mt-6 sm:text-base">灵根定其路，天赋定其势</p>
                 </>
               )}
 
@@ -117,14 +117,14 @@ export default function TalentDraw() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleDrawTalent}
-                  className="ink-button-primary px-12 py-5 text-2xl"
+                  className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
                 >
                   抽取天赋
                 </motion.button>
               )}
 
               {step === 'selectTalent' && (
-                <p className="text-[#4f5d55]">三道命格已现，择其一而定此生。</p>
+                <p className="text-sm text-[#4f5d55] sm:text-base">三道命格已现，择其一而定此生。</p>
               )}
 
               {step === 'ready' && (
@@ -132,7 +132,7 @@ export default function TalentDraw() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleConfirm}
-                  className="ink-button-primary px-12 py-5 text-2xl"
+                  className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
                 >
                   踏入修仙路
                 </motion.button>
@@ -154,7 +154,7 @@ function DrawingState({ label }: { label: string }) {
       className="flex flex-col items-center"
     >
       <motion.div
-        className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-[#9a5b2f] bg-[#fff8df]/70"
+        className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#9a5b2f] bg-[#fff8df]/70 sm:h-32 sm:w-32"
         animate={{
           scale: [1, 1.1, 1],
           rotate: [0, 360],
@@ -166,9 +166,9 @@ function DrawingState({ label }: { label: string }) {
           ease: 'linear'
         }}
       >
-        <div className="text-5xl font-bold text-[#9a5b2f]">玄</div>
+        <div className="text-4xl font-bold text-[#9a5b2f] sm:text-5xl">玄</div>
       </motion.div>
-      <p className="mt-6 text-xl text-[#45564f]">{label}</p>
+      <p className="mt-4 text-lg text-[#45564f] sm:mt-6 sm:text-xl">{label}</p>
     </motion.div>
   );
 }
@@ -176,7 +176,7 @@ function DrawingState({ label }: { label: string }) {
 function StepBadge({ active, done, label }: { active: boolean; done: boolean; label: string }) {
   return (
     <div
-      className={`rounded-md border px-4 py-2 font-semibold ${
+      className={`rounded-md border px-2 py-2 font-semibold sm:px-4 ${
         active
           ? 'border-[#9a5b2f]/50 bg-[#f0dfad]/45 text-[#7a5426]'
           : done
@@ -191,12 +191,12 @@ function StepBadge({ active, done, label }: { active: boolean; done: boolean; la
 
 function EmptyCard({ title, description }: { title: string; description: string }) {
   return (
-    <div className="min-h-[320px] rounded-lg border border-dashed border-[#738275]/35 bg-[#fff9e8]/35 p-8 text-center">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#738275]/35 text-3xl font-bold text-[#738275]">
+    <div className="min-h-[220px] rounded-lg border border-dashed border-[#738275]/35 bg-[#fff9e8]/35 p-5 text-center sm:min-h-[320px] sm:p-8">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#738275]/35 text-2xl font-bold text-[#738275] sm:h-16 sm:w-16 sm:text-3xl">
         ?
       </div>
-      <h2 className="mb-3 text-2xl font-bold text-[#45564f]">{title}</h2>
-      <p className="ink-muted">{description}</p>
+      <h2 className="mb-3 text-xl font-bold text-[#45564f] sm:text-2xl">{title}</h2>
+      <p className="ink-muted text-sm sm:text-base">{description}</p>
     </div>
   );
 }
@@ -209,10 +209,10 @@ function TalentChoicePanel({
   onSelect: (talent: Talent) => void;
 }) {
   return (
-    <div className="ink-panel min-h-[320px] rounded-lg p-5">
+    <div className="ink-panel min-h-[260px] rounded-lg p-4 sm:min-h-[320px] sm:p-5">
       <div className="mb-4 text-center">
         <div className="ink-muted mb-1 text-sm">天赋</div>
-        <h2 className="text-2xl font-bold text-[#45564f]">三道命格</h2>
+        <h2 className="text-xl font-bold text-[#45564f] sm:text-2xl">三道命格</h2>
       </div>
 
       <div className="grid gap-3">
@@ -227,11 +227,11 @@ function TalentChoicePanel({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onSelect(talent)}
-              className="rounded-md border bg-[#fffdf2]/70 p-4 text-left transition hover:bg-[#f7edd0]/80"
+              className="rounded-md border bg-[#fffdf2]/70 p-3 text-left transition hover:bg-[#f7edd0]/80 sm:p-4"
               style={{ borderColor: `${rarityColor}80` }}
             >
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="text-lg font-bold" style={{ color: rarityColor }}>
+                <span className="text-base font-bold sm:text-lg" style={{ color: rarityColor }}>
                   {talent.name}
                 </span>
                 <span
@@ -241,7 +241,7 @@ function TalentChoicePanel({
                   {talent.rarity}
                 </span>
               </div>
-              <p className="mb-3 text-sm leading-relaxed text-[#4f5d55]">{talent.description}</p>
+              <p className="mb-3 text-xs leading-relaxed text-[#4f5d55] sm:text-sm">{talent.description}</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(talent.effect).map(([attr, value]) => (
                   <EffectPill key={attr} label={attr} value={value ?? 0} />
@@ -249,7 +249,7 @@ function TalentChoicePanel({
                 {modifierTexts.map(text => (
                   <span
                     key={text}
-                  className="rounded-full border border-[#738275]/25 bg-[#fff9e8]/80 px-3 py-1 text-sm font-semibold text-[#45564f]"
+                    className="rounded-full border border-[#738275]/25 bg-[#fff9e8]/80 px-2.5 py-1 text-xs font-semibold text-[#45564f] sm:px-3 sm:text-sm"
                   >
                     {text}
                   </span>
@@ -287,18 +287,18 @@ function FateCard({
     <motion.div
       initial={{ scale: 0.96, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className="ink-panel min-h-[320px] rounded-lg border-2 p-7"
+      className="ink-panel min-h-[260px] rounded-lg border-2 p-5 sm:min-h-[320px] sm:p-7"
       style={{ borderColor: rarityColor }}
     >
       <div className="text-center">
         <div className="ink-muted mb-2 text-sm">{title}</div>
         <div
-          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 text-3xl font-bold"
+          className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full border-2 text-2xl font-bold sm:mb-4 sm:h-16 sm:w-16 sm:text-3xl"
           style={{ borderColor: rarityColor, color: rarityColor }}
         >
           {seal}
         </div>
-        <h2 className="mb-2 text-3xl font-bold" style={{ color: rarityColor }}>
+        <h2 className="mb-2 text-2xl font-bold sm:text-3xl" style={{ color: rarityColor }}>
           {name}
         </h2>
         <div
@@ -310,7 +310,7 @@ function FateCard({
         >
           {rarity}
         </div>
-        <p className="ink-muted mb-6 min-h-[48px]">{description}</p>
+        <p className="ink-muted mb-4 min-h-[40px] text-sm sm:mb-6 sm:min-h-[48px] sm:text-base">{description}</p>
 
         {Object.keys(effects).length > 0 && (
           <div className="mb-4">
@@ -346,7 +346,7 @@ function FateCard({
 function EffectPill({ label, value }: { label: string; value: number }) {
   return (
     <span
-      className={`rounded-full border px-3 py-1 text-sm font-semibold ${
+      className={`rounded-full border px-2.5 py-1 text-xs font-semibold sm:px-3 sm:text-sm ${
         value > 0
           ? 'border-[#7f9a78]/45 bg-[#eef3df]/80 text-[#46694f]'
           : 'border-[#b98678]/45 bg-[#f4e2d8]/80 text-[#9a4c35]'

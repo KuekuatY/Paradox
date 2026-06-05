@@ -33,19 +33,19 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#17201d]/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#17201d]/60 p-3 backdrop-blur-sm sm:p-4"
     >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="ink-panel my-auto max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg p-8"
+        className="ink-panel my-auto max-h-[calc(100vh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-lg p-4 sm:max-h-[calc(100vh-2rem)] sm:p-8"
       >
         <div className="text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring' }}
-            className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#a94d37] text-5xl font-bold text-[#a94d37]"
+            className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-[#a94d37] text-4xl font-bold text-[#a94d37] sm:h-24 sm:w-24 sm:text-5xl"
           >
             {isAscended ? '仙' : isMeditationEnd ? '寂' : '终'}
           </motion.div>
@@ -53,7 +53,7 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="ink-title text-4xl font-bold mb-2"
+            className="ink-title mb-2 text-3xl font-bold sm:text-4xl"
           >
             {isAscended ? '飞升成仙' : isMeditationEnd ? '散功坐化' : '寿元耗尽'}
           </motion.h2>
@@ -62,7 +62,7 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-2xl font-bold mb-6"
+            className="mb-5 text-xl font-bold sm:mb-6 sm:text-2xl"
             style={{ color: evaluation.color }}
           >
             {evaluation.icon} {evaluation.text}修仙者
@@ -72,15 +72,15 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="grid grid-cols-2 gap-4 mb-6"
+            className="mb-5 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4"
           >
-            <div className="rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-4">
+            <div className="rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-3 sm:p-4">
               <p className="ink-muted text-sm">最终境界</p>
-              <p className="text-xl font-bold text-[#355d58]">{gameState.currentRealm.name}</p>
+              <p className="text-lg font-bold text-[#355d58] sm:text-xl">{gameState.currentRealm.name}</p>
             </div>
-            <div className="rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-4">
+            <div className="rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-3 sm:p-4">
               <p className="ink-muted text-sm">存活年龄</p>
-              <p className="text-xl font-bold text-[#9a5b2f]">{gameState.age} 岁</p>
+              <p className="text-lg font-bold text-[#9a5b2f] sm:text-xl">{gameState.age} 岁</p>
             </div>
           </motion.div>
 
@@ -88,28 +88,28 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-4 mb-6"
+            className="mb-5 rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-3 sm:mb-6 sm:p-4"
           >
             <p className="ink-muted text-sm mb-2">最终属性</p>
-            <div className="flex justify-around">
+            <div className="grid grid-cols-5 gap-2">
               <span className="text-center">
-                <p className="text-lg font-bold text-[#355d58]">{gameState.attributes.根骨}</p>
+                <p className="text-base font-bold text-[#355d58] sm:text-lg">{gameState.attributes.根骨}</p>
                 <p className="ink-muted text-xs">根骨</p>
               </span>
               <span className="text-center">
-                <p className="text-lg font-bold text-[#355d58]">{gameState.attributes.悟性}</p>
+                <p className="text-base font-bold text-[#355d58] sm:text-lg">{gameState.attributes.悟性}</p>
                 <p className="ink-muted text-xs">悟性</p>
               </span>
               <span className="text-center">
-                <p className="text-lg font-bold text-[#5f7c64]">{gameState.attributes.气运}</p>
+                <p className="text-base font-bold text-[#5f7c64] sm:text-lg">{gameState.attributes.气运}</p>
                 <p className="ink-muted text-xs">气运</p>
               </span>
               <span className="text-center">
-                <p className="text-lg font-bold text-[#9a5b2f]">{gameState.attributes.颜值}</p>
+                <p className="text-base font-bold text-[#9a5b2f] sm:text-lg">{gameState.attributes.颜值}</p>
                 <p className="ink-muted text-xs">颜值</p>
               </span>
               <span className="text-center">
-                <p className="text-lg font-bold text-[#9a5b2f]">{gameState.attributes.家境}</p>
+                <p className="text-base font-bold text-[#9a5b2f] sm:text-lg">{gameState.attributes.家境}</p>
                 <p className="ink-muted text-xs">家境</p>
               </span>
             </div>
@@ -120,15 +120,15 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mb-6 grid grid-cols-2 gap-4"
+              className="mb-5 grid grid-cols-2 gap-3 sm:mb-6 sm:gap-4"
             >
               <div>
                 <p className="ink-muted text-sm">灵根</p>
-                <p className="text-lg text-[#355d58]">{gameState.spiritRoot?.name || '无'}</p>
+                <p className="text-base text-[#355d58] sm:text-lg">{gameState.spiritRoot?.name || '无'}</p>
               </div>
               <div>
                 <p className="ink-muted text-sm">天赋</p>
-                <p className="text-lg text-[#9a5b2f]">{gameState.talent?.name || '无'}</p>
+                <p className="text-base text-[#9a5b2f] sm:text-lg">{gameState.talent?.name || '无'}</p>
               </div>
             </motion.div>
           )}
@@ -137,7 +137,7 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.55 }}
-            className="mb-6 rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-4 text-left"
+            className="mb-5 rounded-lg border border-[#738275]/25 bg-[#fff9e8]/60 p-3 text-left sm:mb-6 sm:p-4"
           >
             <div className="mb-3 flex items-center justify-between">
               <p className="ink-muted text-sm">本世成就</p>
@@ -170,7 +170,7 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex gap-4"
+            className="flex flex-col gap-3 sm:flex-row sm:gap-4"
           >
             <button
               onClick={onRestart}

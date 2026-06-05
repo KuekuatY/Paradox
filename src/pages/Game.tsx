@@ -45,13 +45,13 @@ export default function Game() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden">
       <Background />
       
-      <div className="flex-1 container mx-auto px-4 py-8 z-10">
+      <div className="container z-10 mx-auto flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:py-8">
         <div className="mx-auto max-w-[1500px]">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-5">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-12">
+            <div className="order-2 lg:order-1 lg:col-span-5">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -61,12 +61,12 @@ export default function Game() {
               </motion.div>
             </div>
 
-            <div className="lg:col-span-7">
+            <div className="order-1 lg:order-2 lg:col-span-7">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <AnimatePresence mode="wait">
                   {gameState.status === 'idle' ? (
@@ -91,7 +91,7 @@ export default function Game() {
                         onContinue={handleContinue}
                         onMeditationEnd={handleMeditationEnd}
                       />
-                      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                      <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
                         <AchievementPanel achievements={gameState.achievements} />
                         <RecentEvents events={gameState.events} />
                       </div>
