@@ -563,8 +563,8 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   const successRate = isNeutralEvent
     ? 0.5
     : clampRate(calculateEventSuccessRate(event, gameState) + (choice?.successModifier ?? 0));
-  const result = calculateEventOutcome(successRate, isNeutralEvent);
-  const resolvedEffects = resolveEventEffects(event, result);
+  const result = event.type === 'childhood' ? 'neutral' : calculateEventOutcome(successRate, isNeutralEvent);
+  const resolvedEffects = event.type === 'childhood' ? event.effects : resolveEventEffects(event, result);
   const chosenEffects = choice
     ? mergeEffects(scaleEventEffectsForChoice(resolvedEffects, choice), resolveChoiceEffects(gameState, choice))
     : resolvedEffects;
