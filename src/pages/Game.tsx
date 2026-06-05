@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import Background from '@/components/layout/Background';
-import StatusPanel from '@/components/game/StatusPanel';
+import StatusPanel, { AchievementPanel, RecentEvents } from '@/components/game/StatusPanel';
 import EventDisplay from '@/components/game/EventDisplay';
 import TalentDraw from '@/components/game/TalentDraw';
 import GameOverModal from '@/components/game/GameOverModal';
@@ -49,9 +49,9 @@ export default function Game() {
       <Background />
       
       <div className="flex-1 container mx-auto px-4 py-8 z-10">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-5">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -61,7 +61,7 @@ export default function Game() {
               </motion.div>
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-7">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -91,6 +91,10 @@ export default function Game() {
                         onContinue={handleContinue}
                         onMeditationEnd={handleMeditationEnd}
                       />
+                      <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                        <AchievementPanel achievements={gameState.achievements} />
+                        <RecentEvents events={gameState.events} />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

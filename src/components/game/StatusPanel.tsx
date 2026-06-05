@@ -16,99 +16,103 @@ export default function StatusPanel() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="ink-panel rounded-lg p-6"
+      className="ink-panel rounded-lg p-5"
     >
-      <div className="text-center mb-6">
-        <div className="text-sm text-[#66766e] mb-2">当前境界</div>
-        <motion.div
-          key={currentRealm.name}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="ink-title text-3xl font-bold"
-        >
-          {currentRealm.name}
-        </motion.div>
-        <p className="ink-muted text-xs mt-1">{currentRealm.description}</p>
-      </div>
-
-      {(spiritRoot || talent) && (
-        <div className="border-b border-[#738275]/30 pb-4 mb-4">
-          <div className="grid grid-cols-1 gap-3">
-            {spiritRoot && (
-              <FateSummary
-                label="灵根"
-                name={spiritRoot.name}
-                rarity={spiritRoot.rarity}
-                description={spiritRoot.description}
-              />
-            )}
-            {talent && (
-              <FateSummary
-                label="天赋"
-                name={talent.name}
-                rarity={talent.rarity}
-                description={talent.description}
-              />
-            )}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div>
+          <div className="mb-5 text-center">
+            <div className="mb-2 text-sm text-[#66766e]">当前境界</div>
+            <motion.div
+              key={currentRealm.name}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="ink-title text-3xl font-bold"
+            >
+              {currentRealm.name}
+            </motion.div>
+            <p className="ink-muted mt-1 text-xs">{currentRealm.description}</p>
           </div>
-        </div>
-      )}
 
-      <div className="space-y-2 mb-4">
-        <div className="flex justify-between text-sm">
-          <span className="ink-muted">年龄</span>
-          <span className="font-semibold text-[#263832]">{age} 岁</span>
-        </div>
-        <div className="relative h-2 bg-[#c8c2a9] rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${lifespanPercent}%` }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#5f7c64] via-[#b49a4b] to-[#9b4b35]"
+          <div className="mb-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="ink-muted">年龄</span>
+              <span className="font-semibold text-[#263832]">{age} 岁</span>
+            </div>
+            <div className="relative h-2 overflow-hidden rounded-full bg-[#c8c2a9]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${lifespanPercent}%` }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#5f7c64] via-[#b49a4b] to-[#9b4b35]"
+              />
+            </div>
+            <div className="ink-muted text-right text-xs">
+              寿命: {lifespan === Infinity ? '无尽' : `${lifespan} 年`}
+            </div>
+          </div>
+
+          <CultivationProgress
+            currentRealmName={currentRealm.name}
+            progress={cultivationProgress}
+          />
+
+          <BreakthroughRequirements
+            currentRealmName={currentRealm.name}
+            attributes={attributes}
           />
         </div>
-        <div className="ink-muted text-xs text-right">
-          寿命: {lifespan === Infinity ? '无尽' : `${lifespan} 年`}
+
+        <div className="space-y-4">
+          {(spiritRoot || talent) && (
+            <div className="grid grid-cols-1 gap-3">
+              {spiritRoot && (
+                <FateSummary
+                  label="灵根"
+                  name={spiritRoot.name}
+                  rarity={spiritRoot.rarity}
+                  description={spiritRoot.description}
+                />
+              )}
+              {talent && (
+                <FateSummary
+                  label="天赋"
+                  name={talent.name}
+                  rarity={talent.rarity}
+                  description={talent.description}
+                />
+              )}
+            </div>
+          )}
+
+          {gameState.status === 'playing' && (
+            <LifeGoalPanel
+              activeGoal={gameState.activeGoal}
+              completedCount={gameState.completedGoals.length}
+            />
+          )}
+
+          {gameState.status === 'playing' && (
+            <StrategyPanel
+              selectedStrategy={gameState.strategy}
+              onSelect={setStrategy}
+            />
+          )}
         </div>
       </div>
 
-      <CultivationProgress
-        currentRealmName={currentRealm.name}
-        progress={cultivationProgress}
-      />
-
-      <BreakthroughRequirements
-        currentRealmName={currentRealm.name}
-        attributes={attributes}
-      />
-
-      {gameState.status === 'playing' && (
-        <LifeGoalPanel
-          activeGoal={gameState.activeGoal}
-          completedCount={gameState.completedGoals.length}
-        />
-      )}
-
-      {gameState.status === 'playing' && (
-        <StrategyPanel
-          selectedStrategy={gameState.strategy}
-          onSelect={setStrategy}
-        />
-      )}
-
-      <div className="space-y-3">
-        <div className="mb-2 flex items-center justify-between text-xs">
-          <span className="ink-muted">属性</span>
-          <span className="text-[#66766e]">当前上限 {currentRealm.attributeCap}</span>
+      <div className="mt-5">
+        <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+          <div className="mb-3 flex items-center justify-between text-xs">
+            <span className="font-semibold text-[#45564f]">属性</span>
+            <span className="text-[#66766e]">当前上限 {currentRealm.attributeCap}</span>
+          </div>
+          <div className="space-y-3">
+            {Object.entries(attributes).map(([key, value]) => (
+              <AttributeBar key={key} name={key} value={value} cap={currentRealm.attributeCap} />
+            ))}
+          </div>
         </div>
-        {Object.entries(attributes).map(([key, value]) => (
-          <AttributeBar key={key} name={key} value={value} cap={currentRealm.attributeCap} />
-        ))}
       </div>
-
-      <AchievementPanel achievements={gameState.achievements} />
-
-      <RecentEvents events={gameState.events} />
     </motion.div>
   );
 }
@@ -184,7 +188,7 @@ function BreakthroughRequirements({
 
   if (!nextRealm) {
     return (
-      <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3 text-center">
+      <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3 text-center">
         <div className="text-xs text-[#66766e]">突破门槛</div>
         <div className="mt-1 font-bold text-[#9a5b2f]">大道圆满</div>
       </div>
@@ -194,7 +198,7 @@ function BreakthroughRequirements({
   const requirementItems = getRequirementItems(nextRealm, attributes);
 
   return (
-    <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="ink-muted">突破门槛</span>
         <span className="font-semibold text-[#263832]">{nextRealm.name}</span>
@@ -226,7 +230,7 @@ function StrategyPanel({
   const selected = cultivationStrategies.find(strategy => strategy.id === selectedStrategy) ?? cultivationStrategies[0];
 
   return (
-    <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="font-semibold text-[#45564f]">修炼策略</span>
         <span className="text-xs text-[#66766e]">当前偏向 {selected.focus}</span>
@@ -269,7 +273,7 @@ function LifeGoalPanel({
 
   if (!activeGoal || !definition) {
     return (
-      <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3 text-sm text-[#66766e]">
+      <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3 text-sm text-[#66766e]">
         道途目标将在入世后显现。
       </div>
     );
@@ -279,7 +283,7 @@ function LifeGoalPanel({
   const rewardEntries = Object.entries(definition.reward).filter(([, value]) => value !== undefined);
 
   return (
-    <div className="mb-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="font-semibold text-[#45564f]">道途目标</span>
         <span className="text-xs text-[#66766e]">已成 {completedCount}</span>
@@ -323,12 +327,12 @@ function LifeGoalPanel({
   );
 }
 
-function AchievementPanel({ achievements }: { achievements: string[] }) {
+export function AchievementPanel({ achievements }: { achievements: string[] }) {
   const unlocked = new Set(achievements);
   const visibleAchievements = achievementCatalog.slice(0, 8);
 
   return (
-    <div className="mt-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="font-semibold text-[#45564f]">成就</span>
         <span className="text-xs text-[#66766e]">
@@ -373,13 +377,13 @@ function AchievementPanel({ achievements }: { achievements: string[] }) {
   );
 }
 
-function RecentEvents({ events }: { events: GameEvent[] }) {
+export function RecentEvents({ events }: { events: GameEvent[] }) {
   const recentEvents = events.slice(-4).reverse();
 
   if (recentEvents.length === 0) return null;
 
   return (
-    <div className="mt-5 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-4 py-3">
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="font-semibold text-[#45564f]">最近年表</span>
         <span className="text-xs text-[#66766e]">{events.length} 事</span>
