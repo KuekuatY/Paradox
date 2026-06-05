@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { cultivationPaths } from '@/data/cultivationPaths';
-import type { CombatReport, CultivationPath, EventChoice } from '@/types';
+import { getItem } from '@/data/items';
+import type { CombatReport, CultivationPath, EventChoice, InventoryReward } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -187,6 +188,10 @@ export default function EventDisplay({
         {!isPendingChoice && currentEvent?.combat && (
           <CombatReportPanel report={currentEvent.combat} />
         )}
+
+        {!isPendingChoice && currentEvent?.itemRewards && currentEvent.itemRewards.length > 0 && (
+          <ItemRewardPanel rewards={currentEvent.itemRewards} />
+        )}
         
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {effectEntries.length > 0 && (
@@ -299,6 +304,27 @@ export default function EventDisplay({
         </>
       )}
     </motion.div>
+  );
+}
+
+function ItemRewardPanel({ rewards }: { rewards: InventoryReward[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-[#a9823c]/25 bg-[#f0dfad]/35 px-3 py-2">
+      <span className="text-xs font-semibold text-[#7a5426]">储物戒</span>
+      {rewards.map(reward => {
+        const item = getItem(reward.itemId);
+        if (!item) return null;
+
+        return (
+          <span
+            key={reward.itemId}
+            className="rounded-full bg-[#fffdf2]/75 px-3 py-1 text-xs font-bold text-[#355d58]"
+          >
+            {item.name} x{reward.quantity}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

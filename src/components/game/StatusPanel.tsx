@@ -4,7 +4,8 @@ import { realms } from '@/data/realms';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
-import type { ActiveLifeGoal, Attributes, CombatStats, CultivationPathId, GameEvent, Realm } from '@/types';
+import { getItem } from '@/data/items';
+import type { ActiveLifeGoal, Attributes, CombatStats, CultivationPathId, GameEvent, InventoryEntry, Realm } from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
@@ -95,6 +96,13 @@ export default function StatusPanel({
 
           {gameState.status === 'playing' && currentRealm.name !== '幼年期' && (
             <CombatStatsPanel combatStats={combatStats} />
+          )}
+
+          {gameState.status === 'playing' && (
+            <InventoryPanel
+              inventory={gameState.inventory}
+              canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+            />
           )}
         </div>
       </div>
@@ -276,6 +284,93 @@ export function BreakthroughRequirements({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function InventoryPanel({
+  inventory,
+  canUse
+}: {
+  inventory: InventoryEntry[];
+  canUse: boolean;
+}) {
+  const { useInventoryItem } = useGameStore();
+  const entries = inventory
+    .map(entry => ({ ...entry, item: getItem(entry.itemId) }))
+    .filter((entry): entry is InventoryEntry & { item: NonNullable<ReturnType<typeof getItem>> } => !!entry.item);
+
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">储物戒</span>
+        <span className="text-xs text-[#66766e]">{entries.length} 类</span>
+      </div>
+      {entries.length === 0 ? (
+        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-3 text-sm text-[#66766e]">
+          戒中尚无可用之物。
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+          {entries.map(({ itemId, quantity, item }) => {
+            const usable = canUse && item.usable;
+
+            return (
+              <div
+                key={itemId}
+                className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-2"
+              >
+                <div className="mb-1 flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-bold" style={{ color: getRarityColor(item.rarity) }}>
+                      {item.name}
+                    </div>
+                    <div className="text-xs font-semibold text-[#6d634d]">
+                      {item.type} · {item.rarity}
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-[#e7eddd] px-2 py-0.5 text-xs font-bold text-[#355d58]">
+                    x{quantity}
+                  </span>
+                </div>
+                <p className="line-clamp-2 text-xs leading-relaxed text-[#66766e]">
+                  {item.description}
+                </p>
+                {item.effects && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {Object.entries(item.effects).map(([key, value]) => (
+                      <span
+                        key={key}
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          typeof value === 'number' && value < 0
+                            ? 'bg-[#f2d9d2] text-[#9d3d2f]'
+                            : 'bg-[#e7eddd] text-[#355d58]'
+                        }`}
+                      >
+                        {key} {typeof value === 'number' && value > 0 ? '+' : ''}{String(value)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {item.usable && (
+                  <button
+                    type="button"
+                    disabled={!usable}
+                    onClick={() => useInventoryItem(itemId)}
+                    className={`mt-2 w-full rounded border px-3 py-1.5 text-xs font-bold transition ${
+                      usable
+                        ? 'border-[#738275]/30 bg-[#eef3df] text-[#355d58] hover:border-[#9a5b2f]/45'
+                        : 'border-[#738275]/15 bg-[#eee8d4]/45 text-[#8d947f]'
+                    }`}
+                  >
+                    使用
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

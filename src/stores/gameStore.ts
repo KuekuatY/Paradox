@@ -6,6 +6,7 @@ import { childhoodEvents, events } from '@/data/events';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
+import { getItem } from '@/data/items';
 import type {
   ActiveLifeGoal,
   EventChoice,
@@ -18,7 +19,9 @@ import type {
   CultivationPathId,
   LifeGoalDefinition,
   CombatReport,
-  CombatStats
+  CombatStats,
+  InventoryEntry,
+  InventoryReward
 } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
@@ -31,6 +34,7 @@ interface GameStore {
   chooseCultivationPath: (pathId: CultivationPathId) => void;
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
+  useInventoryItem: (itemId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
   processEvent: () => void;
@@ -68,6 +72,7 @@ const initialState: GameState = {
   },
   familyWealth: BASE_ATTRIBUTE_VALUE,
   combatStats: initialCombatStats,
+  inventory: [],
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
@@ -107,6 +112,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       attributes: initialAttributes,
       familyWealth: initialFamilyWealth,
       combatStats: initialCombatStats,
+      inventory: [],
       spiritRoot,
       talent,
       cultivationPath: null,
@@ -191,6 +197,62 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       gameState: resolveGameEvent(gameState, event, choice)
+    });
+
+    get().checkGameEnd();
+  },
+
+  useInventoryItem: (itemId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+
+    const item = getItem(itemId);
+    const inventoryEntry = gameState.inventory.find(entry => entry.itemId === itemId);
+    if (!item || !item.usable || !item.effects || !inventoryEntry || inventoryEntry.quantity <= 0) return;
+
+    const progressDelta = calculateCultivationProgressDelta(gameState, {
+      id: `use-item-${item.id}`,
+      age: gameState.age,
+      type: 'resource',
+      title: `使用${item.name}`,
+      description: item.description,
+      effects: item.effects,
+      result: 'neutral'
+    }, item.effects);
+    const lifespanDelta = calculateLifespanDelta(gameState, {
+      id: `use-item-${item.id}`,
+      age: gameState.age,
+      type: 'resource',
+      title: `使用${item.name}`,
+      description: item.description,
+      effects: item.effects,
+      result: 'neutral'
+    }, item.effects);
+    const itemEvent: GameEvent = {
+      id: `use-item-${item.id}-${Date.now()}`,
+      age: gameState.age,
+      type: 'resource',
+      title: `使用${item.name}`,
+      description: `你从储物戒中取出${item.name}，${item.description}`,
+      effects: item.effects,
+      appliedEffects: buildAppliedEffects(item.effects, progressDelta, lifespanDelta),
+      result: 'neutral'
+    };
+    const stateAfterUse: GameState = {
+      ...gameState,
+      attributes: applyAttributeEffects(gameState, item.effects),
+      familyWealth: applyFamilyWealthEffects(gameState, item.effects),
+      lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+      cultivationProgress: clampProgress(
+        gameState.cultivationProgress + progressDelta,
+        getRequiredCultivationProgress(gameState)
+      ),
+      inventory: removeInventoryItem(gameState.inventory, itemId, 1),
+      events: [...gameState.events, itemEvent]
+    };
+
+    set({
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterUse, itemEvent))
     });
 
     get().checkGameEnd();
@@ -599,11 +661,13 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
+  const itemRewards = generateEventItemRewards(event, result);
   const newEvent: GameEvent = {
     ...event,
     title: choice ? `${event.title}：${choice.label}` : event.title,
     description: choice ? `${event.description}你选择${choice.label}，${choice.outcome}` : event.description,
     appliedEffects,
+    ...(itemRewards.length > 0 ? { itemRewards } : {}),
     result
   };
   const stateAfterEvent: GameState = {
@@ -613,6 +677,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     familyWealth: newFamilyWealth,
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+    inventory: addInventoryRewards(gameState.inventory, itemRewards),
     events: [...gameState.events, newEvent]
   };
 
@@ -652,6 +717,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
+  const itemRewards = generateCombatItemRewards(event, combatResult.result);
   const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
   const newEvent: GameEvent = {
     ...event,
@@ -659,6 +725,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     description: `${event.description}${choiceText}${combatResult.report.resultText}`,
     appliedEffects,
     combat: combatResult.report,
+    ...(itemRewards.length > 0 ? { itemRewards } : {}),
     result: combatResult.result
   };
   const stateAfterEvent: GameState = {
@@ -669,6 +736,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.result),
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+    inventory: addInventoryRewards(gameState.inventory, itemRewards),
     events: [...gameState.events, newEvent]
   };
 
@@ -1117,6 +1185,146 @@ function mergeEffects(...effectsList: GameEvent['effects'][]): GameEvent['effect
 
     return merged;
   }, {});
+}
+
+function addInventoryRewards(
+  inventory: InventoryEntry[],
+  rewards: InventoryReward[]
+): InventoryEntry[] {
+  if (rewards.length === 0) return inventory;
+
+  const inventoryMap = new Map(inventory.map(entry => [entry.itemId, entry.quantity]));
+  rewards.forEach(reward => {
+    if (reward.quantity <= 0 || !getItem(reward.itemId)) return;
+    inventoryMap.set(reward.itemId, (inventoryMap.get(reward.itemId) ?? 0) + reward.quantity);
+  });
+
+  return Array.from(inventoryMap.entries())
+    .map(([itemId, quantity]) => ({ itemId, quantity }))
+    .filter(entry => entry.quantity > 0);
+}
+
+function removeInventoryItem(
+  inventory: InventoryEntry[],
+  itemId: string,
+  quantity: number
+): InventoryEntry[] {
+  return inventory
+    .map(entry => entry.itemId === itemId
+      ? { ...entry, quantity: entry.quantity - quantity }
+      : entry
+    )
+    .filter(entry => entry.quantity > 0);
+}
+
+function generateEventItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
+  if (event.type === 'childhood' || result === 'great-failure' || result === 'failure') return [];
+
+  const chance = result === 'great-success'
+    ? 0.85
+    : result === 'success'
+      ? 0.65
+      : 0.22;
+  if (Math.random() > chance) return [];
+
+  switch (event.type) {
+    case 'cultivation':
+      return rollOneReward([
+        ['qi-gathering-pill', 0.55],
+        ['soul-nourishing-pill', 0.18],
+        ['spirit-herb', 0.27]
+      ]);
+    case 'encounter':
+      return rollOneReward([
+        ['old-manual-page', 0.38],
+        ['fortune-talisman', 0.22],
+        ['spirit-stone-pouch', 0.4]
+      ]);
+    case 'resource':
+      return rollOneReward([
+        ['spirit-herb', 0.45],
+        ['qi-gathering-pill', 0.2],
+        ['spirit-stone-pouch', 0.35]
+      ], result === 'great-success' ? 2 : 1);
+    case 'mind':
+      return rollOneReward([
+        ['old-manual-page', 0.35],
+        ['soul-nourishing-pill', 0.35],
+        ['fortune-talisman', 0.3]
+      ]);
+    case 'sect':
+      return rollOneReward([
+        ['qi-gathering-pill', 0.4],
+        ['bone-tempering-pill', 0.22],
+        ['spirit-stone-pouch', 0.38]
+      ]);
+    default:
+      return [];
+  }
+}
+
+function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
+  const isWin = result === 'success' || result === 'great-success';
+  if (!isWin && Math.random() > 0.12) return [];
+
+  const quantity = result === 'great-success' ? 2 : 1;
+  switch (event.id) {
+    case 'combat-beast-hunt':
+      return rollOneReward([
+        ['beast-core', 0.55],
+        ['spirit-herb', 0.3],
+        ['bone-tempering-pill', 0.15]
+      ], quantity);
+    case 'combat-demonic-cultivator':
+    case 'combat-heart-devil':
+      return rollOneReward([
+        ['blood-jade', 0.45],
+        ['fortune-talisman', 0.25],
+        ['soul-nourishing-pill', 0.3]
+      ], quantity);
+    case 'combat-ancient-beast':
+      return rollOneReward([
+        ['ancient-scale', 0.55],
+        ['blood-jade', 0.25],
+        ['bone-tempering-pill', 0.2]
+      ], quantity);
+    case 'combat-caravan-escort':
+      return rollOneReward([
+        ['spirit-stone-pouch', 0.55],
+        ['qi-gathering-pill', 0.3],
+        ['spirit-herb', 0.15]
+      ], quantity);
+    case 'combat-sword-contest':
+    case 'combat-arena-duel':
+      return rollOneReward([
+        ['old-manual-page', 0.35],
+        ['bone-tempering-pill', 0.28],
+        ['spirit-stone-pouch', 0.37]
+      ], quantity);
+    default:
+      return rollOneReward([
+        ['beast-core', 0.4],
+        ['spirit-stone-pouch', 0.35],
+        ['qi-gathering-pill', 0.25]
+      ], quantity);
+  }
+}
+
+function rollOneReward(
+  candidates: Array<[string, number]>,
+  quantity = 1
+): InventoryReward[] {
+  const totalWeight = candidates.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const [itemId, weight] of candidates) {
+    roll -= weight;
+    if (roll <= 0) {
+      return [{ itemId, quantity }];
+    }
+  }
+
+  return [{ itemId: candidates[0][0], quantity }];
 }
 
 function getPreparationAction(actionId: string, realmLevel: number): PreparationAction | undefined {

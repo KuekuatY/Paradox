@@ -12,6 +12,7 @@ import StatusPanel, {
   CultivationPathPanel,
   CurrentRealmSummary,
   FateSummary,
+  InventoryPanel,
   LifeGoalPanel,
   RecentEvents
 } from '@/components/game/StatusPanel';
@@ -19,7 +20,7 @@ import EventDisplay, { PreparationPanel } from '@/components/game/EventDisplay';
 import TalentDraw from '@/components/game/TalentDraw';
 import GameOverModal from '@/components/game/GameOverModal';
 
-type MobileTab = 'event' | 'status' | 'goal' | 'breakthrough' | 'records';
+type MobileTab = 'event' | 'status' | 'goal' | 'inventory' | 'breakthrough' | 'records';
 
 export default function Game() {
   const navigate = useNavigate();
@@ -220,6 +221,20 @@ export default function Game() {
                       </motion.div>
                     )}
 
+                    {mobileTab === 'inventory' && (
+                      <motion.div
+                        key="mobile-inventory"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                      >
+                        <InventoryPanel
+                          inventory={gameState.inventory}
+                          canUse={!gameState.pendingEvent && !gameState.pendingPathChoice}
+                        />
+                      </motion.div>
+                    )}
+
                     {mobileTab === 'records' && (
                       <motion.div
                         key="mobile-records"
@@ -261,13 +276,14 @@ function MobileGameNav({
     { id: 'event', label: '修行' },
     { id: 'status', label: '状态' },
     { id: 'goal', label: '道途' },
+    { id: 'inventory', label: '储物' },
     { id: 'breakthrough', label: '突破' },
     { id: 'records', label: '成就' }
   ];
 
   return (
     <div className="fixed left-3 right-3 top-3 z-30 rounded-md border border-[#738275]/25 bg-[#fff9e8]/90 p-1 shadow-md backdrop-blur">
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-6 gap-1">
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
 
@@ -276,7 +292,7 @@ function MobileGameNav({
               key={tab.id}
               type="button"
               onClick={() => onSelect(tab.id)}
-              className={`min-h-[40px] rounded px-1 text-sm font-semibold transition ${
+              className={`min-h-[40px] rounded px-1 text-xs font-semibold transition min-[390px]:text-sm ${
                 isActive
                   ? 'bg-[#355d58] text-[#fff9e8] shadow-sm'
                   : 'text-[#59645f] hover:bg-[#eef3df]'

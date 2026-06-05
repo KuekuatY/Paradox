@@ -2,6 +2,8 @@ export type EventType = 'childhood' | 'cultivation' | 'combat' | 'encounter' | '
 
 export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极品' | '神话' | '传说';
 
+export type ItemType = '丹药' | '灵材' | '法器' | '功法' | '杂物';
+
 export type AttributeEffect = Partial<Attributes> & {
   家境?: number;
 };
@@ -112,6 +114,7 @@ export interface GameState {
   attributes: Attributes;
   familyWealth: number;
   combatStats: CombatStats;
+  inventory: InventoryEntry[];
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
@@ -154,9 +157,30 @@ export interface GameEvent {
   };
   appliedEffects?: GameEvent['effects'];
   combat?: CombatReport;
+  itemRewards?: InventoryReward[];
   result: 'success' | 'failure' | 'neutral' | 'great-success' | 'great-failure';
   isEnding?: boolean;
   endingType?: 'died' | 'ascended';
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  type: ItemType;
+  rarity: Rarity;
+  description: string;
+  usable: boolean;
+  effects?: GameEvent['effects'];
+}
+
+export interface InventoryEntry {
+  itemId: string;
+  quantity: number;
+}
+
+export interface InventoryReward {
+  itemId: string;
+  quantity: number;
 }
 
 export interface CombatStats {
