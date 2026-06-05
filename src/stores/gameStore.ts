@@ -25,6 +25,7 @@ interface GameStore {
   startNewGame: (selectedSpiritRoot?: SpiritRoot, selectedTalent?: Talent) => void;
   drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
+  drawTalentOptions: (count?: number) => Talent[];
   setStrategy: (strategyId: CultivationStrategyId) => void;
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
@@ -114,6 +115,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   drawTalent: () => {
     return pickByProbability(talents);
+  },
+
+  drawTalentOptions: (count = 3) => {
+    return pickManyByProbability(talents, count);
   },
 
   setStrategy: (strategyId) => {
@@ -373,6 +378,19 @@ function pickByProbability<T extends { probability: number }>(items: T[]): T {
   }
 
   return items[0];
+}
+
+function pickManyByProbability<T extends { probability: number }>(items: T[], count: number): T[] {
+  const pool = [...items];
+  const pickedItems: T[] = [];
+
+  while (pickedItems.length < count && pool.length > 0) {
+    const picked = pickByProbability(pool);
+    pickedItems.push(picked);
+    pool.splice(pool.indexOf(picked), 1);
+  }
+
+  return pickedItems;
 }
 
 function selectAvailableEvent(gameState: GameState): GameEvent {

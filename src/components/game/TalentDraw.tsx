@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import type { AttributeEffect, GrowthModifiers, Rarity, SpiritRoot, Talent } from '@/types';
 
-type DrawStep = 'spiritRoot' | 'talent' | 'ready';
+type DrawStep = 'spiritRoot' | 'talent' | 'selectTalent' | 'ready';
 
 export default function TalentDraw() {
-  const { drawSpiritRoot, drawTalent, startNewGame } = useGameStore();
+  const { drawSpiritRoot, drawTalentOptions, startNewGame } = useGameStore();
   const [step, setStep] = useState<DrawStep>('spiritRoot');
   const [currentSpiritRoot, setCurrentSpiritRoot] = useState<SpiritRoot | null>(null);
   const [currentTalent, setCurrentTalent] = useState<Talent | null>(null);
+  const [talentOptions, setTalentOptions] = useState<Talent[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
   const handleDrawSpiritRoot = () => {
@@ -26,10 +27,16 @@ export default function TalentDraw() {
     setIsDrawing(true);
 
     setTimeout(() => {
-      setCurrentTalent(drawTalent());
-      setStep('ready');
+      setTalentOptions(drawTalentOptions(3));
+      setCurrentTalent(null);
+      setStep('selectTalent');
       setIsDrawing(false);
     }, 1200);
+  };
+
+  const handleSelectTalent = (talent: Talent) => {
+    setCurrentTalent(talent);
+    setStep('ready');
   };
 
   const handleConfirm = () => {
@@ -53,7 +60,7 @@ export default function TalentDraw() {
           >
             <div className="mb-6 grid grid-cols-2 gap-3 text-center text-sm">
               <StepBadge active={step === 'spiritRoot'} done={!!currentSpiritRoot} label="一观灵根" />
-              <StepBadge active={step !== 'spiritRoot'} done={!!currentTalent} label="二定天赋" />
+              <StepBadge active={step !== 'spiritRoot' && !currentTalent} done={!!currentTalent} label="二择天赋" />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -81,6 +88,8 @@ export default function TalentDraw() {
                   modifiers={currentTalent.modifiers}
                   seal="命"
                 />
+              ) : talentOptions.length > 0 ? (
+                <TalentChoicePanel choices={talentOptions} onSelect={handleSelectTalent} />
               ) : (
                 <EmptyCard title="天赋未定" description="灵根落定后，再推演此生天赋。" />
               )}
@@ -112,6 +121,10 @@ export default function TalentDraw() {
                 >
                   抽取天赋
                 </motion.button>
+              )}
+
+              {step === 'selectTalent' && (
+                <p className="text-[#4f5d55]">三道命格已现，择其一而定此生。</p>
               )}
 
               {step === 'ready' && (
@@ -184,6 +197,68 @@ function EmptyCard({ title, description }: { title: string; description: string 
       </div>
       <h2 className="mb-3 text-2xl font-bold text-[#45564f]">{title}</h2>
       <p className="ink-muted">{description}</p>
+    </div>
+  );
+}
+
+function TalentChoicePanel({
+  choices,
+  onSelect
+}: {
+  choices: Talent[];
+  onSelect: (talent: Talent) => void;
+}) {
+  return (
+    <div className="ink-panel min-h-[320px] rounded-lg p-5">
+      <div className="mb-4 text-center">
+        <div className="ink-muted mb-1 text-sm">天赋</div>
+        <h2 className="text-2xl font-bold text-[#45564f]">三道命格</h2>
+      </div>
+
+      <div className="grid gap-3">
+        {choices.map(talent => {
+          const rarityColor = getRarityColor(talent.rarity);
+          const modifierTexts = formatModifiers(talent.modifiers);
+
+          return (
+            <motion.button
+              key={talent.id}
+              type="button"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelect(talent)}
+              className="rounded-md border bg-[#fffdf2]/70 p-4 text-left transition hover:bg-[#f7edd0]/80"
+              style={{ borderColor: `${rarityColor}80` }}
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="text-lg font-bold" style={{ color: rarityColor }}>
+                  {talent.name}
+                </span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                  style={{ backgroundColor: `${rarityColor}20`, color: rarityColor }}
+                >
+                  {talent.rarity}
+                </span>
+              </div>
+              <p className="mb-3 text-sm leading-relaxed text-[#4f5d55]">{talent.description}</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(talent.effect).map(([attr, value]) => (
+                  <EffectPill key={attr} label={attr} value={value ?? 0} />
+                ))}
+                {modifierTexts.map(text => (
+                  <span
+                    key={text}
+                  className="rounded-full border border-[#738275]/25 bg-[#fff9e8]/80 px-3 py-1 text-sm font-semibold text-[#45564f]"
+                  >
+                    {text}
+                  </span>
+                ))}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
     </div>
   );
 }
