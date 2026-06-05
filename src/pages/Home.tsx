@@ -39,7 +39,7 @@ export default function Home() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="ink-title mb-4 text-4xl font-bold tracking-normal sm:text-6xl md:text-8xl"
         >
-          修仙模拟器
+          问道轮回
         </motion.h1>
         
         <motion.p
@@ -48,7 +48,7 @@ export default function Home() {
           transition={{ delay: 0.4 }}
           className="mb-8 text-xl text-[#6d5a36] sm:mb-12 sm:text-2xl md:text-3xl"
         >
-          问道重生
+          一念入世
         </motion.p>
 
         <motion.div
