@@ -137,6 +137,13 @@ export function getAvailableTechniqueRewards(
 ): TechniqueDefinition[] {
   const knownSet = new Set(knownTechniqueIds);
   const currentGrade = getTechniqueGradeForRealm(realmLevel);
+  const alreadyKnowsCurrentGrade = techniques.some(technique => {
+    return technique.pathId === pathId
+      && technique.grade === currentGrade
+      && knownSet.has(technique.id);
+  });
+
+  if (alreadyKnowsCurrentGrade) return [];
 
   return techniques.filter(technique => {
     return technique.pathId === pathId
