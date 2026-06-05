@@ -1,6 +1,6 @@
 export type EventType = 'cultivation' | 'encounter' | 'social' | 'disaster' | 'daily' | 'resource' | 'mind' | 'sect';
 
-export type Rarity = '凡品' | '下品' | '中品' | '上品' | '极品' | '神话' | '传说';
+export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极品' | '神话' | '传说';
 
 export type AttributeEffect = Partial<Attributes>;
 

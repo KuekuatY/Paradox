@@ -58,7 +58,17 @@ export const events: GameEvent[] = [
     title: '丹火初炽',
     description: '体内火行灵机一振，修炼速度骤然拔高，但气血也被烧得躁动。',
     weight: 0.45,
-    conditions: { spiritRootIds: ['fire-root', 'heaven-root', 'chaos-root'] },
+    conditions: {
+      spiritRootIds: [
+        'fire-root',
+        'dual-wood-fire-root',
+        'dual-fire-earth-root',
+        'dual-water-fire-root',
+        'dual-fire-metal-root',
+        'tiandao-root',
+        'chaos-root'
+      ]
+    },
     effects: { 修为: 18, 根骨: 5, 寿命: -2 },
     result: 'success'
   },
@@ -69,7 +79,18 @@ export const events: GameEvent[] = [
     title: '水月入怀',
     description: '水行灵息化作清凉月影，洗去杂念，让你对道法有了新的体会。',
     weight: 0.45,
-    conditions: { spiritRootIds: ['water-root', 'chaos-root'] },
+    conditions: {
+      spiritRootIds: [
+        'water-root',
+        'dual-water-wood-root',
+        'dual-metal-water-root',
+        'dual-earth-water-root',
+        'dual-water-fire-root',
+        'ice-root',
+        'tiandao-root',
+        'chaos-root'
+      ]
+    },
     effects: { 悟性: 6, 修为: 12 },
     result: 'success'
   },
@@ -80,8 +101,72 @@ export const events: GameEvent[] = [
     title: '草木回春',
     description: '你在林间静坐，草木生机与灵息互相牵引，连旧伤都淡了几分。',
     weight: 0.45,
-    conditions: { spiritRootIds: ['wood-root', 'chaos-root'] },
+    conditions: {
+      spiritRootIds: [
+        'wood-root',
+        'dual-water-wood-root',
+        'dual-wood-fire-root',
+        'dual-wood-earth-root',
+        'dual-metal-wood-root',
+        'tiandao-root',
+        'chaos-root'
+      ]
+    },
     effects: { 根骨: 4, 寿命: 3, 修为: 9 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-metal-root-edge',
+    age: 0,
+    type: 'cultivation',
+    title: '金气淬锋',
+    description: '金行灵机在经脉中凝成锋芒，淬骨如磨剑，痛楚之后根基更锐。',
+    weight: 0.45,
+    conditions: {
+      spiritRootIds: [
+        'metal-root',
+        'dual-earth-metal-root',
+        'dual-metal-water-root',
+        'dual-fire-metal-root',
+        'dual-metal-wood-root',
+        'sword-root',
+        'tiandao-root',
+        'chaos-root'
+      ]
+    },
+    effects: { 根骨: 5, 修为: 10 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-earth-root-foundation',
+    age: 0,
+    type: 'cultivation',
+    title: '厚土载身',
+    description: '土行灵机沉入丹田，像一方稳固台基，连修行资源也更容易积攒。',
+    weight: 0.45,
+    conditions: {
+      spiritRootIds: [
+        'earth-root',
+        'dual-fire-earth-root',
+        'dual-earth-metal-root',
+        'dual-wood-earth-root',
+        'dual-earth-water-root',
+        'tiandao-root',
+        'chaos-root'
+      ]
+    },
+    effects: { 根骨: 5, 家境: 3, 修为: 7 },
+    result: 'success'
+  },
+  {
+    id: 'cultivation-mutated-root-resonance',
+    age: 0,
+    type: 'cultivation',
+    title: '异灵共鸣',
+    description: '异种灵机忽然与天地相应，剑鸣、雷光、风息或寒霜在心神中一闪而过。',
+    weight: 0.35,
+    conditions: { spiritRootIds: ['sword-root', 'thunder-root', 'wind-root', 'ice-root'] },
+    effects: { 悟性: 5, 气运: 4, 修为: 12 },
     result: 'success'
   },
   {
@@ -91,7 +176,7 @@ export const events: GameEvent[] = [
     title: '五气调和',
     description: '驳杂灵机没有拖住你，反而在耐心梳理后形成了稳固的内息。',
     weight: 0.5,
-    conditions: { spiritRootIds: ['mixed-root'] },
+    conditions: { spiritRootIds: ['three-mixed-root', 'four-mixed-root', 'five-mixed-root'] },
     effects: { 根骨: 4, 悟性: 2, 修为: 7 },
     result: 'success'
   },

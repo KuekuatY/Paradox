@@ -459,6 +459,7 @@ function getRarityColor(rarity: string): string {
     '下品': '#59645f',
     '中品': '#5f7c64',
     '上品': '#355d58',
+    '变异': '#4f6f8f',
     '极品': '#7f6a3e',
     '神话': '#9a5b2f',
     '传说': '#a94d37'
