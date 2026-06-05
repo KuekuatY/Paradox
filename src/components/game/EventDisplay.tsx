@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { cultivationPaths } from '@/data/cultivationPaths';
 import { getItem } from '@/data/items';
+import { getTechnique } from '@/data/techniques';
 import type { CombatReport, CultivationPath, EventChoice, InventoryReward } from '@/types';
 
 interface EventDisplayProps {
@@ -192,6 +193,10 @@ export default function EventDisplay({
         {!isPendingChoice && currentEvent?.itemRewards && currentEvent.itemRewards.length > 0 && (
           <ItemRewardPanel rewards={currentEvent.itemRewards} />
         )}
+
+        {!isPendingChoice && currentEvent?.techniqueRewards && currentEvent.techniqueRewards.length > 0 && (
+          <TechniqueRewardPanel techniqueIds={currentEvent.techniqueRewards} />
+        )}
         
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {effectEntries.length > 0 && (
@@ -304,6 +309,27 @@ export default function EventDisplay({
         </>
       )}
     </motion.div>
+  );
+}
+
+function TechniqueRewardPanel({ techniqueIds }: { techniqueIds: string[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-[#738275]/25 bg-[#e7eddd]/55 px-3 py-2">
+      <span className="text-xs font-semibold text-[#355d58]">功法</span>
+      {techniqueIds.map(techniqueId => {
+        const technique = getTechnique(techniqueId);
+        if (!technique) return null;
+
+        return (
+          <span
+            key={techniqueId}
+            className="rounded-full bg-[#fffdf2]/75 px-3 py-1 text-xs font-bold text-[#355d58]"
+          >
+            《{technique.name}》 · {technique.grade}阶
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

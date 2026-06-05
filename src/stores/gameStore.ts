@@ -7,6 +7,7 @@ import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import { getItem } from '@/data/items';
+import { getBaseTechnique, getEligibleTechnique, getTechnique } from '@/data/techniques';
 import type {
   ActiveLifeGoal,
   EventChoice,
@@ -21,7 +22,9 @@ import type {
   CombatReport,
   CombatStats,
   InventoryEntry,
-  InventoryReward
+  InventoryReward,
+  LearnedTechnique,
+  TechniqueDefinition
 } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
@@ -35,6 +38,7 @@ interface GameStore {
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
   useInventoryItem: (itemId: string) => void;
+  trainTechnique: (techniqueId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
   processEvent: () => void;
@@ -73,6 +77,7 @@ const initialState: GameState = {
   familyWealth: BASE_ATTRIBUTE_VALUE,
   combatStats: initialCombatStats,
   inventory: [],
+  techniques: [],
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
@@ -113,6 +118,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       familyWealth: initialFamilyWealth,
       combatStats: initialCombatStats,
       inventory: [],
+      techniques: [],
       spiritRoot,
       talent,
       cultivationPath: null,
@@ -155,21 +161,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const path = getCultivationPath(pathId);
     if (!path) return;
 
+    const baseTechnique = getBaseTechnique(path.id);
+    const techniqueRewards = baseTechnique ? [baseTechnique.id] : [];
     const pathEvent: GameEvent = {
       id: `cultivation-path-${path.id}-${gameState.age}`,
       age: gameState.age,
       type: 'cultivation',
       title: `流派初定：${path.name}`,
-      description: `引气入体之后，你立下${path.name}之路。${path.description}`,
+      description: `引气入体之后，你立下${path.name}之路。${path.description}${baseTechnique ? `师长授你《${baseTechnique.name}》，作为最初修炼根本。` : ''}`,
       weight: 0,
       effects: path.effect,
       appliedEffects: path.effect,
+      ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
       result: 'success'
     };
     const stateAfterPath: GameState = {
       ...gameState,
       cultivationPath: path.id,
       pendingPathChoice: false,
+      techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
       attributes: applyAttributeEffects(gameState, path.effect),
       familyWealth: applyFamilyWealthEffects(gameState, path.effect),
       events: [...gameState.events, pathEvent]
@@ -253,6 +263,58 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       gameState: unlockAchievements(applyLifeGoalProgress(stateAfterUse, itemEvent))
+    });
+
+    get().checkGameEnd();
+  },
+
+  trainTechnique: (techniqueId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
+
+    const learnedTechnique = gameState.techniques.find(technique => technique.techniqueId === techniqueId);
+    const technique = getTechnique(techniqueId);
+    if (!learnedTechnique || !technique || learnedTechnique.level >= technique.maxLevel) return;
+    if (gameState.currentRealm.level < technique.minRealmLevel) return;
+
+    const cost = getTechniqueTrainingCost(gameState, technique);
+    if (gameState.cultivationProgress < cost.progressCost) return;
+    if (gameState.age >= gameState.lifespan - cost.lifespanCost) return;
+
+    const effect = technique.effectsPerLevel;
+    const nextLevel = learnedTechnique.level + 1;
+    const techniqueEvent: GameEvent = {
+      id: `technique-training-${technique.id}-${Date.now()}`,
+      age: gameState.age,
+      type: 'cultivation',
+      title: `修炼${technique.name}`,
+      description: `你闭关参悟《${technique.name}》，以修为与寿元换取功法精进，功法提升至第 ${nextLevel} 层。`,
+      effects: {
+        ...effect,
+        修为: -technique.trainCost.修为,
+        寿命: -technique.trainCost.寿命
+      },
+      appliedEffects: {
+        ...effect,
+        修为: -cost.progressCost,
+        寿命: -cost.lifespanCost
+      },
+      result: 'neutral'
+    };
+    const stateAfterTraining: GameState = {
+      ...gameState,
+      attributes: applyAttributeEffects(gameState, effect),
+      lifespan: Math.max(1, gameState.lifespan - cost.lifespanCost),
+      cultivationProgress: Math.max(0, gameState.cultivationProgress - cost.progressCost),
+      techniques: gameState.techniques.map(techniqueState => techniqueState.techniqueId === technique.id
+        ? { ...techniqueState, level: nextLevel }
+        : techniqueState
+      ),
+      events: [...gameState.events, techniqueEvent]
+    };
+
+    set({
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterTraining, techniqueEvent))
     });
 
     get().checkGameEnd();
@@ -436,14 +498,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const lifespanGain = getRealmLifespanGain(currentIndex);
+    const unlockedTechnique = getUnlockedTechniqueForRealm(gameState, nextRealm.level);
+    const techniqueRewards = unlockedTechnique ? [unlockedTechnique.id] : [];
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
       age: gameState.age,
       type: 'cultivation',
       title: '突破瓶颈',
-      description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
+      description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。${unlockedTechnique ? `此境正合《${unlockedTechnique.name}》，你将其收入道途中继续参悟。` : ''}`,
       effects: { 境界: 'advance', 寿命: lifespanGain },
       appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
+      ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
       result: 'success'
     };
 
@@ -452,6 +517,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentRealm: nextRealm,
       lifespan: addLifespan(gameState.lifespan, lifespanGain),
       cultivationProgress: 0,
+      techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
       events: [...gameState.events, breakthroughEvent]
     };
 
@@ -900,8 +966,9 @@ function calculatePlayerCombatPower(gameState: GameState, encounter: CombatEncou
   const injuryPenalty = Math.max(0.62, 1 - gameState.combatStats.injury / 140);
   const spiritRootBonus = getSpiritRootCombatBonus(gameState.spiritRoot?.id);
   const pathMultiplier = getCombatPathPowerMultiplier(gameState, encounter);
+  const techniqueMultiplier = getTechniqueCombatMultiplier(gameState);
 
-  return basePower * injuryPenalty * spiritRootBonus * pathMultiplier;
+  return basePower * injuryPenalty * spiritRootBonus * pathMultiplier * techniqueMultiplier;
 }
 
 function calculateEnemyCombatPower(gameState: GameState, encounter: CombatEncounter): number {
@@ -941,6 +1008,17 @@ function getCombatPathPowerMultiplier(gameState: GameState, encounter: CombatEnc
     default:
       return 1;
   }
+}
+
+function getTechniqueCombatMultiplier(gameState: GameState): number {
+  const bonus = gameState.techniques.reduce((sum, learnedTechnique) => {
+    const technique = getTechnique(learnedTechnique.techniqueId);
+    if (!technique) return sum;
+
+    return sum + learnedTechnique.level * technique.combatPowerPerLevel;
+  }, 0);
+
+  return Math.min(1.85, 1 + bonus);
 }
 
 function getCombatLootMultiplier(gameState: GameState): number {
@@ -1185,6 +1263,51 @@ function mergeEffects(...effectsList: GameEvent['effects'][]): GameEvent['effect
 
     return merged;
   }, {});
+}
+
+function addLearnedTechniques(
+  currentTechniques: LearnedTechnique[],
+  techniqueIds: string[]
+): LearnedTechnique[] {
+  if (techniqueIds.length === 0) return currentTechniques;
+
+  const knownTechniqueIds = new Set(currentTechniques.map(technique => technique.techniqueId));
+  const newTechniques = techniqueIds
+    .filter(techniqueId => getTechnique(techniqueId) && !knownTechniqueIds.has(techniqueId))
+    .map(techniqueId => ({ techniqueId, level: 0 }));
+
+  return [...currentTechniques, ...newTechniques];
+}
+
+function getTechniqueTrainingCost(gameState: GameState, technique: TechniqueDefinition): {
+  progressCost: number;
+  lifespanCost: number;
+} {
+  const progressBase = getTechniqueProgressBase(gameState);
+  return {
+    progressCost: Math.max(1, Math.floor(progressBase * technique.trainCost.修为 / 100)),
+    lifespanCost: Math.max(1, Math.floor(gameState.lifespan * technique.trainCost.寿命 / 100))
+  };
+}
+
+function getTechniqueProgressBase(gameState: GameState): number {
+  const requiredProgress = getRequiredCultivationProgress(gameState);
+  if (requiredProgress > 0) return requiredProgress;
+
+  return Math.max(100, gameState.currentRealm.cultivationRequired);
+}
+
+function getUnlockedTechniqueForRealm(
+  gameState: GameState,
+  realmLevel: number
+): TechniqueDefinition | undefined {
+  if (!gameState.cultivationPath) return undefined;
+
+  const eligibleTechnique = getEligibleTechnique(gameState.cultivationPath, realmLevel);
+  if (!eligibleTechnique) return undefined;
+  if (gameState.techniques.some(technique => technique.techniqueId === eligibleTechnique.id)) return undefined;
+
+  return eligibleTechnique;
 }
 
 function addInventoryRewards(
@@ -1910,7 +2033,11 @@ function scaleNumericValue(value: number, factor: number): number {
 }
 
 function canBreakthrough(gameState: GameState): boolean {
+  const realmIndex = realms.findIndex(realm => realm.name === gameState.currentRealm.name);
+  const hasNextRealm = realmIndex >= 0 && realmIndex < realms.length - 1;
+
   return !isChildhood(gameState)
+    && hasNextRealm
     && !gameState.pendingPathChoice
     && !gameState.pendingEvent
     && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState);

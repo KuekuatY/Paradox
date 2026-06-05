@@ -5,7 +5,19 @@ import { getCultivationPath } from '@/data/cultivationPaths';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getItem } from '@/data/items';
-import type { ActiveLifeGoal, Attributes, CombatStats, CultivationPathId, GameEvent, InventoryEntry, Realm } from '@/types';
+import { getTechnique } from '@/data/techniques';
+import type {
+  ActiveLifeGoal,
+  Attributes,
+  CombatStats,
+  CultivationPathId,
+  GameEvent,
+  GameState,
+  InventoryEntry,
+  LearnedTechnique,
+  Realm,
+  TechniqueDefinition
+} from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
@@ -92,6 +104,10 @@ export default function StatusPanel({
               activeGoal={gameState.activeGoal}
               completedCount={gameState.completedGoals.length}
             />
+          )}
+
+          {gameState.status === 'playing' && (
+            <TechniquePanel gameState={gameState} />
           )}
 
           {gameState.status === 'playing' && currentRealm.name !== '幼年期' && (
@@ -286,6 +302,121 @@ export function BreakthroughRequirements({
       </div>
     </div>
   );
+}
+
+export function TechniquePanel({ gameState }: { gameState: GameState }) {
+  const { trainTechnique } = useGameStore();
+  const learnedTechniques = gameState.techniques
+    .map(learnedTechnique => ({ learnedTechnique, technique: getTechnique(learnedTechnique.techniqueId) }))
+    .filter((entry): entry is { learnedTechnique: LearnedTechnique; technique: TechniqueDefinition } => !!entry.technique);
+
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">功法</span>
+        <span className="text-xs text-[#66766e]">{learnedTechniques.length} 本</span>
+      </div>
+      {learnedTechniques.length === 0 ? (
+        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-3 text-sm text-[#66766e]">
+          立定流派后，基础功法会收入道途。
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {learnedTechniques.map(({ learnedTechnique, technique }) => (
+            <TechniqueCard
+              key={technique.id}
+              gameState={gameState}
+              learnedTechnique={learnedTechnique}
+              technique={technique}
+              onTrain={trainTechnique}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TechniqueCard({
+  gameState,
+  learnedTechnique,
+  technique,
+  onTrain
+}: {
+  gameState: GameState;
+  learnedTechnique: LearnedTechnique;
+  technique: TechniqueDefinition;
+  onTrain: (techniqueId: string) => void;
+}) {
+  const cost = getVisibleTechniqueTrainingCost(gameState, technique);
+  const isMaxLevel = learnedTechnique.level >= technique.maxLevel;
+  const canTrain = !gameState.pendingEvent
+    && !gameState.pendingPathChoice
+    && gameState.currentRealm.level >= technique.minRealmLevel
+    && !isMaxLevel
+    && gameState.cultivationProgress >= cost.progressCost
+    && gameState.age < gameState.lifespan - cost.lifespanCost;
+  const combatBonus = Math.round(learnedTechnique.level * technique.combatPowerPerLevel * 100);
+
+  return (
+    <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-2">
+      <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <div className="font-bold text-[#355d58]">
+            《{technique.name}》
+          </div>
+          <div className="text-xs font-semibold text-[#6d634d]">
+            {technique.grade}阶 · {learnedTechnique.level}/{technique.maxLevel} 层
+          </div>
+        </div>
+        <span className="rounded-full bg-[#e7eddd] px-2 py-0.5 text-xs font-bold text-[#355d58]">
+          战力 +{combatBonus}%
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed text-[#66766e]">{technique.description}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {Object.entries(technique.effectsPerLevel).map(([key, value]) => (
+          <span
+            key={key}
+            className="rounded-full bg-[#e7eddd] px-2 py-0.5 text-xs font-semibold text-[#355d58]"
+          >
+            每层 {key} +{value}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+        <div className="text-xs font-semibold text-[#6d634d]">
+          消耗 修为 {cost.progressCost} · 寿元 {cost.lifespanCost}
+        </div>
+        <button
+          type="button"
+          disabled={!canTrain}
+          onClick={() => onTrain(technique.id)}
+          className={`rounded border px-3 py-1.5 text-xs font-bold transition ${
+            canTrain
+              ? 'border-[#738275]/30 bg-[#eef3df] text-[#355d58] hover:border-[#9a5b2f]/45'
+              : 'border-[#738275]/15 bg-[#eee8d4]/45 text-[#8d947f]'
+          }`}
+        >
+          {isMaxLevel ? '已圆满' : '修炼功法'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getVisibleTechniqueTrainingCost(gameState: GameState, technique: TechniqueDefinition): {
+  progressCost: number;
+  lifespanCost: number;
+} {
+  const realmIndex = realms.findIndex(realm => realm.name === gameState.currentRealm.name);
+  const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
+  const progressBase = nextRealm?.cultivationRequired || Math.max(100, gameState.currentRealm.cultivationRequired);
+
+  return {
+    progressCost: Math.max(1, Math.floor(progressBase * technique.trainCost.修为 / 100)),
+    lifespanCost: Math.max(1, Math.floor(gameState.lifespan * technique.trainCost.寿命 / 100))
+  };
 }
 
 export function InventoryPanel({

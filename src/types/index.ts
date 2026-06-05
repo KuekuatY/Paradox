@@ -4,6 +4,8 @@ export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极
 
 export type ItemType = '丹药' | '灵材' | '法器' | '功法' | '杂物';
 
+export type TechniqueGrade = '黄' | '玄' | '地' | '天' | '仙';
+
 export type AttributeEffect = Partial<Attributes> & {
   家境?: number;
 };
@@ -115,6 +117,7 @@ export interface GameState {
   familyWealth: number;
   combatStats: CombatStats;
   inventory: InventoryEntry[];
+  techniques: LearnedTechnique[];
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
@@ -158,6 +161,7 @@ export interface GameEvent {
   appliedEffects?: GameEvent['effects'];
   combat?: CombatReport;
   itemRewards?: InventoryReward[];
+  techniqueRewards?: string[];
   result: 'success' | 'failure' | 'neutral' | 'great-success' | 'great-failure';
   isEnding?: boolean;
   endingType?: 'died' | 'ascended';
@@ -181,6 +185,27 @@ export interface InventoryEntry {
 export interface InventoryReward {
   itemId: string;
   quantity: number;
+}
+
+export interface TechniqueDefinition {
+  id: string;
+  pathId: CultivationPathId;
+  name: string;
+  grade: TechniqueGrade;
+  description: string;
+  minRealmLevel: number;
+  maxLevel: number;
+  trainCost: {
+    修为: number;
+    寿命: number;
+  };
+  effectsPerLevel: Partial<Attributes>;
+  combatPowerPerLevel: number;
+}
+
+export interface LearnedTechnique {
+  techniqueId: string;
+  level: number;
 }
 
 export interface CombatStats {
