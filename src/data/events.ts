@@ -482,6 +482,38 @@ export const events: GameEvent[] = [
     result: 'failure'
   },
   {
+    id: 'resource-market-errand',
+    age: 0,
+    type: 'resource',
+    title: '坊市跑腿',
+    description: '你替坊市掌柜送了几趟货，事情琐碎，却换来一笔踏实的灵石进账。',
+    weight: 0.85,
+    effects: { 家境: 4, 修为: -1 },
+    result: 'success'
+  },
+  {
+    id: 'resource-cave-herbs',
+    age: 0,
+    type: 'resource',
+    title: '洞府药圃',
+    description: '洞府边缘的药圃终于长成一批灵草，品相不高，但足以贴补日常修行。',
+    weight: 0.75,
+    conditions: { minRealmLevel: 2 },
+    effects: { 家境: 5, 根骨: 2 },
+    result: 'success'
+  },
+  {
+    id: 'resource-ledger-clear',
+    age: 0,
+    type: 'resource',
+    title: '旧账理清',
+    description: '你翻检往来账册，追回几笔被拖欠的灵石，人情往来反倒更清楚了。',
+    weight: 0.65,
+    conditions: { attributes: { 悟性: 18 } },
+    effects: { 家境: 4, 悟性: 1 },
+    result: 'success'
+  },
+  {
     id: 'resource-patron',
     age: 0,
     type: 'resource',

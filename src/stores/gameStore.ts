@@ -240,7 +240,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    set({ gameState: agedState });
+    const stateAfterStrategyOutcome = applyAnnualStrategyOutcome(agedState);
+
+    set({ gameState: stateAfterStrategyOutcome });
 
     get().processEvent();
   },
@@ -391,6 +393,41 @@ function pickManyByProbability<T extends { probability: number }>(items: T[], co
   }
 
   return pickedItems;
+}
+
+function applyAnnualStrategyOutcome(gameState: GameState): GameState {
+  if (gameState.strategy !== 'business') return gameState;
+
+  const event: GameEvent = {
+    id: `strategy-business-${gameState.age}`,
+    age: gameState.age,
+    type: 'resource',
+    title: '洞府经营',
+    description: '你留心打理洞府、坊市门路与宗门往来，年终清点时手中资源宽裕了些。',
+    weight: 0,
+    effects: { 家境: 4, 修为: -2 },
+    result: 'success'
+  };
+  const adjustedEffects = applyAttributeModifiers(gameState, event, event.effects);
+  const progressDelta = calculateCultivationProgressDelta(gameState, event, adjustedEffects);
+  const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, 0);
+  const stateAfterOutcome: GameState = {
+    ...gameState,
+    attributes: applyAttributeEffects(gameState, adjustedEffects),
+    cultivationProgress: clampProgress(
+      gameState.cultivationProgress + progressDelta,
+      getRequiredCultivationProgress(gameState)
+    ),
+    events: [
+      ...gameState.events,
+      {
+        ...event,
+        appliedEffects
+      }
+    ]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterOutcome, event));
 }
 
 function selectAvailableEvent(gameState: GameState): GameEvent {
