@@ -3,22 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import type { AttributeEffect, GrowthModifiers, Rarity, SpiritRoot, Talent } from '@/types';
 
-type DrawStep = 'spiritRoot' | 'talent' | 'selectTalent' | 'ready';
+type DrawView = 'spiritRoot' | 'talent';
 
 export default function TalentDraw() {
   const { drawSpiritRoot, drawTalentOptions, startNewGame } = useGameStore();
-  const [step, setStep] = useState<DrawStep>('spiritRoot');
+  const [activeView, setActiveView] = useState<DrawView>('spiritRoot');
   const [currentSpiritRoot, setCurrentSpiritRoot] = useState<SpiritRoot | null>(null);
   const [currentTalent, setCurrentTalent] = useState<Talent | null>(null);
   const [talentOptions, setTalentOptions] = useState<Talent[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const canDrawTalent = !!currentSpiritRoot;
+  const canStartGame = !!currentSpiritRoot && !!currentTalent;
 
   const handleDrawSpiritRoot = () => {
     setIsDrawing(true);
 
     setTimeout(() => {
       setCurrentSpiritRoot(drawSpiritRoot());
-      setStep('talent');
       setIsDrawing(false);
     }, 1200);
   };
@@ -29,14 +30,12 @@ export default function TalentDraw() {
     setTimeout(() => {
       setTalentOptions(drawTalentOptions(3));
       setCurrentTalent(null);
-      setStep('selectTalent');
       setIsDrawing(false);
     }, 1200);
   };
 
   const handleSelectTalent = (talent: Talent) => {
     setCurrentTalent(talent);
-    setStep('ready');
   };
 
   const handleConfirm = () => {
@@ -49,7 +48,7 @@ export default function TalentDraw() {
     <div className="flex flex-col items-center justify-center py-6 sm:py-12">
       <AnimatePresence mode="wait">
         {isDrawing ? (
-          <DrawingState key="drawing" label={step === 'spiritRoot' ? '正在观测灵根...' : '正在推演天赋...'} />
+          <DrawingState key="drawing" label={activeView === 'spiritRoot' ? '正在观测灵根...' : '正在推演天赋...'} />
         ) : (
           <motion.div
             key="draw-panel"
@@ -60,74 +59,94 @@ export default function TalentDraw() {
           >
             <div className="mb-4 grid grid-cols-2 gap-2 text-center text-sm sm:mb-6 sm:gap-3">
               <StepButton
-                active={step === 'spiritRoot'}
+                active={activeView === 'spiritRoot'}
                 done={!!currentSpiritRoot}
-                disabled={!!currentSpiritRoot}
+                disabled={false}
                 label="一观灵根"
-                onClick={handleDrawSpiritRoot}
+                onClick={() => setActiveView('spiritRoot')}
               />
               <StepButton
-                active={!!currentSpiritRoot && step !== 'ready'}
+                active={activeView === 'talent'}
                 done={!!currentTalent}
-                disabled={!currentSpiritRoot || talentOptions.length > 0 || !!currentTalent}
+                disabled={!canDrawTalent}
                 label="二观天赋"
-                onClick={handleDrawTalent}
+                onClick={() => setActiveView('talent')}
               />
             </div>
 
-            <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-              {currentSpiritRoot ? (
-                <FateCard
-                  title="灵根"
-                  name={currentSpiritRoot.name}
-                  rarity={currentSpiritRoot.rarity}
-                  description={currentSpiritRoot.description}
-                  effects={currentSpiritRoot.effect}
-                  modifiers={currentSpiritRoot.modifiers}
-                  seal="根"
-                />
+            <AnimatePresence mode="wait">
+              {activeView === 'spiritRoot' ? (
+                <motion.div
+                  key="spirit-root-view"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  {currentSpiritRoot ? (
+                    <FateCard
+                      title="灵根"
+                      name={currentSpiritRoot.name}
+                      rarity={currentSpiritRoot.rarity}
+                      description={currentSpiritRoot.description}
+                      effects={currentSpiritRoot.effect}
+                      modifiers={currentSpiritRoot.modifiers}
+                      seal="根"
+                    />
+                  ) : (
+                    <EmptyCard title="灵根未定" description="先观灵根，决定修炼底盘。" />
+                  )}
+                </motion.div>
               ) : (
-                <EmptyCard title="灵根未定" description="先观灵根，决定修炼底盘。" />
+                <motion.div
+                  key="talent-view"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  {currentTalent ? (
+                    <FateCard
+                      title="天赋"
+                      name={currentTalent.name}
+                      rarity={currentTalent.rarity}
+                      description={currentTalent.description}
+                      effects={currentTalent.effect}
+                      modifiers={currentTalent.modifiers}
+                      seal="命"
+                    />
+                  ) : talentOptions.length > 0 ? (
+                    <TalentChoicePanel choices={talentOptions} onSelect={handleSelectTalent} />
+                  ) : (
+                    <EmptyCard title="天赋未定" description="灵根落定后，再推演此生天赋。" />
+                  )}
+                </motion.div>
               )}
-
-              {currentTalent ? (
-                <FateCard
-                  title="天赋"
-                  name={currentTalent.name}
-                  rarity={currentTalent.rarity}
-                  description={currentTalent.description}
-                  effects={currentTalent.effect}
-                  modifiers={currentTalent.modifiers}
-                  seal="命"
-                />
-              ) : talentOptions.length > 0 ? (
-                <TalentChoicePanel choices={talentOptions} onSelect={handleSelectTalent} />
-              ) : (
-                <EmptyCard title="天赋未定" description="灵根落定后，再推演此生天赋。" />
-              )}
-            </div>
+            </AnimatePresence>
 
             <div className="mt-6 text-center sm:mt-8">
-              {step === 'spiritRoot' && (
-                <p className="text-sm text-[#4f5d55] sm:text-base">先点一观灵根，定下修炼底盘。</p>
+              {activeView === 'spiritRoot' && !currentSpiritRoot && (
+                <DrawButton label="抽取灵根" onClick={handleDrawSpiritRoot} />
               )}
 
-              {step === 'talent' && (
-                <p className="text-sm text-[#4f5d55] sm:text-base">再点二观天赋，推演三道命格。</p>
+              {activeView === 'spiritRoot' && currentSpiritRoot && !currentTalent && (
+                <p className="text-sm text-[#4f5d55] sm:text-base">灵根已定，可前往二观天赋。</p>
               )}
 
-              {step === 'selectTalent' && (
+              {activeView === 'talent' && !currentTalent && talentOptions.length === 0 && (
+                <DrawButton label="抽取天赋" onClick={handleDrawTalent} />
+              )}
+
+              {activeView === 'talent' && !currentTalent && talentOptions.length > 0 && (
                 <p className="text-sm text-[#4f5d55] sm:text-base">三道命格已现，择其一而定此生。</p>
               )}
 
-              {step === 'ready' && (
+              {canStartGame && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleConfirm}
                   className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
                 >
-                  开始修仙路
+                  踏入修仙路
                 </motion.button>
               )}
             </div>
@@ -135,6 +154,21 @@ export default function TalentDraw() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function DrawButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
+      animate={{ scale: [1, 1.02, 1] }}
+      transition={{ duration: 2, repeat: Infinity }}
+    >
+      {label}
+    </motion.button>
   );
 }
 
@@ -196,7 +230,7 @@ function StepButton({
     >
       <span className="block">{label}</span>
       <span className="mt-0.5 block text-xs font-normal opacity-75">
-        {done ? '已定' : disabled && active ? '择一命格' : active ? '点击抽取' : '未开启'}
+        {done ? '已定' : disabled ? '未开启' : active ? '当前' : '可查看'}
       </span>
     </motion.button>
   );
