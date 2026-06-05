@@ -281,10 +281,29 @@ function MobileGameNav({
 
 function MobileCultivationPanel() {
   const { gameState } = useGameStore();
+  const { age, lifespan } = gameState;
+  const lifespanPercent = lifespan === Infinity ? 100 : Math.min(100, age / lifespan * 100);
 
   return (
     <div className="ink-panel rounded-lg p-4">
       <CurrentRealmSummary currentRealm={gameState.currentRealm} />
+      <div className="mb-4 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="ink-muted">年龄</span>
+          <span className="font-semibold text-[#263832]">{age} 岁</span>
+        </div>
+        <div className="relative h-2 overflow-hidden rounded-full bg-[#c8c2a9]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${lifespanPercent}%` }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#5f7c64] via-[#b49a4b] to-[#9b4b35]"
+          />
+        </div>
+        <div className="ink-muted text-right text-xs">
+          寿元: {lifespan === Infinity ? '无尽' : `${lifespan} 年`}
+        </div>
+      </div>
       <CultivationProgress
         currentRealmName={gameState.currentRealm.name}
         progress={gameState.cultivationProgress}
