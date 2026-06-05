@@ -176,7 +176,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState.pendingEvent) return [];
 
-    return getEventChoices(gameState, gameState.pendingEvent);
+    return getEventChoices(gameState.pendingEvent);
   },
 
   chooseEventOption: (choiceId) => {
@@ -184,7 +184,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (gameState.status !== 'playing' || !gameState.pendingEvent) return;
 
     const event = gameState.pendingEvent;
-    const eventChoices = getEventChoices(gameState, event);
+    const eventChoices = getEventChoices(event);
     const choice = eventChoices.find(item => item.id === choiceId) ?? eventChoices[1];
 
     set({
@@ -607,11 +607,9 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
 }
 
-function getEventChoices(gameState: GameState, event: GameEvent): EventChoice[] {
+function getEventChoices(event: GameEvent): EventChoice[] {
   const specificChoices = getSpecificEventChoices(event.id);
   if (specificChoices) return specificChoices;
-
-  const strategy = getCultivationStrategy(gameState.strategy);
 
   return [
     {
@@ -630,60 +628,8 @@ function getEventChoices(gameState: GameState, event: GameEvent): EventChoice[] 
       outcome: '顺着当下局势行事，让因果自然落定。',
       positiveScale: 1,
       negativeScale: 1
-    },
-    {
-      id: 'focus',
-      label: strategy.name,
-      description: `贯彻当前策略：${strategy.focus}。`,
-      outcome: `你把此事纳入${strategy.name}的修行安排，获得了偏向性的收获。`,
-      successModifier: getStrategySuccessModifier(gameState.strategy, event),
-      positiveScale: getStrategyPositiveScale(gameState.strategy, event),
-      negativeScale: getStrategyNegativeScale(gameState.strategy, event),
-      effects: getStrategyChoiceEffects(gameState.strategy)
     }
   ];
-}
-
-function getStrategySuccessModifier(strategyId: CultivationStrategyId, event: GameEvent): number {
-  if (strategyId === 'balanced') return 0.02;
-  if (strategyId === 'body' && event.type === 'disaster') return 0.08;
-  if (strategyId === 'insight' && event.type === 'mind') return 0.08;
-  if (strategyId === 'roaming' && (event.type === 'encounter' || event.type === 'social')) return 0.06;
-  if (strategyId === 'business' && (event.type === 'resource' || event.type === 'sect')) return 0.06;
-  if (strategyId === 'seclusion' && event.type === 'cultivation') return 0.04;
-
-  return strategyId === 'seclusion' ? -0.04 : 0;
-}
-
-function getStrategyPositiveScale(strategyId: CultivationStrategyId, event: GameEvent): number {
-  if (strategyId === 'balanced') return 1;
-  if (strategyId === 'seclusion' && event.type === 'cultivation') return 1.18;
-  if (strategyId === 'roaming' && event.type === 'encounter') return 1.12;
-  if (strategyId === 'business' && event.type === 'resource') return 1.12;
-  return 1.05;
-}
-
-function getStrategyNegativeScale(strategyId: CultivationStrategyId, event: GameEvent): number {
-  if (strategyId === 'body' && event.type === 'disaster') return 0.75;
-  if (strategyId === 'seclusion' && event.type === 'disaster') return 1.18;
-  return 1;
-}
-
-function getStrategyChoiceEffects(strategyId: CultivationStrategyId): GameEvent['effects'] {
-  switch (strategyId) {
-    case 'body':
-      return { 根骨: 5, 修为: -2 };
-    case 'insight':
-      return { 悟性: 5, 修为: -1 };
-    case 'roaming':
-      return { 气运: 4, 颜值: 3, 修为: -2 };
-    case 'business':
-      return { 家境: 5, 修为: -3 };
-    case 'seclusion':
-      return { 修为: 6 };
-    default:
-      return { 气运: 2, 修为: 2 };
-  }
 }
 
 function resolveChoiceEffects(gameState: GameState, choice: EventChoice): GameEvent['effects'] {
