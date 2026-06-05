@@ -111,6 +111,7 @@ export interface GameState {
   currentRealm: Realm;
   attributes: Attributes;
   familyWealth: number;
+  combatStats: CombatStats;
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
@@ -152,9 +153,33 @@ export interface GameEvent {
     修为?: number;
   };
   appliedEffects?: GameEvent['effects'];
+  combat?: CombatReport;
   result: 'success' | 'failure' | 'neutral' | 'great-success' | 'great-failure';
   isEnding?: boolean;
   endingType?: 'died' | 'ascended';
+}
+
+export interface CombatStats {
+  victories: number;
+  defeats: number;
+  injury: number;
+  loot: number;
+  bestStreak: number;
+  currentStreak: number;
+}
+
+export interface CombatReport {
+  enemyName: string;
+  enemyRank: string;
+  playerPower: number;
+  enemyPower: number;
+  winRate: number;
+  injuryChange: number;
+  injuryAfter: number;
+  loot: number;
+  cultivationPercent: number;
+  resultText: string;
+  styleText: string;
 }
 
 export interface GameRecord {

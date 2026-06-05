@@ -7,6 +7,7 @@ import StatusPanel, {
   AchievementPanel,
   AttributePanel,
   BreakthroughRequirements,
+  CombatStatsPanel,
   CultivationProgress,
   CultivationPathPanel,
   CurrentRealmSummary,
@@ -351,6 +352,9 @@ function MobileStatusPanel() {
             <CultivationPathPanel pathId={cultivationPath} />
           )}
         </div>
+      )}
+      {currentRealm.name !== '幼年期' && (
+        <CombatStatsPanel combatStats={gameState.combatStats} />
       )}
       <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
     </div>

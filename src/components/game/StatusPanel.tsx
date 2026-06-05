@@ -4,7 +4,7 @@ import { realms } from '@/data/realms';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
-import type { ActiveLifeGoal, Attributes, CultivationPathId, GameEvent, Realm } from '@/types';
+import type { ActiveLifeGoal, Attributes, CombatStats, CultivationPathId, GameEvent, Realm } from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
@@ -14,7 +14,7 @@ export default function StatusPanel({
   showLifeGoal = true
 }: StatusPanelProps = {}) {
   const { gameState } = useGameStore();
-  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationPath, cultivationProgress } = gameState;
+  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationPath, cultivationProgress, combatStats } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
 
@@ -93,6 +93,9 @@ export default function StatusPanel({
             />
           )}
 
+          {gameState.status === 'playing' && currentRealm.name !== '幼年期' && (
+            <CombatStatsPanel combatStats={combatStats} />
+          )}
         </div>
       </div>
     </motion.div>
@@ -273,6 +276,57 @@ export function BreakthroughRequirements({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function CombatStatsPanel({ combatStats }: { combatStats: CombatStats }) {
+  const totalBattles = combatStats.victories + combatStats.defeats;
+  const winRate = totalBattles > 0 ? Math.round(combatStats.victories / totalBattles * 100) : 0;
+  const injuryPercent = Math.min(100, combatStats.injury);
+  const injuryColor = injuryPercent >= 70
+    ? 'from-[#9d3d2f] to-[#b98678]'
+    : injuryPercent >= 35
+      ? 'from-[#9a5b2f] to-[#b49a4b]'
+      : 'from-[#355d58] to-[#88a876]';
+
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-3 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">战斗历练</span>
+        <span className="text-xs text-[#66766e]">
+          胜率 {winRate}%
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs min-[420px]:grid-cols-4">
+        <CombatStatItem label="胜场" value={combatStats.victories} />
+        <CombatStatItem label="败场" value={combatStats.defeats} />
+        <CombatStatItem label="连胜" value={combatStats.currentStreak} />
+        <CombatStatItem label="战利品" value={combatStats.loot} />
+      </div>
+      <div className="mt-3">
+        <div className="mb-1 flex justify-between text-xs">
+          <span className="ink-muted">伤势</span>
+          <span className="font-semibold text-[#263832]">{combatStats.injury}/100</span>
+        </div>
+        <div className="relative h-2 overflow-hidden rounded-full bg-[#c8c2a9]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${injuryPercent}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${injuryColor}`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CombatStatItem({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-2 py-2 text-center">
+      <div className="text-[#66766e]">{label}</div>
+      <div className="font-bold text-[#355d58]">{value}</div>
     </div>
   );
 }

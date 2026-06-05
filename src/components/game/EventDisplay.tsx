@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { cultivationPaths } from '@/data/cultivationPaths';
-import type { CultivationPath, EventChoice } from '@/types';
+import type { CombatReport, CultivationPath, EventChoice } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -31,7 +31,7 @@ export default function EventDisplay({
   const currentEvent = gameState.pendingEvent ?? gameState.events[gameState.events.length - 1];
   const isPendingChoice = !!gameState.pendingEvent;
   const effectEntries = !isPendingChoice && currentEvent?.appliedEffects
-    ? Object.entries(currentEvent.appliedEffects).filter(([, value]) => value !== undefined)
+    ? Object.entries(currentEvent.appliedEffects).filter(([, value]) => value !== undefined && value !== 0)
     : [];
 
   useEffect(() => {
@@ -183,6 +183,10 @@ export default function EventDisplay({
           {displayedText}
           <span className="animate-pulse">|</span>
         </p>
+
+        {!isPendingChoice && currentEvent?.combat && (
+          <CombatReportPanel report={currentEvent.combat} />
+        )}
         
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           {effectEntries.length > 0 && (
@@ -295,6 +299,89 @@ export default function EventDisplay({
         </>
       )}
     </motion.div>
+  );
+}
+
+function CombatReportPanel({ report }: { report: CombatReport }) {
+  const playerPercent = Math.min(100, Math.round(report.playerPower / Math.max(1, report.enemyPower) * 50));
+  const enemyPercent = Math.min(100, Math.round(report.enemyPower / Math.max(1, report.playerPower) * 50));
+  const injuryTone = report.injuryAfter >= 70
+    ? 'text-[#9d3d2f]'
+    : report.injuryAfter >= 35
+      ? 'text-[#9a5b2f]'
+      : 'text-[#355d58]';
+
+  return (
+    <div className="mt-4 rounded-md border border-[#738275]/25 bg-[#fffdf2]/65 px-3 py-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-xs font-semibold text-[#66766e]">战斗</div>
+          <div className="text-sm font-bold text-[#355d58]">
+            {report.enemyName} · {report.enemyRank}
+          </div>
+        </div>
+        <div className="rounded-full bg-[#e7eddd] px-3 py-1 text-xs font-bold text-[#355d58]">
+          胜率 {report.winRate}%
+        </div>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <CombatPowerBar label="我方战力" value={report.playerPower} percent={playerPercent} tone="player" />
+        <CombatPowerBar label="敌方战力" value={report.enemyPower} percent={enemyPercent} tone="enemy" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs min-[420px]:grid-cols-4">
+        <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
+          <span className="block text-[#66766e]">战法</span>
+          <span className="font-semibold text-[#45564f]">{report.styleText}</span>
+        </div>
+        <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
+          <span className="block text-[#66766e]">修为收益</span>
+          <span className={report.cultivationPercent >= 0 ? 'font-semibold text-[#355d58]' : 'font-semibold text-[#9d3d2f]'}>
+            {report.cultivationPercent > 0 ? '+' : ''}{report.cultivationPercent}%
+          </span>
+        </div>
+        <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
+          <span className="block text-[#66766e]">战利品</span>
+          <span className={report.loot >= 0 ? 'font-semibold text-[#355d58]' : 'font-semibold text-[#9d3d2f]'}>
+            {report.loot > 0 ? '+' : ''}{report.loot}
+          </span>
+        </div>
+        <div className="rounded border border-[#738275]/15 bg-[#fff9e8]/60 px-2 py-2">
+          <span className="block text-[#66766e]">伤势</span>
+          <span className={`font-semibold ${injuryTone}`}>
+            +{report.injuryChange} · {report.injuryAfter}/100
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CombatPowerBar({
+  label,
+  value,
+  percent,
+  tone
+}: {
+  label: string;
+  value: number;
+  percent: number;
+  tone: 'player' | 'enemy';
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-xs">
+        <span className="text-[#66766e]">{label}</span>
+        <span className="font-semibold text-[#263832]">{value}</span>
+      </div>
+      <div className="relative h-2 overflow-hidden rounded-full bg-[#c8c2a9]">
+        <div
+          className={`absolute inset-y-0 left-0 rounded-full ${
+            tone === 'player' ? 'bg-[#355d58]' : 'bg-[#9a5b2f]'
+          }`}
+          style={{ width: `${Math.max(8, percent)}%` }}
+        />
+      </div>
+    </div>
   );
 }
 

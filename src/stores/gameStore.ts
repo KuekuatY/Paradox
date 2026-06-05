@@ -16,7 +16,9 @@ import type {
   SpiritRoot,
   GrowthModifiers,
   CultivationPathId,
-  LifeGoalDefinition
+  LifeGoalDefinition,
+  CombatReport,
+  CombatStats
 } from '@/types';
 import { saveGameRecord } from '@/utils/storage';
 
@@ -44,6 +46,14 @@ const ATTRIBUTE_MAX = 800;
 const STARTING_AGE = 0;
 const QI_CONDENSING_AGE = 10;
 const BASE_ATTRIBUTE_VALUE = 10;
+const initialCombatStats: CombatStats = {
+  victories: 0,
+  defeats: 0,
+  injury: 0,
+  loot: 0,
+  bestStreak: 0,
+  currentStreak: 0
+};
 
 const initialState: GameState = {
   status: 'idle',
@@ -57,6 +67,7 @@ const initialState: GameState = {
     颜值: BASE_ATTRIBUTE_VALUE
   },
   familyWealth: BASE_ATTRIBUTE_VALUE,
+  combatStats: initialCombatStats,
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
@@ -95,6 +106,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentRealm: realms[0],
       attributes: initialAttributes,
       familyWealth: initialFamilyWealth,
+      combatStats: initialCombatStats,
       spiritRoot,
       talent,
       cultivationPath: null,
@@ -258,7 +270,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newAge = gameState.age + getCultivationYearStep(gameState.currentRealm.level);
     const agedState: GameState = {
       ...gameState,
-      age: newAge
+      age: newAge,
+      combatStats: recoverCombatInjury(gameState.combatStats, gameState.currentRealm.level)
     };
 
     if (newAge >= gameState.lifespan) {
@@ -559,6 +572,10 @@ function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean
 }
 
 function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
+  if (event.type === 'combat') {
+    return resolveCombatEvent(gameState, event, choice);
+  }
+
   const isNeutralEvent = event.result === 'neutral';
   const successRate = isNeutralEvent
     ? 0.5
@@ -600,6 +617,408 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   };
 
   return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+}
+
+interface CombatEncounter {
+  enemyName: string;
+  enemyRank: string;
+  difficulty: number;
+  loot: number;
+  cultivationPercent: number;
+  injury: number;
+  primary: Array<keyof Attributes>;
+  styleText: string;
+}
+
+function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
+  const combatResult = calculateCombatResult(gameState, event, choice);
+  const baseEffects = scaleCombatBaseEffects(event.effects, combatResult.result);
+  const choiceEffects = choice
+    ? mergeEffects(scaleEventEffectsForChoice(baseEffects, choice), resolveChoiceEffects(gameState, choice))
+    : baseEffects;
+  const combatEffects = getCombatRewardEffects(combatResult.report, combatResult.result);
+  const chosenEffects = mergeEffects(choiceEffects, combatEffects);
+  const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
+  const progressDelta = calculateCultivationProgressDelta(gameState, event, adjustedEffects);
+  const lifespanDelta = calculateLifespanDelta(gameState, event, adjustedEffects);
+  const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
+  const stateForEffects = {
+    ...gameState,
+    pendingEvent: null
+  };
+  const newAttributes = applyAttributeEffects(stateForEffects, adjustedEffects);
+  const newFamilyWealth = applyFamilyWealthEffects(stateForEffects, adjustedEffects);
+  const newLifespan = lifespanDelta
+    ? Math.max(1, gameState.lifespan + lifespanDelta)
+    : gameState.lifespan;
+  const requiredProgress = getRequiredCultivationProgress(gameState);
+  const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
+  const newEvent: GameEvent = {
+    ...event,
+    title: choice ? `${event.title}：${choice.label}` : event.title,
+    description: `${event.description}${choiceText}${combatResult.report.resultText}`,
+    appliedEffects,
+    combat: combatResult.report,
+    result: combatResult.result
+  };
+  const stateAfterEvent: GameState = {
+    ...gameState,
+    pendingEvent: null,
+    attributes: newAttributes,
+    familyWealth: newFamilyWealth,
+    combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.result),
+    lifespan: newLifespan,
+    cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
+    events: [...gameState.events, newEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+}
+
+function calculateCombatResult(
+  gameState: GameState,
+  event: GameEvent,
+  choice?: EventChoice
+): { result: GameEvent['result']; report: CombatReport } {
+  const encounter = getCombatEncounter(event);
+  const playerPower = calculatePlayerCombatPower(gameState, encounter);
+  const enemyPower = calculateEnemyCombatPower(gameState, encounter);
+  const winRate = clampRate(
+    0.5 + ((playerPower - enemyPower) / Math.max(1, enemyPower * 2.2)) + (choice?.successModifier ?? 0)
+  );
+  const roll = Math.random();
+  const result = roll <= winRate
+    ? roll <= winRate * 0.12 ? 'great-success' : 'success'
+    : roll >= 1 - ((1 - winRate) * 0.12) ? 'great-failure' : 'failure';
+  const isWin = result === 'success' || result === 'great-success';
+  const outcomeScale = result === 'great-success'
+    ? 1.55
+    : result === 'success'
+      ? 1
+      : result === 'great-failure'
+        ? 1.45
+        : 1;
+  const injuryChange = calculateCombatInjuryChange(gameState, encounter, result, outcomeScale);
+  const loot = isWin
+    ? Math.max(0, Math.round(encounter.loot * getCombatLootMultiplier(gameState) * (result === 'great-success' ? 1.6 : 1)))
+    : -Math.max(0, Math.ceil(encounter.loot * (result === 'great-failure' ? 0.8 : 0.45)));
+  const cultivationPercent = isWin
+    ? Math.round(encounter.cultivationPercent * (result === 'great-success' ? 1.45 : 1))
+    : -Math.max(3, Math.ceil(encounter.cultivationPercent * (result === 'great-failure' ? 0.65 : 0.35)));
+  const injuryAfter = Math.max(0, Math.min(100, gameState.combatStats.injury + injuryChange));
+  const report: CombatReport = {
+    enemyName: encounter.enemyName,
+    enemyRank: encounter.enemyRank,
+    playerPower: Math.round(playerPower),
+    enemyPower: Math.round(enemyPower),
+    winRate: Math.round(winRate * 100),
+    injuryChange,
+    injuryAfter,
+    loot,
+    cultivationPercent,
+    resultText: getCombatResultText(result, encounter.enemyName),
+    styleText: `${getCombatPathStyle(gameState)} · ${encounter.styleText}`
+  };
+
+  return { result, report };
+}
+
+function getCombatEncounter(event: GameEvent): CombatEncounter {
+  const encounters: Record<string, CombatEncounter> = {
+    'combat-beast-hunt': {
+      enemyName: '山魈妖兽',
+      enemyRank: '同阶下位',
+      difficulty: 0.88,
+      loot: 2,
+      cultivationPercent: 7,
+      injury: 5,
+      primary: ['根骨', '神识'],
+      styleText: '林中缠斗'
+    },
+    'combat-caravan-escort': {
+      enemyName: '劫道散修',
+      enemyRank: '同阶',
+      difficulty: 0.95,
+      loot: 3,
+      cultivationPercent: 7,
+      injury: 6,
+      primary: ['根骨', '气运'],
+      styleText: '护阵反击'
+    },
+    'combat-arena-duel': {
+      enemyName: '同门劲敌',
+      enemyRank: '同阶',
+      difficulty: 1,
+      loot: 1,
+      cultivationPercent: 8,
+      injury: 4,
+      primary: ['根骨', '神识', '悟性'],
+      styleText: '擂台斗法'
+    },
+    'combat-demonic-cultivator': {
+      enemyName: '血法邪修',
+      enemyRank: '同阶上位',
+      difficulty: 1.12,
+      loot: 4,
+      cultivationPercent: 9,
+      injury: 8,
+      primary: ['根骨', '神识', '气运'],
+      styleText: '破阵斩邪'
+    },
+    'combat-sword-contest': {
+      enemyName: '试剑修士',
+      enemyRank: '同阶上位',
+      difficulty: 1.08,
+      loot: 2,
+      cultivationPercent: 10,
+      injury: 7,
+      primary: ['根骨', '神识'],
+      styleText: '剑意对撞'
+    },
+    'combat-ancient-beast': {
+      enemyName: '古兽遗种',
+      enemyRank: '越阶强敌',
+      difficulty: 1.32,
+      loot: 7,
+      cultivationPercent: 12,
+      injury: 12,
+      primary: ['根骨', '神识', '气运'],
+      styleText: '险死搏杀'
+    },
+    'combat-ambush': {
+      enemyName: '伏杀散修',
+      enemyRank: '同阶上位',
+      difficulty: 1.08,
+      loot: 3,
+      cultivationPercent: 8,
+      injury: 9,
+      primary: ['神识', '气运'],
+      styleText: '仓促突围'
+    },
+    'combat-heart-devil': {
+      enemyName: '识海心魔',
+      enemyRank: '心劫',
+      difficulty: 1.18,
+      loot: 1,
+      cultivationPercent: 9,
+      injury: 10,
+      primary: ['神识', '悟性', '气运'],
+      styleText: '心神交锋'
+    }
+  };
+
+  return encounters[event.id] ?? {
+    enemyName: event.title,
+    enemyRank: '同阶',
+    difficulty: 1,
+    loot: 2,
+    cultivationPercent: 8,
+    injury: 6,
+    primary: ['根骨', '神识'],
+    styleText: '正面交锋'
+  };
+}
+
+function calculatePlayerCombatPower(gameState: GameState, encounter: CombatEncounter): number {
+  const { attributes } = gameState;
+  const primaryBonus = encounter.primary.reduce((sum, key) => sum + attributes[key] * 0.35, 0);
+  const basePower = attributes.根骨 * 1.05
+    + attributes.神识 * 0.9
+    + attributes.悟性 * 0.35
+    + attributes.气运 * 0.45
+    + gameState.familyWealth * 0.12
+    + primaryBonus
+    + gameState.currentRealm.level * 42;
+  const injuryPenalty = Math.max(0.62, 1 - gameState.combatStats.injury / 140);
+  const spiritRootBonus = getSpiritRootCombatBonus(gameState.spiritRoot?.id);
+  const pathMultiplier = getCombatPathPowerMultiplier(gameState, encounter);
+
+  return basePower * injuryPenalty * spiritRootBonus * pathMultiplier;
+}
+
+function calculateEnemyCombatPower(gameState: GameState, encounter: CombatEncounter): number {
+  const level = Math.max(1, gameState.currentRealm.level);
+  return (62 + level * 86 + level * level * 10) * encounter.difficulty;
+}
+
+function getSpiritRootCombatBonus(spiritRootId: string | undefined): number {
+  switch (spiritRootId) {
+    case 'sword-root':
+      return 1.1;
+    case 'thunder-root':
+      return 1.08;
+    case 'fire-root':
+    case 'dual-wood-fire-root':
+    case 'dual-fire-earth-root':
+      return 1.05;
+    case 'tiandao-root':
+      return 1.08;
+    case 'chaos-root':
+      return 1.12;
+    default:
+      return 1;
+  }
+}
+
+function getCombatPathPowerMultiplier(gameState: GameState, encounter: CombatEncounter): number {
+  switch (gameState.cultivationPath) {
+    case 'sword':
+      return encounter.primary.includes('根骨') ? 1.16 : 1.1;
+    case 'body':
+      return 1.12;
+    case 'spell':
+      return encounter.primary.includes('神识') || encounter.primary.includes('悟性') ? 1.14 : 1.06;
+    case 'demonic':
+      return 1.08;
+    default:
+      return 1;
+  }
+}
+
+function getCombatLootMultiplier(gameState: GameState): number {
+  switch (gameState.cultivationPath) {
+    case 'demonic':
+      return 1.35;
+    case 'sword':
+      return 1.12;
+    case 'spell':
+      return 1.05;
+    default:
+      return 1;
+  }
+}
+
+function getCombatPathStyle(gameState: GameState): string {
+  switch (gameState.cultivationPath) {
+    case 'sword':
+      return '剑意抢攻';
+    case 'body':
+      return '肉身硬撼';
+    case 'spell':
+      return '术法控场';
+    case 'demonic':
+      return '夺势掠杀';
+    default:
+      return '临阵应敌';
+  }
+}
+
+function calculateCombatInjuryChange(
+  gameState: GameState,
+  encounter: CombatEncounter,
+  result: GameEvent['result'],
+  outcomeScale: number
+): number {
+  const pathMitigation = gameState.cultivationPath === 'body'
+    ? 0.68
+    : gameState.cultivationPath === 'spell'
+      ? 0.9
+      : gameState.cultivationPath === 'demonic'
+        ? 1.12
+        : 1;
+  const baseInjury = result === 'great-success'
+    ? Math.max(1, Math.round(encounter.injury * 0.25))
+    : result === 'success'
+      ? Math.max(1, Math.round(encounter.injury * 0.55))
+      : Math.round(encounter.injury * outcomeScale);
+
+  return Math.max(1, Math.round(baseInjury * pathMitigation));
+}
+
+function scaleCombatBaseEffects(
+  effects: GameEvent['effects'],
+  result: GameEvent['result']
+): GameEvent['effects'] {
+  const positiveScale = result === 'great-success'
+    ? 1.35
+    : result === 'success'
+      ? 1
+      : result === 'great-failure'
+        ? 0.15
+        : 0.35;
+  const negativeScale = result === 'great-success'
+    ? 0.25
+    : result === 'success'
+      ? 0.45
+      : result === 'great-failure'
+        ? 1.55
+        : 1.15;
+  const scaledEffects: GameEvent['effects'] = {};
+
+  Object.entries(effects).forEach(([key, value]) => {
+    if (typeof value !== 'number') {
+      (scaledEffects as Record<string, typeof value>)[key] = value;
+      return;
+    }
+
+    const scale = value >= 0 ? positiveScale : negativeScale;
+    const scaledValue = value >= 0 ? Math.floor(value * scale) : Math.ceil(value * scale);
+
+    if (scaledValue !== 0) {
+      (scaledEffects as Record<string, number>)[key] = scaledValue;
+    }
+  });
+
+  return scaledEffects;
+}
+
+function getCombatRewardEffects(
+  report: CombatReport,
+  result: GameEvent['result']
+): GameEvent['effects'] {
+  const isWin = result === 'success' || result === 'great-success';
+  const injuryLifespanLoss = Math.max(0, Math.ceil(report.injuryChange / 4));
+  const focusGain = result === 'great-success' ? 3 : isWin ? 1 : 0;
+
+  return {
+    修为: report.cultivationPercent,
+    家境: report.loot,
+    ...(!isWin && injuryLifespanLoss > 0 ? { 寿命: -injuryLifespanLoss } : {}),
+    ...(focusGain > 0 ? { 根骨: focusGain, 神识: Math.max(1, focusGain - 1) } : {})
+  };
+}
+
+function updateCombatStats(
+  combatStats: CombatStats,
+  report: CombatReport,
+  result: GameEvent['result']
+): CombatStats {
+  const isWin = result === 'success' || result === 'great-success';
+  const currentStreak = isWin ? combatStats.currentStreak + 1 : 0;
+
+  return {
+    victories: combatStats.victories + (isWin ? 1 : 0),
+    defeats: combatStats.defeats + (isWin ? 0 : 1),
+    injury: report.injuryAfter,
+    loot: Math.max(0, combatStats.loot + report.loot),
+    currentStreak,
+    bestStreak: Math.max(combatStats.bestStreak, currentStreak)
+  };
+}
+
+function recoverCombatInjury(combatStats: CombatStats, realmLevel: number): CombatStats {
+  if (combatStats.injury <= 0) return combatStats;
+
+  const recovery = Math.max(2, Math.min(8, 2 + Math.floor(realmLevel / 2)));
+  return {
+    ...combatStats,
+    injury: Math.max(0, combatStats.injury - recovery)
+  };
+}
+
+function getCombatResultText(result: GameEvent['result'], enemyName: string): string {
+  switch (result) {
+    case 'great-success':
+      return `你几乎没有给${enemyName}喘息之机，破绽一现便定下胜局。`;
+    case 'success':
+      return `你与${enemyName}鏖战一场，最终稳住阵脚，赢下这次交锋。`;
+    case 'great-failure':
+      return `${enemyName}凶势太盛，你判断失误，受创后才勉强脱身。`;
+    case 'failure':
+      return `这一战未能取胜，你付出代价后退走，伤势也压在经脉里。`;
+    default:
+      return '这场交锋平平收束。';
+  }
 }
 
 function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): GameEvent['result'] {
