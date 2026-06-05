@@ -155,6 +155,7 @@ export interface GameEvent {
     颜值?: number;
     家境?: number;
     寿命?: number;
+    时间?: number;
     境界?: 'advance' | 'regress';
     修为?: number;
   };
@@ -197,7 +198,7 @@ export interface TechniqueDefinition {
   maxLevel: number;
   trainCost: {
     修为: number;
-    寿命: number;
+    时间: number;
   };
   effectsPerLevel: Partial<Attributes>;
   combatPowerPerLevel: number;

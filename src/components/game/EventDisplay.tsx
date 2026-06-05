@@ -128,6 +128,10 @@ export default function EventDisplay({
       return value === 'advance' ? '境界突破' : '境界跌落';
     }
 
+    if (key === '时间' && typeof value === 'number') {
+      return `耗时 ${value} 年`;
+    }
+
     if (typeof value === 'number') {
       if (!Number.isFinite(value)) {
         return `${key} 无尽`;

@@ -279,7 +279,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const cost = getTechniqueTrainingCost(gameState, technique);
     if (gameState.cultivationProgress < cost.progressCost) return;
-    if (gameState.age >= gameState.lifespan - cost.lifespanCost) return;
+    if (gameState.age >= gameState.lifespan - cost.timeCost) return;
 
     const effect = technique.effectsPerLevel;
     const nextLevel = learnedTechnique.level + 1;
@@ -288,23 +288,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
       age: gameState.age,
       type: 'cultivation',
       title: `修炼${technique.name}`,
-      description: `你闭关参悟《${technique.name}》，以修为与寿元换取功法精进，功法提升至第 ${nextLevel} 层。`,
+      description: `你闭关参悟《${technique.name}》，以修为与时间换取功法精进，功法提升至第 ${nextLevel} 层。`,
       effects: {
         ...effect,
-        修为: -technique.trainCost.修为,
-        寿命: -technique.trainCost.寿命
+        修为: -technique.trainCost.修为
       },
       appliedEffects: {
         ...effect,
         修为: -cost.progressCost,
-        寿命: -cost.lifespanCost
+        时间: cost.timeCost
       },
       result: 'neutral'
     };
     const stateAfterTraining: GameState = {
       ...gameState,
+      age: gameState.age + cost.timeCost,
       attributes: applyAttributeEffects(gameState, effect),
-      lifespan: Math.max(1, gameState.lifespan - cost.lifespanCost),
       cultivationProgress: Math.max(0, gameState.cultivationProgress - cost.progressCost),
       techniques: gameState.techniques.map(techniqueState => techniqueState.techniqueId === technique.id
         ? { ...techniqueState, level: nextLevel }
@@ -682,21 +681,10 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
   return true;
 }
 
-function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean {
+function shouldOfferEventChoice(_gameState: GameState, event: GameEvent): boolean {
   if (event.type === 'childhood') return false;
-  if (hasSpecificEventChoices(event.id)) return true;
-  if (event.result === 'neutral' && event.type === 'daily') return false;
-  if (event.type === 'disaster') return true;
-  if (hasNegativeNumericEffect(event)) return true;
-  if (event.conditions && event.type !== 'daily') return true;
-  if ((event.weight ?? 1) <= 0.55) return true;
 
-  const choiceFriendlyTypes: GameEvent['type'][] = ['combat', 'encounter', 'social', 'resource', 'mind', 'sect'];
-  if (!choiceFriendlyTypes.includes(event.type)) return false;
-
-  const baseChance = gameState.currentRealm.level >= 4 ? 0.32 : 0.22;
-  const typeBonus = event.type === 'encounter' || event.type === 'resource' || event.type === 'combat' ? 0.08 : 0;
-  return Math.random() < baseChance + typeBonus;
+  return hasSpecificEventChoices(event.id);
 }
 
 function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
@@ -1181,27 +1169,7 @@ function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): Ga
 
 function getEventChoices(event: GameEvent): EventChoice[] {
   const specificChoices = getSpecificEventChoices(event.id);
-  if (specificChoices) return specificChoices;
-
-  return [
-    {
-      id: 'steady',
-      label: '稳扎稳打',
-      description: '降低风险，收益略少。',
-      outcome: '以稳为先，少取机缘，也少惹祸端。',
-      successModifier: 0.1,
-      positiveScale: 0.75,
-      negativeScale: 0.6
-    },
-    {
-      id: 'flow',
-      label: '顺势而为',
-      description: '按原本机缘发展。',
-      outcome: '顺着当下局势行事，让因果自然落定。',
-      positiveScale: 1,
-      negativeScale: 1
-    }
-  ];
+  return specificChoices ?? [];
 }
 
 function resolveChoiceEffects(gameState: GameState, choice: EventChoice): GameEvent['effects'] {
@@ -1281,12 +1249,12 @@ function addLearnedTechniques(
 
 function getTechniqueTrainingCost(gameState: GameState, technique: TechniqueDefinition): {
   progressCost: number;
-  lifespanCost: number;
+  timeCost: number;
 } {
   const progressBase = getTechniqueProgressBase(gameState);
   return {
     progressCost: Math.max(1, Math.floor(progressBase * technique.trainCost.修为 / 100)),
-    lifespanCost: Math.max(1, Math.floor(gameState.lifespan * technique.trainCost.寿命 / 100))
+    timeCost: Math.max(1, technique.trainCost.时间)
   };
 }
 
@@ -1699,7 +1667,7 @@ function calculateCultivationProgressDelta(
     : getDefaultProgressPercent(event.type);
 
   Object.entries(effects).forEach(([key, value]) => {
-    if (key === '寿命' || key === '境界' || key === '修为' || key === '家境' || typeof value !== 'number') return;
+    if (key === '寿命' || key === '时间' || key === '境界' || key === '修为' || key === '家境' || typeof value !== 'number') return;
     percentDelta += value > 0 ? 0.25 : -1.2;
   });
 
@@ -1963,7 +1931,7 @@ function applyAttributeModifiers(
       return;
     }
 
-    if (key === '寿命' || key === '修为' || key === '家境') {
+    if (key === '寿命' || key === '时间' || key === '修为' || key === '家境') {
       (adjustedEffects as Record<string, number>)[key] = value;
       return;
     }
@@ -2014,10 +1982,6 @@ function scaleEffectByOutcome(value: number, result: GameEvent['result']): numbe
     default:
       return scaleNumericValue(value, 0.75);
   }
-}
-
-function hasNegativeNumericEffect(event: GameEvent): boolean {
-  return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
 }
 
 function scaleNumericValue(value: number, factor: number): number {

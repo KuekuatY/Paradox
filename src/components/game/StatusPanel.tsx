@@ -355,7 +355,7 @@ function TechniqueCard({
     && gameState.currentRealm.level >= technique.minRealmLevel
     && !isMaxLevel
     && gameState.cultivationProgress >= cost.progressCost
-    && gameState.age < gameState.lifespan - cost.lifespanCost;
+    && gameState.age < gameState.lifespan - cost.timeCost;
   const combatBonus = Math.round(learnedTechnique.level * technique.combatPowerPerLevel * 100);
 
   return (
@@ -386,7 +386,7 @@ function TechniqueCard({
       </div>
       <div className="mt-2 flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
         <div className="text-xs font-semibold text-[#6d634d]">
-          消耗 修为 {cost.progressCost} · 寿元 {cost.lifespanCost}
+          消耗 修为 {cost.progressCost} · 时间 {cost.timeCost} 年
         </div>
         <button
           type="button"
@@ -407,7 +407,7 @@ function TechniqueCard({
 
 function getVisibleTechniqueTrainingCost(gameState: GameState, technique: TechniqueDefinition): {
   progressCost: number;
-  lifespanCost: number;
+  timeCost: number;
 } {
   const realmIndex = realms.findIndex(realm => realm.name === gameState.currentRealm.name);
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
@@ -415,7 +415,7 @@ function getVisibleTechniqueTrainingCost(gameState: GameState, technique: Techni
 
   return {
     progressCost: Math.max(1, Math.floor(progressBase * technique.trainCost.修为 / 100)),
-    lifespanCost: Math.max(1, Math.floor(gameState.lifespan * technique.trainCost.寿命 / 100))
+    timeCost: Math.max(1, technique.trainCost.时间)
   };
 }
 
