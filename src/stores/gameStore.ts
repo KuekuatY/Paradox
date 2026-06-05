@@ -1413,22 +1413,22 @@ function generateEventTechniqueRewards(
 
 function getTechniqueRewardChance(event: GameEvent, result: GameEvent['result']): number {
   const resultChance = result === 'great-success'
-    ? 0.42
+    ? 0.24
     : result === 'success'
-      ? 0.22
-      : 0.07;
+      ? 0.1
+      : 0.018;
 
   switch (event.type) {
     case 'encounter':
     case 'mind':
-      return resultChance + 0.12;
+      return resultChance + 0.05;
     case 'sect':
     case 'resource':
-      return resultChance + 0.08;
+      return resultChance + 0.035;
     case 'combat':
-      return resultChance + 0.06;
-    case 'cultivation':
       return resultChance + 0.03;
+    case 'cultivation':
+      return resultChance + 0.015;
     default:
       return resultChance;
   }
