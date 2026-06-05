@@ -373,7 +373,7 @@ export function PreparationPanel({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="font-semibold text-[#45564f]">突破准备</span>
         <span className={shouldPrepare ? 'text-[#9a5b2f]' : 'text-[#66766e]'}>
-          家境可用于补短板
+          家境 {familyWealth} · 可补短板
         </span>
       </div>
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">

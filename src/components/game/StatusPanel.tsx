@@ -14,7 +14,7 @@ export default function StatusPanel({
   showLifeGoal = true
 }: StatusPanelProps = {}) {
   const { gameState } = useGameStore();
-  const { currentRealm, age, lifespan, attributes, familyWealth, spiritRoot, talent, cultivationPath, cultivationProgress } = gameState;
+  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationPath, cultivationProgress } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
 
@@ -43,10 +43,6 @@ export default function StatusPanel({
             </div>
             <div className="ink-muted text-right text-xs">
               寿命: {lifespan === Infinity ? '无尽' : `${lifespan} 年`}
-            </div>
-            <div className="flex justify-between rounded border border-[#738275]/20 bg-[#fff9e8]/45 px-2 py-1 text-xs">
-              <span className="ink-muted">家境</span>
-              <span className="font-semibold text-[#6d634d]">{familyWealth}</span>
             </div>
           </div>
 
