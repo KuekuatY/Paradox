@@ -172,7 +172,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       effects: path.effect,
       appliedEffects: path.effect,
       ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
-      result: 'success'
+      result: 'neutral'
     };
     const stateAfterPath: GameState = {
       ...gameState,
@@ -467,7 +467,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           修为: -getBreakthroughFailureProgressPercent(gameState, breakthroughDeficit),
           寿命: -getBreakthroughFailureLifespanPercent(gameState, breakthroughDeficit)
         },
-        result: 'failure'
+        result: 'great-failure'
       };
       const lifespanDelta = calculateLifespanDelta(gameState, failureEvent, failureEvent.effects);
       const progressDelta = calculateCultivationProgressDelta(gameState, failureEvent, failureEvent.effects);
@@ -504,7 +504,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
       effects: { 境界: 'advance', 寿命: lifespanGain },
       appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
-      result: 'success'
+      result: 'neutral'
     };
 
     const stateAfterBreakthrough: GameState = {
@@ -614,7 +614,7 @@ function enterQiCondensingRealm(gameState: GameState): GameState {
     weight: 0,
     effects: { 境界: 'advance' },
     appliedEffects: { 境界: 'advance' },
-    result: 'success'
+    result: 'neutral'
   };
   const stateAfterTransition: GameState = {
     ...gameState,
@@ -748,11 +748,11 @@ interface CombatEncounter {
 
 function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
   const combatResult = calculateCombatResult(gameState, event, choice);
-  const baseEffects = scaleCombatBaseEffects(event.effects, combatResult.result);
+  const baseEffects = scaleCombatBaseEffects(event.effects, combatResult.rawResult);
   const choiceEffects = choice
     ? mergeEffects(scaleEventEffectsForChoice(baseEffects, choice), resolveChoiceEffects(gameState, choice))
     : baseEffects;
-  const combatEffects = getCombatRewardEffects(combatResult.report, combatResult.result);
+  const combatEffects = getCombatRewardEffects(combatResult.report, combatResult.rawResult, combatResult.isWin);
   const chosenEffects = mergeEffects(choiceEffects, combatEffects);
   const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
   const progressDelta = calculateCultivationProgressDelta(gameState, event, adjustedEffects);
@@ -768,9 +768,11 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
-  const itemRewards = generateCombatItemRewards(event, combatResult.result);
-  const itemLosses = generateCombatItemLosses(gameState, combatResult.result);
-  const techniqueRewards = generateEventTechniqueRewards(gameState, event, combatResult.result);
+  const itemRewards = generateCombatItemRewards(event, combatResult.rawResult, combatResult.isWin);
+  const itemLosses = generateCombatItemLosses(gameState, combatResult.rawResult, combatResult.isWin);
+  const techniqueRewards = combatResult.isWin
+    ? generateEventTechniqueRewards(gameState, event, combatResult.rawResult)
+    : [];
   const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
   const newEvent: GameEvent = {
     ...event,
@@ -788,7 +790,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     pendingEvent: null,
     attributes: newAttributes,
     familyWealth: newFamilyWealth,
-    combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.result),
+    combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.isWin),
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
     inventory: removeInventoryRewards(addInventoryRewards(gameState.inventory, itemRewards), itemLosses),
@@ -803,7 +805,12 @@ function calculateCombatResult(
   gameState: GameState,
   event: GameEvent,
   choice?: EventChoice
-): { result: GameEvent['result']; report: CombatReport } {
+): {
+  result: GameEvent['result'];
+  rawResult: GameEvent['result'];
+  isWin: boolean;
+  report: CombatReport;
+} {
   const encounter = getCombatEncounter(event);
   const playerPower = calculatePlayerCombatPower(gameState, encounter);
   const enemyPower = calculateEnemyCombatPower(gameState, encounter);
@@ -811,21 +818,22 @@ function calculateCombatResult(
     0.5 + ((playerPower - enemyPower) / Math.max(1, enemyPower * 2.2)) + (choice?.successModifier ?? 0)
   );
   const roll = Math.random();
-  const result = roll <= winRate
+  const rawResult = roll <= winRate
     ? roll <= winRate * 0.12 ? 'great-success' : 'success'
     : roll >= 1 - ((1 - winRate) * 0.12) ? 'great-failure' : 'failure';
-  const isWin = result === 'success' || result === 'great-success';
-  const outcomeScale = result === 'great-success'
+  const result = rawResult === 'great-success' || rawResult === 'great-failure' ? rawResult : 'neutral';
+  const isWin = rawResult === 'success' || rawResult === 'great-success';
+  const outcomeScale = rawResult === 'great-success'
     ? 1.55
-    : result === 'success'
+    : rawResult === 'success'
       ? 1
-      : result === 'great-failure'
+      : rawResult === 'great-failure'
         ? 1.45
         : 1;
-  const injuryChange = calculateCombatInjuryChange(gameState, encounter, result, outcomeScale);
+  const injuryChange = calculateCombatInjuryChange(gameState, encounter, rawResult, outcomeScale);
   const cultivationPercent = isWin
-    ? Math.round(encounter.cultivationPercent * (result === 'great-success' ? 1.45 : 1))
-    : -Math.max(3, Math.ceil(encounter.cultivationPercent * (result === 'great-failure' ? 0.65 : 0.35)));
+    ? Math.round(encounter.cultivationPercent * (rawResult === 'great-success' ? 1.45 : 1))
+    : -Math.max(3, Math.ceil(encounter.cultivationPercent * (rawResult === 'great-failure' ? 0.65 : 0.35)));
   const injuryAfter = Math.max(0, Math.min(100, gameState.combatStats.injury + injuryChange));
   const report: CombatReport = {
     enemyName: encounter.enemyName,
@@ -836,11 +844,11 @@ function calculateCombatResult(
     injuryChange,
     injuryAfter,
     cultivationPercent,
-    resultText: getCombatResultText(result, encounter.enemyName),
+    resultText: getCombatResultText(rawResult, encounter.enemyName),
     styleText: `${getCombatPathStyle(gameState)} · ${encounter.styleText}`
   };
 
-  return { result, report };
+  return { result, rawResult, isWin, report };
 }
 
 function getCombatEncounter(event: GameEvent): CombatEncounter {
@@ -1074,9 +1082,9 @@ function scaleCombatBaseEffects(
 
 function getCombatRewardEffects(
   report: CombatReport,
-  result: GameEvent['result']
+  result: GameEvent['result'],
+  isWin: boolean
 ): GameEvent['effects'] {
-  const isWin = result === 'success' || result === 'great-success';
   const injuryLifespanLoss = Math.max(0, Math.ceil(report.injuryChange / 4));
   const focusGain = result === 'great-success' ? 3 : isWin ? 1 : 0;
 
@@ -1090,9 +1098,8 @@ function getCombatRewardEffects(
 function updateCombatStats(
   combatStats: CombatStats,
   report: CombatReport,
-  result: GameEvent['result']
+  isWin: boolean
 ): CombatStats {
-  const isWin = result === 'success' || result === 'great-success';
   const currentStreak = isWin ? combatStats.currentStreak + 1 : 0;
 
   return {
@@ -1314,8 +1321,11 @@ function generateEventItemRewards(event: GameEvent, result: GameEvent['result'])
   }
 }
 
-function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
-  const isWin = result === 'success' || result === 'great-success';
+function generateCombatItemRewards(
+  event: GameEvent,
+  result: GameEvent['result'],
+  isWin: boolean
+): InventoryReward[] {
   if (!isWin) return [];
 
   const rewardChance = result === 'great-success' ? 0.82 : 0.48;
@@ -1364,8 +1374,12 @@ function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']
   }
 }
 
-function generateCombatItemLosses(gameState: GameState, result: GameEvent['result']): InventoryReward[] {
-  const isLoss = result === 'failure' || result === 'great-failure';
+function generateCombatItemLosses(
+  gameState: GameState,
+  result: GameEvent['result'],
+  isWin: boolean
+): InventoryReward[] {
+  const isLoss = !isWin || result === 'great-failure';
   if (!isLoss || gameState.inventory.length === 0) return [];
 
   const availableItems = gameState.inventory.filter(entry => entry.quantity > 0);
@@ -1595,7 +1609,7 @@ function completeLifeGoal(
     title: `道途目标：${definition.name}`,
     description: definition.completionText,
     effects: definition.reward,
-    result: 'success'
+    result: 'neutral'
   };
   const progressDelta = calculateCultivationProgressDelta(gameState, rewardEvent, definition.reward);
   const lifespanDelta = calculateLifespanDelta(gameState, rewardEvent, definition.reward);

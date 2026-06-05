@@ -94,10 +94,8 @@ export default function EventDisplay({
   const getEventColor = (result: string) => {
     switch (result) {
       case 'great-success':
-      case 'success':
         return 'border-[#7f9a78]/35';
       case 'great-failure':
-      case 'failure':
         return 'border-[#b98678]/35';
       default:
         return 'border-[#8d947f]/30';
@@ -114,10 +112,6 @@ export default function EventDisplay({
         return '大成功';
       case 'great-failure':
         return '大失败';
-      case 'success':
-        return '成功';
-      case 'failure':
-        return '失败';
       default:
         return '普通';
     }
@@ -223,9 +217,7 @@ export default function EventDisplay({
           <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
             isPendingChoice ? 'bg-[#eef2e7] text-[#45564f]' :
             currentEvent?.result === 'great-success' ? 'bg-[#e8d49a] text-[#7a5426]' :
-            currentEvent?.result === 'success' ? 'bg-[#e7eddd] text-[#355d58]' :
             currentEvent?.result === 'great-failure' ? 'bg-[#e6b8ae] text-[#8f2f24]' :
-            currentEvent?.result === 'failure' ? 'bg-[#f2d9d2] text-[#9d3d2f]' :
             'bg-[#eee8d4] text-[#6d634d]'
           }`}>
             {getResultText(currentEvent?.result || '')}
