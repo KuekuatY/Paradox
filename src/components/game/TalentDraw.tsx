@@ -52,15 +52,27 @@ export default function TalentDraw() {
           <DrawingState key="drawing" label={step === 'spiritRoot' ? '正在观测灵根...' : '正在推演天赋...'} />
         ) : (
           <motion.div
-            key={step}
+            key="draw-panel"
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             className="w-full max-w-3xl px-0 sm:px-4"
           >
             <div className="mb-4 grid grid-cols-2 gap-2 text-center text-sm sm:mb-6 sm:gap-3">
-              <StepBadge active={step === 'spiritRoot'} done={!!currentSpiritRoot} label="一观灵根" />
-              <StepBadge active={step !== 'spiritRoot' && !currentTalent} done={!!currentTalent} label="二择天赋" />
+              <StepButton
+                active={step === 'spiritRoot'}
+                done={!!currentSpiritRoot}
+                disabled={!!currentSpiritRoot}
+                label="一观灵根"
+                onClick={handleDrawSpiritRoot}
+              />
+              <StepButton
+                active={!!currentSpiritRoot && step !== 'ready'}
+                done={!!currentTalent}
+                disabled={!currentSpiritRoot || talentOptions.length > 0 || !!currentTalent}
+                label="二观天赋"
+                onClick={handleDrawTalent}
+              />
             </div>
 
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
@@ -97,30 +109,11 @@ export default function TalentDraw() {
 
             <div className="mt-6 text-center sm:mt-8">
               {step === 'spiritRoot' && (
-                <>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleDrawSpiritRoot}
-                    className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
-                    animate={{ scale: [1, 1.02, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    抽取灵根
-                  </motion.button>
-                  <p className="mt-4 text-sm text-[#4f5d55] sm:mt-6 sm:text-base">灵根定其路，天赋定其势</p>
-                </>
+                <p className="text-sm text-[#4f5d55] sm:text-base">先点一观灵根，定下修炼底盘。</p>
               )}
 
               {step === 'talent' && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleDrawTalent}
-                  className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
-                >
-                  抽取天赋
-                </motion.button>
+                <p className="text-sm text-[#4f5d55] sm:text-base">再点二观天赋，推演三道命格。</p>
               )}
 
               {step === 'selectTalent' && (
@@ -134,7 +127,7 @@ export default function TalentDraw() {
                   onClick={handleConfirm}
                   className="ink-button-primary w-full px-8 py-4 text-xl sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
                 >
-                  踏入修仙路
+                  开始修仙路
                 </motion.button>
               )}
             </div>
@@ -173,19 +166,39 @@ function DrawingState({ label }: { label: string }) {
   );
 }
 
-function StepBadge({ active, done, label }: { active: boolean; done: boolean; label: string }) {
+function StepButton({
+  active,
+  done,
+  disabled,
+  label,
+  onClick
+}: {
+  active: boolean;
+  done: boolean;
+  disabled: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
-    <div
-      className={`rounded-md border px-2 py-2 font-semibold sm:px-4 ${
+    <motion.button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`min-h-[44px] rounded-md border px-2 py-2 font-semibold transition sm:px-4 ${
         active
-          ? 'border-[#9a5b2f]/50 bg-[#f0dfad]/45 text-[#7a5426]'
+          ? 'border-[#9a5b2f]/50 bg-[#f0dfad]/45 text-[#7a5426] shadow-sm'
           : done
             ? 'border-[#7f9a78]/40 bg-[#eef3df]/70 text-[#46694f]'
             : 'border-[#738275]/25 bg-[#fff9e8]/45 text-[#66766e]'
-      }`}
+      } ${disabled ? 'cursor-default' : 'hover:border-[#9a5b2f]/45 hover:bg-[#fffdf2]'}`}
+      animate={{ scale: active && !done ? [1, 1.02, 1] : 1 }}
+      transition={{ duration: 2, repeat: active && !done ? Infinity : 0 }}
     >
-      {label}
-    </div>
+      <span className="block">{label}</span>
+      <span className="mt-0.5 block text-xs font-normal opacity-75">
+        {done ? '已定' : disabled && active ? '择一命格' : active ? '点击抽取' : '未开启'}
+      </span>
+    </motion.button>
   );
 }
 
