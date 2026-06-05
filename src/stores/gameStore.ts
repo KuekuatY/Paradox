@@ -768,6 +768,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
+  const itemRewards = generateCombatItemRewards(event, combatResult.result);
   const itemLosses = generateCombatItemLosses(gameState, combatResult.result);
   const techniqueRewards = generateEventTechniqueRewards(gameState, event, combatResult.result);
   const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
@@ -777,6 +778,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     description: `${event.description}${choiceText}${combatResult.report.resultText}`,
     appliedEffects,
     combat: combatResult.report,
+    ...(itemRewards.length > 0 ? { itemRewards } : {}),
     ...(itemLosses.length > 0 ? { itemLosses } : {}),
     ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
     result: combatResult.result
@@ -789,7 +791,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     combatStats: updateCombatStats(gameState.combatStats, combatResult.report, combatResult.result),
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
-    inventory: removeInventoryRewards(gameState.inventory, itemLosses),
+    inventory: removeInventoryRewards(addInventoryRewards(gameState.inventory, itemRewards), itemLosses),
     techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
     events: [...gameState.events, newEvent]
   };
@@ -1309,6 +1311,56 @@ function generateEventItemRewards(event: GameEvent, result: GameEvent['result'])
       ]);
     default:
       return [];
+  }
+}
+
+function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
+  const isWin = result === 'success' || result === 'great-success';
+  if (!isWin) return [];
+
+  const rewardChance = result === 'great-success' ? 0.82 : 0.48;
+  if (Math.random() > rewardChance) return [];
+
+  const quantity = result === 'great-success' ? 2 : 1;
+  switch (event.id) {
+    case 'combat-beast-hunt':
+      return rollOneReward([
+        ['beast-core', 0.55],
+        ['spirit-herb', 0.3],
+        ['bone-tempering-pill', 0.15]
+      ], quantity);
+    case 'combat-demonic-cultivator':
+    case 'combat-heart-devil':
+      return rollOneReward([
+        ['blood-jade', 0.45],
+        ['fortune-talisman', 0.25],
+        ['soul-nourishing-pill', 0.3]
+      ], quantity);
+    case 'combat-ancient-beast':
+      return rollOneReward([
+        ['ancient-scale', 0.55],
+        ['blood-jade', 0.25],
+        ['bone-tempering-pill', 0.2]
+      ], quantity);
+    case 'combat-caravan-escort':
+      return rollOneReward([
+        ['spirit-stone-pouch', 0.55],
+        ['qi-gathering-pill', 0.3],
+        ['spirit-herb', 0.15]
+      ], quantity);
+    case 'combat-sword-contest':
+    case 'combat-arena-duel':
+      return rollOneReward([
+        ['old-manual-page', 0.35],
+        ['bone-tempering-pill', 0.28],
+        ['spirit-stone-pouch', 0.37]
+      ], quantity);
+    default:
+      return rollOneReward([
+        ['beast-core', 0.4],
+        ['spirit-stone-pouch', 0.35],
+        ['qi-gathering-pill', 0.25]
+      ], quantity);
   }
 }
 
