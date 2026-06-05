@@ -1093,7 +1093,7 @@ function calculateCombatResult(
   const roll = Math.random();
   const rawResult = roll <= winRate
     ? roll <= winRate * 0.07 ? 'great-success' : 'success'
-    : roll >= 1 - ((1 - winRate) * 0.07) ? 'great-failure' : 'failure';
+    : roll >= 1 - ((1 - winRate) * 0.04) ? 'great-failure' : 'failure';
   const result = rawResult === 'great-success' || rawResult === 'great-failure' ? rawResult : 'neutral';
   const isWin = rawResult === 'success' || rawResult === 'great-success';
   const outcomeScale = rawResult === 'great-success'
@@ -1535,7 +1535,7 @@ function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): Ga
   if (isNeutralEvent) return 'neutral';
 
   const greatSuccessChance = Math.max(0.02, Math.min(0.06, 0.02 + successRate * 0.04));
-  const greatFailureChance = Math.max(0.02, Math.min(0.06, 0.02 + (1 - successRate) * 0.04));
+  const greatFailureChance = Math.max(0.01, Math.min(0.035, 0.01 + (1 - successRate) * 0.025));
   const roll = Math.random();
 
   if (roll < greatFailureChance) return 'great-failure';
