@@ -31,6 +31,7 @@ export default function EventDisplay({
   
   const currentEvent = gameState.pendingEvent ?? gameState.events[gameState.events.length - 1];
   const isPendingChoice = !!gameState.pendingEvent;
+  const cultivationYearStep = getCultivationYearStep(gameState.currentRealm.level);
   const effectEntries = !isPendingChoice && currentEvent?.appliedEffects
     ? Object.entries(currentEvent.appliedEffects).filter(([, value]) => value !== undefined)
     : [];
@@ -237,7 +238,7 @@ export default function EventDisplay({
             onClick={handleContinue}
             className="ink-button-primary w-full text-lg sm:w-auto sm:text-xl"
           >
-            继续修仙
+            {cultivationYearStep > 1 ? `闭关 ${cultivationYearStep} 年` : '继续修仙'}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -277,6 +278,29 @@ export default function EventDisplay({
       )}
     </motion.div>
   );
+}
+
+function getCultivationYearStep(realmLevel: number): number {
+  switch (realmLevel) {
+    case 2:
+      return 2;
+    case 3:
+      return 3;
+    case 4:
+      return 5;
+    case 5:
+      return 10;
+    case 6:
+      return 20;
+    case 7:
+      return 40;
+    case 8:
+      return 80;
+    case 9:
+      return 100;
+    default:
+      return 1;
+  }
 }
 
 function PathChoices({ onChoose }: { onChoose: (pathId: CultivationPath['id']) => void }) {

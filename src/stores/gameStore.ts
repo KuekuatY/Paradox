@@ -250,7 +250,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
 
-    const newAge = gameState.age + 1;
+    const newAge = gameState.age + getCultivationYearStep(gameState.currentRealm.level);
     const agedState: GameState = {
       ...gameState,
       age: newAge
@@ -313,6 +313,47 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
+    const breakthroughSuccessRate = calculateBreakthroughSuccessRate(gameState, nextRealm);
+
+    if (Math.random() > breakthroughSuccessRate) {
+      const failureEvent: GameEvent = {
+        id: `breakthrough-failed-${Date.now()}`,
+        age: gameState.age,
+        type: 'disaster',
+        title: '冲关失利',
+        description: '你强行冲击瓶颈，灵机却在关口前散乱反噬，寿元与修为都折损了不少。',
+        effects: {
+          修为: -getBreakthroughFailureProgressPercent(gameState),
+          寿命: -getBreakthroughFailureLifespanPercent(gameState)
+        },
+        result: 'failure'
+      };
+      const lifespanDelta = calculateLifespanDelta(gameState, failureEvent, failureEvent.effects);
+      const progressDelta = calculateCultivationProgressDelta(gameState, failureEvent, failureEvent.effects);
+      const stateAfterFailure: GameState = {
+        ...gameState,
+        lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
+        cultivationProgress: clampProgress(
+          gameState.cultivationProgress + progressDelta,
+          getRequiredCultivationProgress(gameState)
+        ),
+        events: [
+          ...gameState.events,
+          {
+            ...failureEvent,
+            appliedEffects: buildAppliedEffects(failureEvent.effects, progressDelta, lifespanDelta)
+          }
+        ]
+      };
+
+      set({
+        gameState: unlockAchievements(applyLifeGoalProgress(stateAfterFailure, failureEvent))
+      });
+
+      get().checkGameEnd();
+      return;
+    }
+
     const lifespanGain = getRealmLifespanGain(currentIndex);
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
@@ -1188,6 +1229,34 @@ function canAdvanceRealm(gameState: GameState): boolean {
   return true;
 }
 
+function calculateBreakthroughSuccessRate(
+  gameState: GameState,
+  nextRealm: GameState['currentRealm']
+): number {
+  const requirements = Object.entries(nextRealm.requirements.attributes);
+  const averageSurplus = requirements.length > 0
+    ? requirements.reduce((sum, [key, required]) => {
+      const requiredValue = required ?? 1;
+      const current = gameState.attributes[key as keyof Attributes];
+      return sum + Math.min(0.35, Math.max(0, (current - requiredValue) / requiredValue));
+    }, 0) / requirements.length
+    : 0;
+  const fortuneBonus = getAttributePower(gameState.attributes.气运) * 0.006;
+  const realmPressure = Math.max(0, gameState.currentRealm.level - 3) * 0.02;
+
+  return Math.max(0.55, Math.min(0.92, 0.74 + averageSurplus * 0.45 + fortuneBonus - realmPressure));
+}
+
+function getBreakthroughFailureProgressPercent(gameState: GameState): number {
+  if (gameState.currentRealm.level >= 6) return 35;
+  if (gameState.currentRealm.level >= 4) return 30;
+  return 25;
+}
+
+function getBreakthroughFailureLifespanPercent(gameState: GameState): number {
+  return Math.min(8, Math.max(1, gameState.currentRealm.level));
+}
+
 function meetsAttributeRequirements(
   attributes: Attributes,
   requirements: Partial<Attributes>
@@ -1204,6 +1273,29 @@ function getRequiredCultivationProgress(gameState: GameState): number {
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
 
   return nextRealm?.cultivationRequired ?? 0;
+}
+
+function getCultivationYearStep(realmLevel: number): number {
+  switch (realmLevel) {
+    case 2:
+      return 2;
+    case 3:
+      return 3;
+    case 4:
+      return 5;
+    case 5:
+      return 10;
+    case 6:
+      return 20;
+    case 7:
+      return 40;
+    case 8:
+      return 80;
+    case 9:
+      return 100;
+    default:
+      return 1;
+  }
 }
 
 function getRealmLifespanGain(currentIndex: number): number {
