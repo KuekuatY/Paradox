@@ -560,11 +560,10 @@ function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean
 function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
   const isNeutralEvent = event.result === 'neutral';
   const successRate = isNeutralEvent
-    ? 1
+    ? 0.5
     : clampRate(calculateEventSuccessRate(event, gameState) + (choice?.successModifier ?? 0));
-  const isSuccess = isNeutralEvent || Math.random() < successRate;
-  const result = isNeutralEvent ? 'neutral' : isSuccess ? 'success' : 'failure';
-  const resolvedEffects = resolveEventEffects(event, isSuccess);
+  const result = calculateEventOutcome(successRate, isNeutralEvent);
+  const resolvedEffects = resolveEventEffects(event, result);
   const chosenEffects = choice
     ? mergeEffects(scaleEventEffectsForChoice(resolvedEffects, choice), resolveChoiceEffects(gameState, choice))
     : resolvedEffects;
@@ -600,6 +599,18 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   };
 
   return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+}
+
+function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): GameEvent['result'] {
+  if (isNeutralEvent) return 'neutral';
+
+  const greatSuccessChance = Math.max(0.04, Math.min(0.1, 0.04 + successRate * 0.06));
+  const greatFailureChance = Math.max(0.04, Math.min(0.1, 0.04 + (1 - successRate) * 0.06));
+  const roll = Math.random();
+
+  if (roll < greatFailureChance) return 'great-failure';
+  if (roll < greatFailureChance + greatSuccessChance) return 'great-success';
+  return 'neutral';
 }
 
 function getEventChoices(event: GameEvent): EventChoice[] {
@@ -1197,7 +1208,7 @@ function applyAttributeModifiers(
   return adjustedEffects;
 }
 
-function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['effects'] {
+function resolveEventEffects(event: GameEvent, result: GameEvent['result']): GameEvent['effects'] {
   const resolvedEffects: GameEvent['effects'] = {};
 
   Object.entries(event.effects).forEach(([key, value]) => {
@@ -1206,8 +1217,7 @@ function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['e
       return;
     }
 
-    const shouldReduce = isSuccess ? value < 0 : value > 0;
-    const resolvedValue = shouldReduce ? scaleNumericValue(value, 0.5) : value;
+    const resolvedValue = scaleEffectByOutcome(value, result);
 
     if (resolvedValue !== 0) {
       (resolvedEffects as Record<string, number>)[key] = resolvedValue;
@@ -1217,14 +1227,36 @@ function resolveEventEffects(event: GameEvent, isSuccess: boolean): GameEvent['e
   return resolvedEffects;
 }
 
+function scaleEffectByOutcome(value: number, result: GameEvent['result']): number {
+  switch (result) {
+    case 'great-success':
+      return scaleNumericValue(value, value > 0 ? 1.35 : 0.5);
+    case 'great-failure':
+      return scaleNumericValue(value, value > 0 ? 0.5 : 1.35);
+    case 'success':
+      return scaleNumericValue(value, value > 0 ? 1.15 : 0.7);
+    case 'failure':
+      return scaleNumericValue(value, value > 0 ? 0.7 : 1.15);
+    case 'neutral':
+    default:
+      return scaleNumericValue(value, 0.75);
+  }
+}
+
 function hasNegativeNumericEffect(event: GameEvent): boolean {
   return Object.values(event.effects).some(value => typeof value === 'number' && value < 0);
 }
 
 function scaleNumericValue(value: number, factor: number): number {
-  return value > 0
+  const scaledValue = value > 0
     ? Math.floor(value * factor)
     : Math.ceil(value * factor);
+
+  if (scaledValue === 0 && value !== 0 && factor > 0) {
+    return value > 0 ? 1 : -1;
+  }
+
+  return scaledValue;
 }
 
 function canBreakthrough(gameState: GameState): boolean {

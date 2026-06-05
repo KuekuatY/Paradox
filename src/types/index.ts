@@ -152,7 +152,7 @@ export interface GameEvent {
     修为?: number;
   };
   appliedEffects?: GameEvent['effects'];
-  result: 'success' | 'failure' | 'neutral';
+  result: 'success' | 'failure' | 'neutral' | 'great-success' | 'great-failure';
   isEnding?: boolean;
   endingType?: 'died' | 'ascended';
 }

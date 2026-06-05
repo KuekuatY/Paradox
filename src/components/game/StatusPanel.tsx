@@ -426,13 +426,17 @@ export function RecentEvents({ events }: { events: GameEvent[] }) {
 }
 
 function getEventResultText(result: GameEvent['result']): string {
+  if (result === 'great-success') return '大成';
   if (result === 'success') return '成';
+  if (result === 'great-failure') return '大折';
   if (result === 'failure') return '折';
   return '平';
 }
 
 function getEventResultClass(result: GameEvent['result']): string {
+  if (result === 'great-success') return 'font-semibold text-[#7a5426]';
   if (result === 'success') return 'font-semibold text-[#355d58]';
+  if (result === 'great-failure') return 'font-semibold text-[#8f2f24]';
   if (result === 'failure') return 'font-semibold text-[#9d3d2f]';
   return 'font-semibold text-[#6d634d]';
 }
