@@ -136,10 +136,19 @@ export function getAvailableTechniqueRewards(
   knownTechniqueIds: string[]
 ): TechniqueDefinition[] {
   const knownSet = new Set(knownTechniqueIds);
+  const currentGrade = getTechniqueGradeForRealm(realmLevel);
 
   return techniques.filter(technique => {
     return technique.pathId === pathId
-      && technique.minRealmLevel <= realmLevel
+      && technique.grade === currentGrade
       && !knownSet.has(technique.id);
   });
+}
+
+export function getTechniqueGradeForRealm(realmLevel: number): TechniqueGrade {
+  if (realmLevel >= 9) return '仙';
+  if (realmLevel >= 7) return '天';
+  if (realmLevel >= 5) return '地';
+  if (realmLevel >= 3) return '玄';
+  return '黄';
 }
