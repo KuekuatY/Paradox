@@ -7,7 +7,7 @@ import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import { getItem } from '@/data/items';
-import { getBaseTechnique, getEligibleTechnique, getTechnique } from '@/data/techniques';
+import { getAvailableTechniqueRewards, getBaseTechnique, getTechnique } from '@/data/techniques';
 import type {
   ActiveLifeGoal,
   EventChoice,
@@ -497,17 +497,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const lifespanGain = getRealmLifespanGain(currentIndex);
-    const unlockedTechnique = getUnlockedTechniqueForRealm(gameState, nextRealm.level);
-    const techniqueRewards = unlockedTechnique ? [unlockedTechnique.id] : [];
     const breakthroughEvent: GameEvent = {
       id: `breakthrough-${Date.now()}`,
       age: gameState.age,
       type: 'cultivation',
       title: '突破瓶颈',
-      description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。${unlockedTechnique ? `此境正合《${unlockedTechnique.name}》，你将其收入道途中继续参悟。` : ''}`,
+      description: `灵机圆满，瓶颈破开，你踏入了${nextRealm.name}。`,
       effects: { 境界: 'advance', 寿命: lifespanGain },
       appliedEffects: { 境界: 'advance', 寿命: lifespanGain },
-      ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
       result: 'success'
     };
 
@@ -516,7 +513,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentRealm: nextRealm,
       lifespan: addLifespan(gameState.lifespan, lifespanGain),
       cultivationProgress: 0,
-      techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
       events: [...gameState.events, breakthroughEvent]
     };
 
@@ -716,12 +712,14 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
   const itemRewards = generateEventItemRewards(event, result);
+  const techniqueRewards = generateEventTechniqueRewards(gameState, event, result);
   const newEvent: GameEvent = {
     ...event,
     title: choice ? `${event.title}：${choice.label}` : event.title,
     description: choice ? `${event.description}你选择${choice.label}，${choice.outcome}` : event.description,
     appliedEffects,
     ...(itemRewards.length > 0 ? { itemRewards } : {}),
+    ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
     result
   };
   const stateAfterEvent: GameState = {
@@ -732,6 +730,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
     inventory: addInventoryRewards(gameState.inventory, itemRewards),
+    techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
     events: [...gameState.events, newEvent]
   };
 
@@ -772,6 +771,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
   const itemRewards = generateCombatItemRewards(event, combatResult.result);
+  const techniqueRewards = generateEventTechniqueRewards(gameState, event, combatResult.result);
   const choiceText = choice ? `你选择${choice.label}，${choice.outcome}` : '';
   const newEvent: GameEvent = {
     ...event,
@@ -780,6 +780,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     appliedEffects,
     combat: combatResult.report,
     ...(itemRewards.length > 0 ? { itemRewards } : {}),
+    ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
     result: combatResult.result
   };
   const stateAfterEvent: GameState = {
@@ -791,6 +792,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
     inventory: addInventoryRewards(gameState.inventory, itemRewards),
+    techniques: addLearnedTechniques(gameState.techniques, techniqueRewards),
     events: [...gameState.events, newEvent]
   };
 
@@ -1265,19 +1267,6 @@ function getTechniqueProgressBase(gameState: GameState): number {
   return Math.max(100, gameState.currentRealm.cultivationRequired);
 }
 
-function getUnlockedTechniqueForRealm(
-  gameState: GameState,
-  realmLevel: number
-): TechniqueDefinition | undefined {
-  if (!gameState.cultivationPath) return undefined;
-
-  const eligibleTechnique = getEligibleTechnique(gameState.cultivationPath, realmLevel);
-  if (!eligibleTechnique) return undefined;
-  if (gameState.techniques.some(technique => technique.techniqueId === eligibleTechnique.id)) return undefined;
-
-  return eligibleTechnique;
-}
-
 function addInventoryRewards(
   inventory: InventoryEntry[],
   rewards: InventoryReward[]
@@ -1399,6 +1388,68 @@ function generateCombatItemRewards(event: GameEvent, result: GameEvent['result']
         ['qi-gathering-pill', 0.25]
       ], quantity);
   }
+}
+
+function generateEventTechniqueRewards(
+  gameState: GameState,
+  event: GameEvent,
+  result: GameEvent['result']
+): string[] {
+  if (!gameState.cultivationPath || event.type === 'childhood') return [];
+  if (result === 'failure' || result === 'great-failure') return [];
+
+  const candidates = getAvailableTechniqueRewards(
+    gameState.cultivationPath,
+    gameState.currentRealm.level,
+    gameState.techniques.map(technique => technique.techniqueId)
+  );
+  if (candidates.length === 0) return [];
+
+  const chance = getTechniqueRewardChance(event, result);
+  if (Math.random() > chance) return [];
+
+  return [pickTechniqueReward(candidates).id];
+}
+
+function getTechniqueRewardChance(event: GameEvent, result: GameEvent['result']): number {
+  const resultChance = result === 'great-success'
+    ? 0.42
+    : result === 'success'
+      ? 0.22
+      : 0.07;
+
+  switch (event.type) {
+    case 'encounter':
+    case 'mind':
+      return resultChance + 0.12;
+    case 'sect':
+    case 'resource':
+      return resultChance + 0.08;
+    case 'combat':
+      return resultChance + 0.06;
+    case 'cultivation':
+      return resultChance + 0.03;
+    default:
+      return resultChance;
+  }
+}
+
+function pickTechniqueReward(candidates: TechniqueDefinition[]): TechniqueDefinition {
+  const weightedCandidates = candidates.map(technique => ({
+    technique,
+    weight: 1 + technique.minRealmLevel * 0.12
+  }));
+  const totalWeight = weightedCandidates.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (const item of weightedCandidates) {
+    roll -= item.weight;
+    if (roll <= 0) {
+      return item.technique;
+    }
+  }
+
+  return weightedCandidates[0].technique;
 }
 
 function rollOneReward(
