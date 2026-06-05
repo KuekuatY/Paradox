@@ -57,6 +57,10 @@ export default function StatusPanel({
             currentRealmName={currentRealm.name}
             attributes={attributes}
           />
+
+          <div className="mt-3 sm:mt-4">
+            <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
+          </div>
         </div>
 
         <div className="space-y-3 sm:space-y-4">
@@ -95,10 +99,6 @@ export default function StatusPanel({
             />
           )}
         </div>
-      </div>
-
-      <div className="mt-3 sm:mt-5">
-        <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
       </div>
     </motion.div>
   );
