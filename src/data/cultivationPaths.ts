@@ -6,7 +6,7 @@ export const cultivationPaths: CultivationPath[] = [
     name: '剑修',
     description: '以剑意立身，杀伐凌厉，修为推进快，但劫数与冲突也更容易找上门。',
     focus: '修为 / 根骨',
-    effect: { 根骨: 4, 悟性: 2 },
+    effect: { 根骨: 4, 神识: 2, 悟性: 2 },
     modifiers: {
       修为倍率: 1.08,
       灾劫抗性: -0.04,
@@ -34,7 +34,7 @@ export const cultivationPaths: CultivationPath[] = [
     name: '法修',
     description: '以术法与经卷入道，悟性收益更高，心境与宗门事件更容易成为助力。',
     focus: '悟性 / 术法',
-    effect: { 悟性: 8 },
+    effect: { 神识: 4, 悟性: 8 },
     modifiers: {
       修为倍率: 1.03,
       属性倍率: 1.04,
@@ -47,7 +47,7 @@ export const cultivationPaths: CultivationPath[] = [
     name: '邪修',
     description: '不循常法，重机缘与掠夺，成长上限来得快，但名声、劫数与失衡风险更高。',
     focus: '气运 / 资源',
-    effect: { 气运: 5, 家境: 3, 颜值: -2 },
+    effect: { 神识: 2, 气运: 5, 家境: 1, 颜值: -2 },
     modifiers: {
       修为倍率: 1.12,
       属性倍率: 1.02,

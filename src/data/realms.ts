@@ -70,7 +70,7 @@ export const realms: Realm[] = [
     description: '元婴化神，神识万里',
     requirements: {
       minAge: 200,
-      attributes: { 根骨: 215, 悟性: 190, 气运: 145, 家境: 90 }
+      attributes: { 根骨: 215, 悟性: 190, 神识: 170, 气运: 145 }
     }
   },
   {
@@ -82,7 +82,7 @@ export const realms: Realm[] = [
     description: '炼化虚妄，身化天地',
     requirements: {
       minAge: 400,
-      attributes: { 根骨: 320, 悟性: 285, 气运: 220, 家境: 160 }
+      attributes: { 根骨: 320, 悟性: 285, 神识: 260, 气运: 220 }
     }
   },
   {
@@ -94,7 +94,7 @@ export const realms: Realm[] = [
     description: '神魂合体，初窥天道',
     requirements: {
       minAge: 800,
-      attributes: { 根骨: 440, 悟性: 390, 气运: 315, 家境: 240 }
+      attributes: { 根骨: 440, 悟性: 390, 神识: 360, 气运: 315 }
     }
   },
   {
@@ -106,7 +106,7 @@ export const realms: Realm[] = [
     description: '功德圆满，只待飞升',
     requirements: {
       minAge: 1500,
-      attributes: { 根骨: 575, 悟性: 515, 气运: 425, 家境: 335 }
+      attributes: { 根骨: 575, 悟性: 515, 神识: 480, 气运: 425 }
     }
   },
   {
@@ -118,7 +118,7 @@ export const realms: Realm[] = [
     description: '历经天劫，飞升成仙',
     requirements: {
       minAge: 3000,
-      attributes: { 根骨: 690, 悟性: 625, 气运: 535, 家境: 440 }
+      attributes: { 根骨: 690, 悟性: 625, 神识: 600, 气运: 535 }
     }
   }
 ];

@@ -20,7 +20,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.12,
       positiveScale: 0.75,
       negativeScale: 0.45,
-      effects: { 悟性: 2 }
+      effects: { 神识: 1, 悟性: 2 }
     },
     {
       id: 'ask-sect',
@@ -62,7 +62,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.04,
       positiveScale: 0.85,
       negativeScale: 0.9,
-      effects: { 颜值: 2, 家境: 2, 修为: -2 }
+      effects: { 颜值: 2, 家境: 1, 修为: -2 }
     }
   ],
   'resource-auction': [
@@ -94,7 +94,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.02,
       positiveScale: 0.85,
       negativeScale: 0.8,
-      effects: { 家境: 2, 气运: 2, 修为: -1 }
+      effects: { 家境: 1, 气运: 2, 修为: -1 }
     }
   ],
   'social-rival': [
@@ -106,7 +106,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.12,
       positiveScale: 0.65,
       negativeScale: 0.55,
-      effects: { 颜值: -1, 悟性: 2 }
+      effects: { 颜值: -1, 神识: 1, 悟性: 2 }
     },
     {
       id: 'face-rival',
@@ -148,7 +148,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.1,
       positiveScale: 0.55,
       negativeScale: 0.45,
-      effects: { 寿命: 1, 悟性: 1 }
+      effects: { 寿命: 1, 神识: 1, 悟性: 1 }
     },
     {
       id: 'buy-medicine',
@@ -180,7 +180,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0,
       positiveScale: 0.9,
       negativeScale: 0.9,
-      effects: { 气运: 3, 悟性: 1, 修为: -3 }
+      effects: { 气运: 3, 神识: 1, 悟性: 1, 修为: -3 }
     },
     {
       id: 'point-road',
@@ -202,7 +202,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.12,
       positiveScale: 0.7,
       negativeScale: 0.45,
-      effects: { 悟性: 2, 修为: -1 }
+      effects: { 神识: 1, 悟性: 2, 修为: -1 }
     },
     {
       id: 'ride-fame',
@@ -212,7 +212,7 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: -0.04,
       positiveScale: 1.15,
       negativeScale: 1.25,
-      effects: { 颜值: 3, 家境: 2 }
+      effects: { 颜值: 3, 家境: 1 }
     },
     {
       id: 'ignore-talk',

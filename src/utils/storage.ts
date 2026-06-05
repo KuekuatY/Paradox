@@ -3,10 +3,10 @@ import type { GameRecord } from '@/types';
 const STORAGE_KEY = 'gameRecords';
 const DEFAULT_STATS = {
   根骨: 0,
+  神识: 0,
   悟性: 0,
   气运: 0,
-  颜值: 0,
-  家境: 0
+  颜值: 0
 };
 
 export function saveGameRecord(record: GameRecord): void {
@@ -54,6 +54,7 @@ function normalizeGameRecord(record: unknown): GameRecord | null {
     talent: typeof value.talent === 'string' ? value.talent : '',
     result: value.result === 'ascended' ? 'ascended' : 'died',
     stats,
+    familyWealth: normalizeNumber(value.familyWealth ?? (value.stats as { 家境?: unknown } | undefined)?.家境),
     achievements: Array.isArray(value.achievements)
       ? value.achievements.filter((achievement): achievement is string => typeof achievement === 'string')
       : []
@@ -66,10 +67,10 @@ function normalizeStats(stats: unknown): GameRecord['stats'] {
   const value = stats as Partial<GameRecord['stats']>;
   return {
     根骨: normalizeNumber(value.根骨),
+    神识: normalizeNumber(value.神识),
     悟性: normalizeNumber(value.悟性),
     气运: normalizeNumber(value.气运),
-    颜值: normalizeNumber(value.颜值),
-    家境: normalizeNumber(value.家境)
+    颜值: normalizeNumber(value.颜值)
   };
 }
 

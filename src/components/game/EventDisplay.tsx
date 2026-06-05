@@ -215,7 +215,7 @@ export default function EventDisplay({
           {showBreakthroughControls && (
             <PreparationPanel
               canUse={!isPendingChoice}
-              familyWealth={gameState.attributes.家境}
+              familyWealth={gameState.familyWealth}
               shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
               onPrepare={useBreakthroughPreparation}
             />

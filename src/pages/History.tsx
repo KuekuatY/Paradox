@@ -79,8 +79,11 @@ export default function History() {
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#59645f]">
                     <span>根骨: {record.stats.根骨}</span>
+                    <span>神识: {record.stats.神识}</span>
                     <span>悟性: {record.stats.悟性}</span>
                     <span>气运: {record.stats.气运}</span>
+                    <span>颜值: {record.stats.颜值}</span>
+                    <span>家境: {record.familyWealth}</span>
                   </div>
                 </div>
               </motion.div>

@@ -2,6 +2,18 @@ import type { LifeGoalDefinition } from '@/types';
 
 export const lifeGoals: LifeGoalDefinition[] = [
   {
+    id: 'temper-spirit',
+    name: '凝练神识',
+    description: '以观想与入定打磨灵台，让神识足以承载更高境界。',
+    progressKind: 'effectGain',
+    target: 22,
+    targetLabel: '神识提升',
+    effectKeys: ['神识'],
+    minRealmLevel: 3,
+    reward: { 神识: 6, 修为: 5 },
+    completionText: '灵台清明许多，外界纷扰似乎隔了一层薄雾。'
+  },
+  {
     id: 'forge-foundation',
     name: '打磨根基',
     description: '以筋骨承载灵机，优先补足突破所需的根基。',
@@ -32,7 +44,7 @@ export const lifeGoals: LifeGoalDefinition[] = [
     target: 18,
     targetLabel: '家境提升',
     effectKeys: ['家境'],
-    reward: { 家境: 8, 气运: 2 },
+    reward: { 家境: 4, 气运: 2 },
     completionText: '手中资源宽裕许多，许多难事也有了转圜余地。'
   },
   {
@@ -54,7 +66,7 @@ export const lifeGoals: LifeGoalDefinition[] = [
     target: 18,
     targetLabel: '颜值提升',
     effectKeys: ['颜值'],
-    reward: { 颜值: 7, 家境: 4 },
+    reward: { 颜值: 7, 家境: 2 },
     completionText: '你的名声慢慢传开，来往时少了许多冷眼。'
   },
   {
@@ -78,7 +90,7 @@ export const lifeGoals: LifeGoalDefinition[] = [
     targetLabel: '宗门事务',
     eventTypes: ['sect'],
     minRealmLevel: 2,
-    reward: { 家境: 10, 颜值: 4 },
+    reward: { 家境: 4, 颜值: 4 },
     completionText: '宗门中终于有了你的一席位置。'
   },
   {
@@ -90,7 +102,7 @@ export const lifeGoals: LifeGoalDefinition[] = [
     targetLabel: '修为积累',
     effectKeys: ['修为'],
     minRealmLevel: 3,
-    reward: { 根骨: 5, 悟性: 5, 气运: 4 },
+    reward: { 根骨: 5, 神识: 4, 悟性: 5, 气运: 4 },
     completionText: '瓶颈前的准备更扎实了，心中也少了几分慌乱。'
   },
   {

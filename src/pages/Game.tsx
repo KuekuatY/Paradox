@@ -367,7 +367,7 @@ function MobileBreakthroughPanel({
       />
       <PreparationPanel
         canUse={!isBlockedByChoice}
-        familyWealth={gameState.attributes.家境}
+        familyWealth={gameState.familyWealth}
         shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
         onPrepare={onPrepare}
       />

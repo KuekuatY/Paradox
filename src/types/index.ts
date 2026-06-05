@@ -2,7 +2,9 @@ export type EventType = 'childhood' | 'cultivation' | 'encounter' | 'social' | '
 
 export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极品' | '神话' | '传说';
 
-export type AttributeEffect = Partial<Attributes>;
+export type AttributeEffect = Partial<Attributes> & {
+  家境?: number;
+};
 
 export type CultivationPathId = 'sword' | 'body' | 'spell' | 'demonic';
 
@@ -25,7 +27,7 @@ export interface LifeGoalDefinition {
   progressKind: LifeGoalProgressKind;
   target: number;
   targetLabel: string;
-  effectKeys?: Array<keyof Attributes | '修为' | '寿命'>;
+  effectKeys?: Array<keyof Attributes | '家境' | '修为' | '寿命'>;
   eventTypes?: EventType[];
   minRealmLevel?: number;
   maxRealmLevel?: number;
@@ -88,19 +90,19 @@ export interface Realm {
     minAge: number;
     attributes: {
       根骨?: number;
+      神识?: number;
       悟性?: number;
       气运?: number;
-      家境?: number;
     };
   };
 }
 
 export interface Attributes {
   根骨: number;
+  神识: number;
   悟性: number;
   气运: number;
   颜值: number;
-  家境: number;
 }
 
 export interface GameState {
@@ -108,6 +110,7 @@ export interface GameState {
   age: number;
   currentRealm: Realm;
   attributes: Attributes;
+  familyWealth: number;
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
@@ -133,12 +136,13 @@ export interface GameEvent {
     minRealmLevel?: number;
     maxRealmLevel?: number;
     minAge?: number;
-    attributes?: Partial<Attributes>;
+    attributes?: Partial<Attributes> & { 家境?: number };
     spiritRootIds?: string[];
     talentIds?: string[];
   };
   effects: {
     根骨?: number;
+    神识?: number;
     悟性?: number;
     气运?: number;
     颜值?: number;
@@ -162,5 +166,6 @@ export interface GameRecord {
   talent: string;
   result: 'died' | 'ascended';
   stats: Attributes;
+  familyWealth: number;
   achievements: string[];
 }

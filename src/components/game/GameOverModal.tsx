@@ -97,6 +97,10 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
                 <p className="ink-muted text-xs">根骨</p>
               </span>
               <span className="text-center">
+                <p className="text-base font-bold text-[#355d58] sm:text-lg">{gameState.attributes.神识}</p>
+                <p className="ink-muted text-xs">神识</p>
+              </span>
+              <span className="text-center">
                 <p className="text-base font-bold text-[#355d58] sm:text-lg">{gameState.attributes.悟性}</p>
                 <p className="ink-muted text-xs">悟性</p>
               </span>
@@ -108,10 +112,10 @@ export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProp
                 <p className="text-base font-bold text-[#9a5b2f] sm:text-lg">{gameState.attributes.颜值}</p>
                 <p className="ink-muted text-xs">颜值</p>
               </span>
-              <span className="text-center">
-                <p className="text-base font-bold text-[#9a5b2f] sm:text-lg">{gameState.attributes.家境}</p>
-                <p className="ink-muted text-xs">家境</p>
-              </span>
+            </div>
+            <div className="mt-3 rounded border border-[#738275]/20 bg-[#fffdf2]/55 px-3 py-2 text-center">
+              <p className="text-base font-bold text-[#9a5b2f] sm:text-lg">{gameState.familyWealth}</p>
+              <p className="ink-muted text-xs">家境</p>
             </div>
           </motion.div>
 

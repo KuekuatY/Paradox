@@ -51,11 +51,12 @@ const initialState: GameState = {
   currentRealm: realms[0],
   attributes: {
     根骨: BASE_ATTRIBUTE_VALUE,
+    神识: BASE_ATTRIBUTE_VALUE,
     悟性: BASE_ATTRIBUTE_VALUE,
     气运: BASE_ATTRIBUTE_VALUE,
-    颜值: BASE_ATTRIBUTE_VALUE,
-    家境: BASE_ATTRIBUTE_VALUE
+    颜值: BASE_ATTRIBUTE_VALUE
   },
+  familyWealth: BASE_ATTRIBUTE_VALUE,
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
@@ -78,17 +79,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const startingAttributeCap = getAttributeCap(realms[0]);
     const initialAttributes: Attributes = {
       根骨: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.根骨 || 0) + (talent.effect.根骨 || 0), startingAttributeCap),
+      神识: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.神识 || 0) + (talent.effect.神识 || 0), startingAttributeCap),
       悟性: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.悟性 || 0) + (talent.effect.悟性 || 0), startingAttributeCap),
       气运: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.气运 || 0) + (talent.effect.气运 || 0), startingAttributeCap),
-      颜值: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0), startingAttributeCap),
-      家境: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0), startingAttributeCap)
+      颜值: clampAttribute(BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.颜值 || 0) + (talent.effect.颜值 || 0), startingAttributeCap)
     };
+    const initialFamilyWealth = Math.max(
+      0,
+      BASE_ATTRIBUTE_VALUE + (spiritRoot.effect.家境 || 0) + (talent.effect.家境 || 0)
+    );
 
     const newGameState: GameState = {
       status: 'playing',
       age: STARTING_AGE,
       currentRealm: realms[0],
       attributes: initialAttributes,
+      familyWealth: initialFamilyWealth,
       spiritRoot,
       talent,
       cultivationPath: null,
@@ -147,6 +153,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cultivationPath: path.id,
       pendingPathChoice: false,
       attributes: applyAttributeEffects(gameState, path.effect),
+      familyWealth: applyFamilyWealthEffects(gameState, path.effect),
       events: [...gameState.events, pathEvent]
     };
 
@@ -184,19 +191,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const action = getPreparationAction(actionId);
     if (!action) return;
 
-    if ((gameState.attributes.家境 ?? 0) < action.cost) return;
+    if (gameState.familyWealth < action.cost) return;
 
     const requiredProgress = getRequiredCultivationProgress(gameState);
     const effects = action.effects(gameState);
-    const attributesAfterCost = {
-      ...gameState.attributes,
-      家境: clampAttribute(gameState.attributes.家境 - action.cost, getAttributeCap(gameState.currentRealm))
-    };
     const stateAfterCost = {
       ...gameState,
-      attributes: attributesAfterCost
+      familyWealth: Math.max(0, gameState.familyWealth - action.cost)
     };
     const newAttributes = applyAttributeEffects(stateAfterCost, effects);
+    const newFamilyWealth = applyFamilyWealthEffects(stateAfterCost, effects);
     const progressDelta = calculateCultivationProgressDelta(gameState, {
       id: action.id,
       age: gameState.age,
@@ -236,6 +240,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const stateAfterPreparation: GameState = {
       ...gameState,
       attributes: newAttributes,
+      familyWealth: newFamilyWealth,
       lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
       cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
       events: [...gameState.events, preparationEvent]
@@ -417,6 +422,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       talent: gameState.talent?.name || '',
       result,
       stats: gameState.attributes,
+      familyWealth: gameState.familyWealth,
       achievements: gameState.achievements
     });
   },
@@ -527,7 +533,7 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
   if (conditions.spiritRootIds && !conditions.spiritRootIds.includes(gameState.spiritRoot?.id ?? '')) return false;
   if (conditions.talentIds && !conditions.talentIds.includes(gameState.talent?.id ?? '')) return false;
 
-  if (conditions.attributes && !meetsAttributeRequirements(gameState.attributes, conditions.attributes)) {
+  if (conditions.attributes && !meetsEventAttributeRequirements(gameState, conditions.attributes)) {
     return false;
   }
 
@@ -571,6 +577,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     pendingEvent: null
   };
   const newAttributes = applyAttributeEffects(stateForEffects, adjustedEffects);
+  const newFamilyWealth = applyFamilyWealthEffects(stateForEffects, adjustedEffects);
   const newLifespan = lifespanDelta
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
@@ -586,6 +593,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     ...gameState,
     pendingEvent: null,
     attributes: newAttributes,
+    familyWealth: newFamilyWealth,
     lifespan: newLifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
     events: [...gameState.events, newEvent]
@@ -687,7 +695,7 @@ function getPreparationAction(actionId: string): PreparationAction | undefined {
       name: '稳固根基',
       description: '你暂缓冲境，回头打磨根基与悟法。修为略退，但突破门槛更容易补齐。',
       cost: 6,
-      effects: () => ({ 根骨: 6, 悟性: 4, 修为: -8 })
+      effects: () => ({ 根骨: 6, 神识: 4, 悟性: 4, 修为: -8 })
     },
     {
       id: 'elixir',
@@ -701,14 +709,14 @@ function getPreparationAction(actionId: string): PreparationAction | undefined {
       name: '请教高人',
       description: '你奉上厚礼，请高人为自己点破修行关窍。',
       cost: 16,
-      effects: () => ({ 悟性: 12, 修为: 4 })
+      effects: () => ({ 神识: 8, 悟性: 10, 修为: 4 })
     },
     {
       id: 'ward',
       name: '布置护阵',
       description: '你修缮洞府阵法，凝聚气运，也让心神更安定。',
       cost: 12,
-      effects: () => ({ 气运: 10, 颜值: 3 })
+      effects: () => ({ 神识: 3, 气运: 10, 颜值: 3 })
     }
   ];
 
@@ -814,6 +822,7 @@ function completeLifeGoal(
   const lifespanDelta = calculateLifespanDelta(gameState, rewardEvent, definition.reward);
   const rewardEffects = buildAppliedEffects(definition.reward, progressDelta, lifespanDelta);
   const newAttributes = applyAttributeEffects(gameState, definition.reward);
+  const newFamilyWealth = applyFamilyWealthEffects(gameState, definition.reward);
   const requiredProgress = getRequiredCultivationProgress(gameState);
   const events = mergeLifeGoalRewardIntoEvents(
     gameState.events,
@@ -824,6 +833,7 @@ function completeLifeGoal(
   const stateAfterReward: GameState = {
     ...gameState,
     attributes: newAttributes,
+    familyWealth: newFamilyWealth,
     lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
     cultivationProgress: clampProgress(gameState.cultivationProgress + progressDelta, requiredProgress),
     events,
@@ -885,6 +895,12 @@ function applyAttributeEffects(gameState: GameState, effects: GameEvent['effects
   return newAttributes;
 }
 
+function applyFamilyWealthEffects(gameState: GameState, effects: GameEvent['effects']): number {
+  if (typeof effects.家境 !== 'number') return gameState.familyWealth;
+
+  return Math.max(0, Math.round(gameState.familyWealth + effects.家境));
+}
+
 function calculateCultivationProgressDelta(
   gameState: GameState,
   event: GameEvent,
@@ -908,7 +924,7 @@ function calculateCultivationProgressDelta(
     : getDefaultProgressPercent(event.type);
 
   Object.entries(effects).forEach(([key, value]) => {
-    if (key === '寿命' || key === '境界' || key === '修为' || typeof value !== 'number') return;
+    if (key === '寿命' || key === '境界' || key === '修为' || key === '家境' || typeof value !== 'number') return;
     percentDelta += value > 0 ? 0.25 : -1.2;
   });
 
@@ -1057,10 +1073,11 @@ function calculateEventSuccessRate(event: GameEvent, gameState: GameState): numb
   const disasterResistance = getDisasterResistance(gameState);
   const attributePower = {
     根骨: getAttributePower(attributes.根骨),
+    神识: getAttributePower(attributes.神识),
     悟性: getAttributePower(attributes.悟性),
     气运: getAttributePower(attributes.气运),
     颜值: getAttributePower(attributes.颜值),
-    家境: getAttributePower(attributes.家境)
+    家境: getAttributePower(gameState.familyWealth)
   };
   let baseRate = 0.5;
 
@@ -1071,49 +1088,53 @@ function calculateEventSuccessRate(event: GameEvent, gameState: GameState): numb
     case 'cultivation':
       baseRate = 0.24
         + (attributePower.根骨 * 0.01)
-        + (attributePower.悟性 * 0.01)
-        + (attributePower.家境 * 0.003);
+        + (attributePower.悟性 * 0.007)
+        + (attributePower.神识 * 0.006)
+        + (attributePower.家境 * 0.0015);
       break;
     case 'encounter':
       baseRate = 0.24
         + (attributePower.气运 * 0.013)
-        + (attributePower.家境 * 0.004);
+        + (attributePower.家境 * 0.002);
       break;
     case 'social':
       baseRate = 0.24
         + (attributePower.颜值 * 0.012)
-        + (attributePower.家境 * 0.004);
+        + (attributePower.家境 * 0.002);
       break;
     case 'disaster':
       baseRate = 0.22
         + (attributePower.根骨 * 0.01)
-        + (attributePower.家境 * 0.004)
+        + (attributePower.神识 * 0.006)
+        + (attributePower.家境 * 0.0015)
         + disasterResistance;
       break;
     case 'daily':
       baseRate = 0.36
         + (attributePower.悟性 * 0.007)
-        + (attributePower.家境 * 0.006);
+        + (attributePower.神识 * 0.003)
+        + (attributePower.家境 * 0.0025);
       break;
     case 'resource':
       baseRate = 0.26
-        + (attributePower.家境 * 0.014)
+        + (attributePower.家境 * 0.009)
         + (attributePower.气运 * 0.004);
       break;
     case 'mind':
       baseRate = 0.28
-        + (attributePower.悟性 * 0.012)
+        + (attributePower.悟性 * 0.007)
+        + (attributePower.神识 * 0.008)
         + (attributePower.气运 * 0.003);
       break;
     case 'sect':
       baseRate = 0.27
-        + (attributePower.家境 * 0.008)
+        + (attributePower.家境 * 0.004)
         + (attributePower.颜值 * 0.005)
         + (attributePower.悟性 * 0.003);
       break;
   }
 
-  baseRate += getEventSpecificModifier(event, attributes);
+  baseRate += getEventSpecificModifier(event, gameState.familyWealth);
 
   return Math.max(0.1, Math.min(0.9, baseRate));
 }
@@ -1122,21 +1143,21 @@ function getAttributePower(value: number): number {
   return Math.sqrt(Math.max(0, value));
 }
 
-function getEventSpecificModifier(event: GameEvent, attributes: Attributes): number {
-  const familyPower = getAttributePower(attributes.家境);
+function getEventSpecificModifier(event: GameEvent, familyWealth: number): number {
+  const familyPower = getAttributePower(familyWealth);
 
   switch (event.id) {
     case 'daily-merchant':
     case 'resource-auction':
-      return familyPower * 0.006;
+      return familyPower * 0.0035;
     case 'daily-sect-mission':
     case 'sect-inner-test':
-      return familyPower * 0.004;
+      return familyPower * 0.0025;
     case 'encounter-master':
-      return familyPower * 0.004;
+      return familyPower * 0.0025;
     case 'social-partner':
     case 'social-brother':
-      return familyPower * 0.004;
+      return familyPower * 0.0025;
     default:
       return 0;
   }
@@ -1158,7 +1179,7 @@ function applyAttributeModifiers(
       return;
     }
 
-    if (key === '寿命' || key === '修为') {
+    if (key === '寿命' || key === '修为' || key === '家境') {
       (adjustedEffects as Record<string, number>)[key] = value;
       return;
     }
@@ -1265,6 +1286,18 @@ function meetsAttributeRequirements(
     if (!required) return true;
 
     return attributes[key as keyof Attributes] >= required;
+  });
+}
+
+function meetsEventAttributeRequirements(
+  gameState: GameState,
+  requirements: Partial<Attributes> & { 家境?: number }
+): boolean {
+  return Object.entries(requirements).every(([key, required]) => {
+    if (!required) return true;
+    if (key === '家境') return gameState.familyWealth >= required;
+
+    return gameState.attributes[key as keyof Attributes] >= required;
   });
 }
 
@@ -1388,7 +1421,7 @@ function unlockAchievements(gameState: GameState): GameState {
   if (gameState.currentRealm.name === '渡劫期') achievements.add('渡劫之身');
   if (Object.values(gameState.attributes).some(value => value >= 300)) achievements.add('一项通玄');
   if (Object.values(gameState.attributes).every(value => value >= 120)) achievements.add('五维均衡');
-  if (gameState.attributes.家境 >= 200) achievements.add('富甲仙门');
+  if (gameState.familyWealth >= 200) achievements.add('富甲仙门');
   if (gameState.talent?.rarity === '传说') achievements.add('传说命格');
   if (gameState.spiritRoot?.rarity === '神话') achievements.add('神话灵根');
 
