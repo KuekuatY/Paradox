@@ -4,6 +4,7 @@ import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
 import { childhoodEvents, events } from '@/data/events';
 import { getCultivationStrategy } from '@/data/strategies';
+import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import type {
@@ -15,6 +16,7 @@ import type {
   Attributes,
   SpiritRoot,
   GrowthModifiers,
+  CultivationPathId,
   CultivationStrategyId,
   LifeGoalDefinition
 } from '@/types';
@@ -26,6 +28,7 @@ interface GameStore {
   drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
   drawTalentOptions: (count?: number) => Talent[];
+  chooseCultivationPath: (pathId: CultivationPathId) => void;
   setStrategy: (strategyId: CultivationStrategyId) => void;
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
@@ -58,10 +61,12 @@ const initialState: GameState = {
   },
   spiritRoot: null,
   talent: null,
+  cultivationPath: null,
   strategy: 'balanced',
   lifespan: 100,
   cultivationProgress: 0,
   pendingEvent: null,
+  pendingPathChoice: false,
   activeGoal: null,
   completedGoals: [],
   events: [],
@@ -90,10 +95,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       attributes: initialAttributes,
       spiritRoot,
       talent,
+      cultivationPath: null,
       strategy: 'balanced',
       lifespan: 100,
       cultivationProgress: 0,
       pendingEvent: null,
+      pendingPathChoice: false,
       activeGoal: null,
       completedGoals: [],
       events: [],
@@ -122,9 +129,40 @@ export const useGameStore = create<GameStore>((set, get) => ({
     return pickManyByProbability(talents, count);
   },
 
+  chooseCultivationPath: (pathId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || !gameState.pendingPathChoice) return;
+
+    const path = getCultivationPath(pathId);
+    if (!path) return;
+
+    const pathEvent: GameEvent = {
+      id: `cultivation-path-${path.id}-${gameState.age}`,
+      age: gameState.age,
+      type: 'cultivation',
+      title: `流派初定：${path.name}`,
+      description: `引气入体之后，你立下${path.name}之路。${path.description}`,
+      weight: 0,
+      effects: path.effect,
+      appliedEffects: path.effect,
+      result: 'success'
+    };
+    const stateAfterPath: GameState = {
+      ...gameState,
+      cultivationPath: path.id,
+      pendingPathChoice: false,
+      attributes: applyAttributeEffects(gameState, path.effect),
+      events: [...gameState.events, pathEvent]
+    };
+
+    set({
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterPath, pathEvent))
+    });
+  },
+
   setStrategy: (strategyId) => {
     const { gameState } = get();
-    if (gameState.status !== 'playing') return;
+    if (gameState.status !== 'playing' || gameState.pendingPathChoice) return;
 
     set({
       gameState: {
@@ -158,7 +196,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   useBreakthroughPreparation: (actionId) => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
 
     const action = getPreparationAction(actionId);
     if (!action) return;
@@ -227,7 +265,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   advanceAge: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
 
     const newAge = gameState.age + 1;
     const agedState: GameState = {
@@ -255,7 +293,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   processEvent: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || gameState.pendingEvent) return;
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice) return;
     const event = {
       ...selectAvailableEvent(gameState),
       age: gameState.age
@@ -290,7 +328,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   breakthroughRealm: () => {
     const { gameState } = get();
-    if (gameState.status !== 'playing' || !canBreakthrough(gameState)) return;
+    if (gameState.status !== 'playing' || gameState.pendingPathChoice || !canBreakthrough(gameState)) return;
 
     const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
     const nextRealm = realms[currentIndex + 1];
@@ -418,6 +456,7 @@ function enterQiCondensingRealm(gameState: GameState): GameState {
     ...gameState,
     currentRealm: qiRealm,
     cultivationProgress: 0,
+    pendingPathChoice: true,
     events: [...gameState.events, transitionEvent]
   };
 
@@ -1206,6 +1245,7 @@ function scaleNumericValue(value: number, factor: number): number {
 
 function canBreakthrough(gameState: GameState): boolean {
   return !isChildhood(gameState)
+    && !gameState.pendingPathChoice
     && !gameState.pendingEvent
     && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState)
     && canAdvanceRealm(gameState);
@@ -1275,6 +1315,7 @@ function getCombinedModifiers(gameState: GameState): GrowthModifiers {
   return mergeModifiers(
     gameState.spiritRoot?.modifiers,
     gameState.talent?.modifiers,
+    getCultivationPath(gameState.cultivationPath)?.modifiers,
     getCultivationStrategy(gameState.strategy).modifiers
   );
 }

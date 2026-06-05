@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
-import type { EventChoice } from '@/types';
+import { cultivationPaths } from '@/data/cultivationPaths';
+import type { CultivationPath, EventChoice } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -18,7 +19,13 @@ export default function EventDisplay({
   onMeditationEnd,
   showBreakthroughControls = true
 }: EventDisplayProps) {
-  const { gameState, chooseEventOption, getCurrentEventChoices, useBreakthroughPreparation } = useGameStore();
+  const {
+    gameState,
+    chooseCultivationPath,
+    chooseEventOption,
+    getCurrentEventChoices,
+    useBreakthroughPreparation
+  } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
   const [isConfirmingMeditationEnd, setIsConfirmingMeditationEnd] = useState(false);
   
@@ -201,6 +208,8 @@ export default function EventDisplay({
           choices={getCurrentEventChoices()}
           onChoose={chooseEventOption}
         />
+      ) : gameState.pendingPathChoice ? (
+        <PathChoices onChoose={chooseCultivationPath} />
       ) : (
         <>
           {showBreakthroughControls && (
@@ -267,6 +276,52 @@ export default function EventDisplay({
         </>
       )}
     </motion.div>
+  );
+}
+
+function PathChoices({ onChoose }: { onChoose: (pathId: CultivationPath['id']) => void }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {cultivationPaths.map(path => (
+        <motion.button
+          key={path.id}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onChoose(path.id)}
+          className="rounded-md border border-[#738275]/30 bg-[#fff9e8]/70 px-4 py-3 text-left transition-all hover:border-[#355d58]/55 hover:bg-[#eef3df] sm:py-4"
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-lg font-bold text-[#355d58]">{path.name}</span>
+            <span className="rounded-full bg-[#e7eddd] px-2 py-1 text-xs font-semibold text-[#355d58]">
+              {path.focus}
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-[#66766e]">{path.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {Object.entries(path.effect).map(([key, value]) => (
+              <span
+                key={key}
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  (value ?? 0) >= 0
+                    ? 'bg-[#e7eddd] text-[#355d58]'
+                    : 'bg-[#f2d9d2] text-[#9d3d2f]'
+                }`}
+              >
+                {key} {(value ?? 0) > 0 ? '+' : ''}{value}
+              </span>
+            ))}
+            {path.build.map(item => (
+              <span
+                key={item}
+                className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/70 px-2.5 py-1 text-xs font-semibold text-[#6d634d]"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </motion.button>
+      ))}
+    </div>
   );
 }
 

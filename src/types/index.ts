@@ -6,6 +6,18 @@ export type AttributeEffect = Partial<Attributes>;
 
 export type CultivationStrategyId = 'balanced' | 'body' | 'insight' | 'roaming' | 'business' | 'seclusion';
 
+export type CultivationPathId = 'sword' | 'body' | 'spell' | 'demonic';
+
+export interface CultivationPath {
+  id: CultivationPathId;
+  name: string;
+  description: string;
+  focus: string;
+  effect: AttributeEffect;
+  modifiers: GrowthModifiers;
+  build: string[];
+}
+
 export interface CultivationStrategy {
   id: CultivationStrategyId;
   name: string;
@@ -108,10 +120,12 @@ export interface GameState {
   attributes: Attributes;
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
+  cultivationPath: CultivationPathId | null;
   strategy: CultivationStrategyId;
   lifespan: number;
   cultivationProgress: number;
   pendingEvent: GameEvent | null;
+  pendingPathChoice: boolean;
   activeGoal: ActiveLifeGoal | null;
   completedGoals: string[];
   events: GameEvent[];

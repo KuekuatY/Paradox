@@ -8,6 +8,7 @@ import StatusPanel, {
   AttributePanel,
   BreakthroughRequirements,
   CultivationProgress,
+  CultivationPathPanel,
   CurrentRealmSummary,
   FateSummary,
   LifeGoalPanel,
@@ -314,11 +315,11 @@ function MobileCultivationPanel() {
 
 function MobileStatusPanel() {
   const { gameState } = useGameStore();
-  const { spiritRoot, talent, attributes, currentRealm } = gameState;
+  const { spiritRoot, talent, cultivationPath, attributes, currentRealm } = gameState;
 
   return (
     <div className="ink-panel space-y-3 rounded-lg p-4">
-      {(spiritRoot || talent) && (
+      {(spiritRoot || talent || cultivationPath) && (
         <div className="grid grid-cols-1 gap-3">
           {spiritRoot && (
             <FateSummary
@@ -335,6 +336,9 @@ function MobileStatusPanel() {
               rarity={talent.rarity}
               description={talent.description}
             />
+          )}
+          {cultivationPath && (
+            <CultivationPathPanel pathId={cultivationPath} />
           )}
         </div>
       )}
@@ -353,7 +357,7 @@ function MobileBreakthroughPanel({
   onPrepare: (actionId: string) => void;
 }) {
   const { gameState } = useGameStore();
-  const isBlockedByChoice = !!gameState.pendingEvent;
+  const isBlockedByChoice = !!gameState.pendingEvent || gameState.pendingPathChoice;
 
   return (
     <div className="ink-panel space-y-3 rounded-lg p-4">
@@ -382,7 +386,9 @@ function MobileBreakthroughPanel({
           突破瓶颈
         </button>
         <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
-          {isBlockedByChoice
+          {gameState.pendingPathChoice
+            ? '需先在修行页立定流派，方可继续筹备突破。'
+            : isBlockedByChoice
             ? '需先处理当前抉择，方可闭关冲境。'
             : canBreakthrough
               ? '修为圆满，门槛已足，可以尝试突破。'

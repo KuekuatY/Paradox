@@ -2,9 +2,10 @@ import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { realms } from '@/data/realms';
 import { cultivationStrategies } from '@/data/strategies';
+import { getCultivationPath } from '@/data/cultivationPaths';
 import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
-import type { ActiveLifeGoal, Attributes, CultivationStrategyId, GameEvent, Realm } from '@/types';
+import type { ActiveLifeGoal, Attributes, CultivationPathId, CultivationStrategyId, GameEvent, Realm } from '@/types';
 
 interface StatusPanelProps {
   showLifeGoal?: boolean;
@@ -16,7 +17,7 @@ export default function StatusPanel({
   showStrategy = true
 }: StatusPanelProps = {}) {
   const { gameState, setStrategy } = useGameStore();
-  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationProgress } = gameState;
+  const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationPath, cultivationProgress } = gameState;
   
   const lifespanPercent = lifespan === Infinity ? 100 : (age / lifespan) * 100;
 
@@ -64,7 +65,7 @@ export default function StatusPanel({
         </div>
 
         <div className="space-y-3 sm:space-y-4">
-          {(spiritRoot || talent) && (
+          {(spiritRoot || talent || cultivationPath) && (
             <div className="grid grid-cols-1 gap-3">
               {spiritRoot && (
                 <FateSummary
@@ -81,6 +82,9 @@ export default function StatusPanel({
                   rarity={talent.rarity}
                   description={talent.description}
                 />
+              )}
+              {cultivationPath && (
+                <CultivationPathPanel pathId={cultivationPath} />
               )}
             </div>
           )}
@@ -139,6 +143,30 @@ export function FateSummary({
         {name}
       </div>
       <p className="ink-muted mt-1 text-xs leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+export function CultivationPathPanel({ pathId }: { pathId: CultivationPathId | null }) {
+  const path = getCultivationPath(pathId);
+  if (!path) return null;
+
+  return (
+    <div className="rounded-md border border-[#738275]/20 bg-[#fff9e8]/45 px-3 py-2 text-center">
+      <div className="ink-muted text-xs">流派</div>
+      <div className="text-sm font-semibold text-[#355d58] sm:text-base">{path.name}</div>
+      <div className="mt-1 text-xs font-semibold text-[#6d634d]">{path.focus}</div>
+      <p className="ink-muted mt-1 text-xs leading-relaxed">{path.description}</p>
+      <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+        {path.build.map(item => (
+          <span
+            key={item}
+            className="rounded-full bg-[#e7eddd] px-2 py-0.5 text-xs font-semibold text-[#355d58]"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
