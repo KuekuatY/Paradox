@@ -112,7 +112,7 @@ export const realms: Realm[] = [
   {
     name: '渡劫期',
     level: 9,
-    maxAge: Infinity,
+    maxAge: 50000,
     attributeCap: 800,
     cultivationRequired: 20000,
     description: '历经天劫，飞升成仙',
