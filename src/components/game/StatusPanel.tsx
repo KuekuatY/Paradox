@@ -150,6 +150,28 @@ export function CultivationProgress({
   currentRealmName: string;
   progress: number;
 }) {
+  if (currentRealmName === '幼年期') {
+    return (
+      <div className="mb-3 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span className="ink-muted">修炼进度</span>
+          <span className="font-semibold text-[#263832]">未启蒙</span>
+        </div>
+        <div className="relative h-2 rounded-full bg-[#c8c2a9]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#355d58] to-[#9a8a54]"
+          />
+        </div>
+        <div className="mt-1 text-right text-xs text-[#66766e]">
+          10 岁引气入体后开始修炼
+        </div>
+      </div>
+    );
+  }
+
   const realmIndex = realms.findIndex(realm => realm.name === currentRealmName);
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
   const requiredProgress = nextRealm?.cultivationRequired ?? 0;
@@ -187,6 +209,18 @@ export function BreakthroughRequirements({
   currentRealmName: string;
   attributes: Attributes;
 }) {
+  if (currentRealmName === '幼年期') {
+    return (
+      <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-center sm:px-4">
+        <div className="text-xs text-[#66766e]">突破门槛</div>
+        <div className="mt-1 font-bold text-[#355d58]">10 岁引气入体</div>
+        <p className="mt-1 text-xs leading-relaxed text-[#66766e]">
+          幼年期只积累五维根基，不增加修为。
+        </p>
+      </div>
+    );
+  }
+
   const realmIndex = realms.findIndex(realm => realm.name === currentRealmName);
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
 

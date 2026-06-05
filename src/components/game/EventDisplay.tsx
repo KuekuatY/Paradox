@@ -69,6 +69,7 @@ export default function EventDisplay({
 
   const getEventIcon = (type: string) => {
     const icons: Record<string, string> = {
+      'childhood': '幼',
       'cultivation': '修',
       'encounter': '缘',
       'social': '交',

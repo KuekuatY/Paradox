@@ -1,5 +1,108 @@
 import type { GameEvent } from '@/types';
 
+export const childhoodEvents: GameEvent[] = [
+  {
+    id: 'childhood-reading',
+    age: 0,
+    type: 'childhood',
+    title: '蒙学识字',
+    description: '你在灯下跟着长辈认字，许多道经还看不懂，却先学会了静心。',
+    weight: 1,
+    effects: { 悟性: 2 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-mountain-run',
+    age: 0,
+    type: 'childhood',
+    title: '山径奔跑',
+    description: '你常在山路间追风奔跑，摔过许多跤，筋骨也一点点结实起来。',
+    weight: 1,
+    effects: { 根骨: 2 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-family-ledger',
+    age: 0,
+    type: 'childhood',
+    title: '帮看账册',
+    description: '家中大人让你帮忙核对账册，琐碎数字里藏着一点处世门道。',
+    weight: 0.85,
+    effects: { 家境: 2, 悟性: 1 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-neighbor-kindness',
+    age: 0,
+    type: 'childhood',
+    title: '邻里善缘',
+    description: '你帮邻人送药递信，小小善举被人记在心里。',
+    weight: 0.9,
+    effects: { 气运: 2, 颜值: 1 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-river-reflection',
+    age: 0,
+    type: 'childhood',
+    title: '溪边照影',
+    description: '你在溪边整理衣冠，虽还年幼，举止间已有几分清朗。',
+    weight: 0.8,
+    effects: { 颜值: 2 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-herb-gathering',
+    age: 0,
+    type: 'childhood',
+    title: '采药认草',
+    description: '你跟着药师辨认草木，认错几回之后，终于记住了药性的细微差别。',
+    weight: 0.85,
+    effects: { 悟性: 1, 根骨: 1 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-small-illness',
+    age: 0,
+    type: 'childhood',
+    title: '幼时小病',
+    description: '一场小病让你卧床数日，病愈后反倒更懂得爱惜身体。',
+    weight: 0.65,
+    effects: { 根骨: -1, 悟性: 1 },
+    result: 'neutral'
+  },
+  {
+    id: 'childhood-lost-and-found',
+    age: 0,
+    type: 'childhood',
+    title: '迷路归家',
+    description: '你在山脚迷了路，最后凭着一点直觉寻回家门。',
+    weight: 0.7,
+    effects: { 气运: 2 },
+    result: 'success'
+  },
+  {
+    id: 'childhood-family-change',
+    age: 0,
+    type: 'childhood',
+    title: '家中变故',
+    description: '家中生意起落不定，你早早见过人情冷暖。',
+    weight: 0.55,
+    effects: { 家境: -1, 悟性: 1 },
+    result: 'neutral'
+  },
+  {
+    id: 'childhood-elder-praise',
+    age: 0,
+    type: 'childhood',
+    title: '长辈称许',
+    description: '族中长辈夸你心性沉稳，愿意多照拂几分。',
+    weight: 0.55,
+    effects: { 家境: 1, 气运: 1, 颜值: 1 },
+    result: 'success'
+  }
+];
+
 export const events: GameEvent[] = [
   {
     id: 'cultivation-meridian-flow',

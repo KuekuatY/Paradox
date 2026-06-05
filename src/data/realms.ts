@@ -2,6 +2,18 @@ import type { Realm } from '@/types';
 
 export const realms: Realm[] = [
   {
+    name: '幼年期',
+    level: 0,
+    maxAge: 100,
+    attributeCap: 40,
+    cultivationRequired: 0,
+    description: '蒙昧未开，静待引气入体',
+    requirements: {
+      minAge: 0,
+      attributes: {}
+    }
+  },
+  {
     name: '炼气期',
     level: 1,
     maxAge: 100,

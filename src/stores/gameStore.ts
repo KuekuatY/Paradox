@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { talents } from '@/data/talents';
 import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
-import { events } from '@/data/events';
+import { childhoodEvents, events } from '@/data/events';
 import { getCultivationStrategy } from '@/data/strategies';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
@@ -41,7 +41,8 @@ interface GameStore {
 }
 
 const ATTRIBUTE_MAX = 800;
-const STARTING_AGE = 10;
+const STARTING_AGE = 0;
+const QI_CONDENSING_AGE = 10;
 const BASE_ATTRIBUTE_VALUE = 10;
 
 const initialState: GameState = {
@@ -240,6 +241,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    if (gameState.currentRealm.name === '幼年期' && newAge >= QI_CONDENSING_AGE) {
+      set({ gameState: enterQiCondensingRealm(agedState) });
+      return;
+    }
+
     const stateAfterStrategyOutcome = applyAnnualStrategyOutcome(agedState);
 
     set({ gameState: stateAfterStrategyOutcome });
@@ -395,8 +401,31 @@ function pickManyByProbability<T extends { probability: number }>(items: T[], co
   return pickedItems;
 }
 
+function enterQiCondensingRealm(gameState: GameState): GameState {
+  const qiRealm = realms.find(realm => realm.name === '炼气期') ?? realms[1];
+  const transitionEvent: GameEvent = {
+    id: `qi-condensing-${gameState.age}`,
+    age: gameState.age,
+    type: 'cultivation',
+    title: '引气入体',
+    description: '十岁这一年，你第一次清楚感到天地灵气入体流转，幼年蒙学至此化作修行根基。',
+    weight: 0,
+    effects: { 境界: 'advance' },
+    appliedEffects: { 境界: 'advance' },
+    result: 'success'
+  };
+  const stateAfterTransition: GameState = {
+    ...gameState,
+    currentRealm: qiRealm,
+    cultivationProgress: 0,
+    events: [...gameState.events, transitionEvent]
+  };
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterTransition, transitionEvent));
+}
+
 function applyAnnualStrategyOutcome(gameState: GameState): GameState {
-  if (gameState.strategy !== 'business') return gameState;
+  if (isChildhood(gameState) || gameState.strategy !== 'business') return gameState;
 
   const event: GameEvent = {
     id: `strategy-business-${gameState.age}`,
@@ -431,6 +460,10 @@ function applyAnnualStrategyOutcome(gameState: GameState): GameState {
 }
 
 function selectAvailableEvent(gameState: GameState): GameEvent {
+  if (isChildhood(gameState)) {
+    return pickWeightedEvent(childhoodEvents, gameState);
+  }
+
   const availableEvents = events.filter(event => {
     return event.effects.境界 !== 'advance' && matchesEventConditions(event, gameState);
   });
@@ -476,6 +509,7 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
 }
 
 function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean {
+  if (event.type === 'childhood') return false;
   if (hasSpecificEventChoices(event.id)) return true;
   if (event.result === 'neutral' && event.type === 'daily') return false;
   if (event.type === 'disaster') return true;
@@ -772,6 +806,8 @@ function applyLifeGoalProgress(gameState: GameState, triggeringEvent: GameEvent)
 }
 
 function calculateLifeGoalProgress(definition: LifeGoalDefinition, event: GameEvent): number {
+  if (event.type === 'childhood') return 0;
+
   if (definition.progressKind === 'breakthrough') {
     return event.appliedEffects?.境界 === 'advance' || event.effects.境界 === 'advance' ? 1 : 0;
   }
@@ -882,6 +918,10 @@ function calculateCultivationProgressDelta(
   event: GameEvent,
   effects: GameEvent['effects']
 ): number {
+  if (isChildhood(gameState) || event.type === 'childhood') {
+    return 0;
+  }
+
   const requiredProgress = getRequiredCultivationProgress(gameState);
   const toProgressDelta = (percent: number) => {
     return Math.trunc(requiredProgress * percent / 100);
@@ -957,6 +997,8 @@ function getRealmProgressPace(gameState: GameState): number {
 
 function getDefaultProgressPercent(type: GameEvent['type']): number {
   switch (type) {
+    case 'childhood':
+      return 0;
     case 'cultivation':
       return 8;
     case 'encounter':
@@ -1027,6 +1069,9 @@ function calculateEventSuccessRate(event: GameEvent, gameState: GameState): numb
   let baseRate = 0.5;
 
   switch (event.type) {
+    case 'childhood':
+      baseRate = 1;
+      break;
     case 'cultivation':
       baseRate = 0.2
         + (attributes.根骨 * 0.003)
@@ -1160,11 +1205,16 @@ function scaleNumericValue(value: number, factor: number): number {
 }
 
 function canBreakthrough(gameState: GameState): boolean {
-  return !gameState.pendingEvent && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState) && canAdvanceRealm(gameState);
+  return !isChildhood(gameState)
+    && !gameState.pendingEvent
+    && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState)
+    && canAdvanceRealm(gameState);
 }
 
 function canAdvanceRealm(gameState: GameState): boolean {
   const { currentRealm, attributes } = gameState;
+
+  if (isChildhood(gameState)) return false;
 
   const realmIndex = realms.findIndex(r => r.name === currentRealm.name);
   if (realmIndex >= realms.length - 1) return false;
@@ -1215,6 +1265,10 @@ function getRealmLifespanGain(currentIndex: number): number {
 
 function getAttributeCap(realm: GameState['currentRealm']): number {
   return Math.min(ATTRIBUTE_MAX, realm.attributeCap);
+}
+
+function isChildhood(gameState: GameState): boolean {
+  return gameState.currentRealm.name === '幼年期' || gameState.age < QI_CONDENSING_AGE;
 }
 
 function getCombinedModifiers(gameState: GameState): GrowthModifiers {
