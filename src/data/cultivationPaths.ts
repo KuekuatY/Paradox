@@ -10,7 +10,7 @@ export const cultivationPaths: CultivationPath[] = [
     modifiers: {
       修为倍率: 1.08,
       灾劫抗性: -0.04,
-      事件权重: { cultivation: 1.18, encounter: 1.15, disaster: 1.08 }
+      事件权重: { cultivation: 1.18, combat: 1.35, encounter: 1.15, disaster: 1.08 }
     },
     build: ['剑意', '杀伐', '速破境']
   },
@@ -25,7 +25,7 @@ export const cultivationPaths: CultivationPath[] = [
       属性倍率: 1.1,
       寿命倍率: 1.04,
       灾劫抗性: 0.12,
-      事件权重: { daily: 1.15, disaster: 0.9 }
+      事件权重: { combat: 1.18, daily: 1.15, disaster: 0.9 }
     },
     build: ['淬体', '厚血', '稳突破']
   },
@@ -38,7 +38,7 @@ export const cultivationPaths: CultivationPath[] = [
     modifiers: {
       修为倍率: 1.03,
       属性倍率: 1.04,
-      事件权重: { mind: 1.35, sect: 1.18, cultivation: 1.08 }
+      事件权重: { mind: 1.35, sect: 1.18, cultivation: 1.08, combat: 0.92 }
     },
     build: ['悟法', '心境', '法术循环']
   },
@@ -52,7 +52,7 @@ export const cultivationPaths: CultivationPath[] = [
       修为倍率: 1.12,
       属性倍率: 1.02,
       灾劫抗性: -0.1,
-      事件权重: { resource: 1.3, encounter: 1.18, social: 0.82, disaster: 1.18 }
+      事件权重: { combat: 1.28, resource: 1.3, encounter: 1.18, social: 0.82, disaster: 1.18 }
     },
     build: ['夺机缘', '高风险', '快成型']
   }

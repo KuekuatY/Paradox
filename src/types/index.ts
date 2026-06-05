@@ -1,4 +1,4 @@
-export type EventType = 'childhood' | 'cultivation' | 'encounter' | 'social' | 'disaster' | 'daily' | 'resource' | 'mind' | 'sect';
+export type EventType = 'childhood' | 'cultivation' | 'combat' | 'encounter' | 'social' | 'disaster' | 'daily' | 'resource' | 'mind' | 'sect';
 
 export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极品' | '神话' | '传说';
 

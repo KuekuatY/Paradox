@@ -78,6 +78,7 @@ export default function EventDisplay({
     const icons: Record<string, string> = {
       'childhood': '幼',
       'cultivation': '修',
+      'combat': '战',
       'encounter': '缘',
       'social': '交',
       'disaster': '劫',

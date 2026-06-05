@@ -316,6 +316,94 @@ export const events: GameEvent[] = [
   },
 
   {
+    id: 'combat-beast-hunt',
+    age: 0,
+    type: 'combat',
+    title: '猎杀妖兽',
+    description: '山中妖兽扰人清修，你提气入林，与其周旋半日后终于寻到破绽。',
+    weight: 0.85,
+    effects: { 根骨: 4, 神识: 2, 家境: 1, 修为: 14 },
+    result: 'success'
+  },
+  {
+    id: 'combat-caravan-escort',
+    age: 0,
+    type: 'combat',
+    title: '护送商队',
+    description: '坊市商队请你随行护送，一路妖影窥伺，正好磨炼实战手段。',
+    weight: 0.7,
+    conditions: { attributes: { 家境: 12 } },
+    effects: { 家境: 2, 颜值: 2, 修为: 12 },
+    result: 'success'
+  },
+  {
+    id: 'combat-arena-duel',
+    age: 0,
+    type: 'combat',
+    title: '同门斗法',
+    description: '宗门擂台上，你与同门切磋斗法，胜负之外，更重要的是看清自身短板。',
+    weight: 0.75,
+    conditions: { minRealmLevel: 2 },
+    effects: { 根骨: 3, 神识: 3, 颜值: 2, 修为: 13 },
+    result: 'success'
+  },
+  {
+    id: 'combat-demonic-cultivator',
+    age: 0,
+    type: 'combat',
+    title: '斩除邪修',
+    description: '邪修伏于荒庙，以血法害人。你趁其法阵未成，强行破局。',
+    weight: 0.55,
+    conditions: { minRealmLevel: 2 },
+    effects: { 神识: 3, 气运: 3, 家境: 2, 修为: 16 },
+    result: 'success'
+  },
+  {
+    id: 'combat-sword-contest',
+    age: 0,
+    type: 'combat',
+    title: '剑意相争',
+    description: '你遇到一名剑意凌厉的修士，对方邀你试剑，锋芒相撞间灵机大开。',
+    weight: 0.45,
+    conditions: { spiritRootIds: ['sword-root', 'metal-root', 'tiandao-root', 'chaos-root'] },
+    effects: { 根骨: 5, 神识: 2, 修为: 16 },
+    result: 'success'
+  },
+  {
+    id: 'combat-ancient-beast',
+    age: 0,
+    type: 'combat',
+    title: '古兽遗种',
+    description: '秘境深处伏着一头古兽遗种，气血如炉。你几乎拼尽全力才从爪下脱身。',
+    weight: 0.35,
+    conditions: { minRealmLevel: 4 },
+    effects: { 根骨: 7, 神识: 5, 修为: 18, 寿命: -1 },
+    result: 'success'
+  },
+  {
+    id: 'combat-ambush',
+    age: 0,
+    type: 'combat',
+    title: '半路遇伏',
+    description: '归途中杀机骤起，数道术法封住退路，你被迫仓促应战。',
+    weight: 0.45,
+    conditions: { minRealmLevel: 2 },
+    effects: { 寿命: -2, 修为: -10, 家境: -3 },
+    result: 'failure'
+  },
+  {
+    id: 'combat-heart-devil',
+    age: 0,
+    type: 'combat',
+    title: '心魔交锋',
+    description: '战至酣处，心魔趁血气翻涌而起，你不得不在识海中再斗一场。',
+    weight: 0.35,
+    conditions: { minRealmLevel: 3 },
+    effects: { 神识: -5, 悟性: -2, 修为: -8, 寿命: -1 },
+    result: 'failure'
+  },
+
+  {
     id: 'encounter-secret-manual',
     age: 0,
     type: 'encounter',

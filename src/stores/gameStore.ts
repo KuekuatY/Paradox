@@ -549,11 +549,11 @@ function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean
   if (event.conditions && event.type !== 'daily') return true;
   if ((event.weight ?? 1) <= 0.55) return true;
 
-  const choiceFriendlyTypes: GameEvent['type'][] = ['encounter', 'social', 'resource', 'mind', 'sect'];
+  const choiceFriendlyTypes: GameEvent['type'][] = ['combat', 'encounter', 'social', 'resource', 'mind', 'sect'];
   if (!choiceFriendlyTypes.includes(event.type)) return false;
 
   const baseChance = gameState.currentRealm.level >= 4 ? 0.32 : 0.22;
-  const typeBonus = event.type === 'encounter' || event.type === 'resource' ? 0.08 : 0;
+  const typeBonus = event.type === 'encounter' || event.type === 'resource' || event.type === 'combat' ? 0.08 : 0;
   return Math.random() < baseChance + typeBonus;
 }
 
@@ -1017,6 +1017,8 @@ function getDefaultProgressPercent(type: GameEvent['type']): number {
       return 0;
     case 'cultivation':
       return 8;
+    case 'combat':
+      return 9;
     case 'encounter':
       return 5;
     case 'daily':
@@ -1102,6 +1104,12 @@ function calculateEventSuccessRate(event: GameEvent, gameState: GameState): numb
         + (attributePower.悟性 * 0.007)
         + (attributePower.神识 * 0.006)
         + (attributePower.家境 * 0.0015);
+      break;
+    case 'combat':
+      baseRate = 0.24
+        + (attributePower.根骨 * 0.011)
+        + (attributePower.神识 * 0.008)
+        + (attributePower.气运 * 0.004);
       break;
     case 'encounter':
       baseRate = 0.24
