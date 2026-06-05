@@ -16,10 +16,11 @@ export default function TribulationQte({
   const [flashText, setFlashText] = useState<string | null>(null);
   const animationRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const markerRef = useRef(50);
   const strikeIndex = tribulation.strikesResolved + 1;
   const successThreshold = Math.ceil(tribulation.strikesRequired * 0.6);
   const zoneWidth = useMemo(() => {
-    return Math.max(12, 27 - tribulation.targetRealmLevel * 1.25 - tribulation.strikesResolved * 0.45);
+    return Math.max(16, 33 - tribulation.targetRealmLevel * 1.1 - tribulation.strikesResolved * 0.35);
   }, [tribulation.strikesResolved, tribulation.targetRealmLevel]);
   const zoneStart = (100 - zoneWidth) / 2;
   const zoneEnd = zoneStart + zoneWidth;
@@ -34,10 +35,11 @@ export default function TribulationQte({
     if (locked) return undefined;
 
     const startedAt = performance.now();
-    const speed = 0.36 + tribulation.targetRealmLevel * 0.035 + tribulation.strikesResolved * 0.025;
+    const speed = 0.28 + tribulation.targetRealmLevel * 0.03 + tribulation.strikesResolved * 0.02;
     const animate = (now: number) => {
       const elapsed = (now - startedAt) / 1000;
       const nextMarker = (Math.sin(elapsed * Math.PI * 2 * speed) + 1) * 50;
+      markerRef.current = nextMarker;
       setMarker(nextMarker);
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -52,6 +54,13 @@ export default function TribulationQte({
   }, [locked, tribulation.strikesResolved, tribulation.targetRealmLevel]);
 
   useEffect(() => {
+    markerRef.current = 50;
+    setMarker(50);
+    setLocked(false);
+    setFlashText(null);
+  }, [tribulation.strikesResolved]);
+
+  useEffect(() => {
     return () => {
       if (timeoutRef.current !== null) {
         window.clearTimeout(timeoutRef.current);
@@ -62,12 +71,17 @@ export default function TribulationQte({
   const handleStrike = () => {
     if (locked) return;
 
-    const success = marker >= zoneStart && marker <= zoneEnd;
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    const capturedMarker = markerRef.current;
+    const success = capturedMarker >= zoneStart && capturedMarker <= zoneEnd;
+    setMarker(capturedMarker);
     setLocked(true);
     setFlashText(success ? '雷息入体' : '劫雷反噬');
     timeoutRef.current = window.setTimeout(() => {
       setFlashText(null);
-      setLocked(false);
       onResolveStrike(success);
     }, 520);
   };
@@ -135,7 +149,7 @@ export default function TribulationQte({
           <div className="absolute left-[72%] top-0 h-full w-px -rotate-12 bg-[#fff9e8]/10" />
           <motion.div
             animate={{ left: `${marker}%` }}
-            transition={{ duration: 0.04, ease: 'linear' }}
+            transition={{ duration: locked ? 0 : 0.04, ease: 'linear' }}
             className={`absolute top-1/2 h-14 w-4 -translate-x-1/2 -translate-y-1/2 rounded-sm ${
               locked
                 ? marker >= zoneStart && marker <= zoneEnd
