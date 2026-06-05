@@ -6,7 +6,15 @@ import { achievementCatalog, getAchievementInfo } from '@/data/achievements';
 import { getLifeGoalDefinition } from '@/data/lifeGoals';
 import type { ActiveLifeGoal, Attributes, CultivationStrategyId, GameEvent } from '@/types';
 
-export default function StatusPanel() {
+interface StatusPanelProps {
+  showLifeGoal?: boolean;
+  showStrategy?: boolean;
+}
+
+export default function StatusPanel({
+  showLifeGoal = true,
+  showStrategy = true
+}: StatusPanelProps = {}) {
   const { gameState, setStrategy } = useGameStore();
   const { currentRealm, age, lifespan, attributes, spiritRoot, talent, cultivationProgress } = gameState;
   
@@ -84,14 +92,14 @@ export default function StatusPanel() {
             </div>
           )}
 
-          {gameState.status === 'playing' && (
+          {showLifeGoal && gameState.status === 'playing' && (
             <LifeGoalPanel
               activeGoal={gameState.activeGoal}
               completedCount={gameState.completedGoals.length}
             />
           )}
 
-          {gameState.status === 'playing' && (
+          {showStrategy && gameState.status === 'playing' && (
             <StrategyPanel
               selectedStrategy={gameState.strategy}
               onSelect={setStrategy}
@@ -220,7 +228,7 @@ function BreakthroughRequirements({
   );
 }
 
-function StrategyPanel({
+export function StrategyPanel({
   selectedStrategy,
   onSelect
 }: {
@@ -262,7 +270,7 @@ function StrategyPanel({
   );
 }
 
-function LifeGoalPanel({
+export function LifeGoalPanel({
   activeGoal,
   completedCount
 }: {
