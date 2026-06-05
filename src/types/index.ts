@@ -36,6 +36,17 @@ export interface ActiveLifeGoal {
   progress: number;
 }
 
+export interface EventChoice {
+  id: string;
+  label: string;
+  description: string;
+  outcome: string;
+  successModifier?: number;
+  positiveScale?: number;
+  negativeScale?: number;
+  effects?: GameEvent['effects'];
+}
+
 export interface GrowthModifiers {
   修为倍率?: number;
   属性倍率?: number;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
+import type { EventChoice } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -15,7 +16,7 @@ export default function EventDisplay({
   onContinue,
   onMeditationEnd
 }: EventDisplayProps) {
-  const { gameState, chooseEventOption, useBreakthroughPreparation } = useGameStore();
+  const { gameState, chooseEventOption, getCurrentEventChoices, useBreakthroughPreparation } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
   const [isConfirmingMeditationEnd, setIsConfirmingMeditationEnd] = useState(false);
   
@@ -194,7 +195,7 @@ export default function EventDisplay({
 
       {isPendingChoice ? (
         <EventChoices
-          strategyName={getCurrentStrategyName(gameState.strategy)}
+          choices={getCurrentEventChoices()}
           onChoose={chooseEventOption}
         />
       ) : (
@@ -265,18 +266,12 @@ export default function EventDisplay({
 }
 
 function EventChoices({
-  strategyName,
+  choices,
   onChoose
 }: {
-  strategyName: string;
+  choices: EventChoice[];
   onChoose: (choiceId: string) => void;
 }) {
-  const choices = [
-    { id: 'steady', label: '稳扎稳打', description: '风险更低，收益略少。' },
-    { id: 'flow', label: '顺势而为', description: '按原本机缘结算。' },
-    { id: 'focus', label: strategyName, description: '贯彻当前修炼策略。' }
-  ];
-
   return (
     <div className="grid gap-3 md:grid-cols-3">
       {choices.map(choice => (
@@ -343,17 +338,4 @@ function PreparationPanel({
       </div>
     </div>
   );
-}
-
-function getCurrentStrategyName(strategyId: string): string {
-  const names: Record<string, string> = {
-    balanced: '顺其自然',
-    body: '淬体筑基',
-    insight: '静心悟道',
-    roaming: '出山游历',
-    business: '经营洞府',
-    seclusion: '闭关冲境'
-  };
-
-  return names[strategyId] ?? names.balanced;
 }

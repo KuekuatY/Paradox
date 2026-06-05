@@ -5,8 +5,10 @@ import { realms } from '@/data/realms';
 import { events } from '@/data/events';
 import { getCultivationStrategy } from '@/data/strategies';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
+import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import type {
   ActiveLifeGoal,
+  EventChoice,
   GameState,
   Talent,
   GameEvent,
@@ -24,6 +26,7 @@ interface GameStore {
   drawSpiritRoot: () => SpiritRoot;
   drawTalent: () => Talent;
   setStrategy: (strategyId: CultivationStrategyId) => void;
+  getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
@@ -125,12 +128,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  getCurrentEventChoices: () => {
+    const { gameState } = get();
+    if (!gameState.pendingEvent) return [];
+
+    return getEventChoices(gameState, gameState.pendingEvent);
+  },
+
   chooseEventOption: (choiceId) => {
     const { gameState } = get();
     if (gameState.status !== 'playing' || !gameState.pendingEvent) return;
 
     const event = gameState.pendingEvent;
-    const choice = getEventChoices(gameState, event).find(item => item.id === choiceId) ?? getEventChoices(gameState, event)[1];
+    const eventChoices = getEventChoices(gameState, event);
+    const choice = eventChoices.find(item => item.id === choiceId) ?? eventChoices[1];
 
     set({
       gameState: resolveGameEvent(gameState, event, choice)
@@ -342,17 +353,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   }
 }));
 
-interface EventChoice {
-  id: string;
-  label: string;
-  description: string;
-  outcome: string;
-  successModifier?: number;
-  positiveScale?: number;
-  negativeScale?: number;
-  effects?: GameEvent['effects'];
-}
-
 interface PreparationAction {
   id: string;
   name: string;
@@ -421,6 +421,7 @@ function matchesEventConditions(event: GameEvent, gameState: GameState): boolean
 }
 
 function shouldOfferEventChoice(gameState: GameState, event: GameEvent): boolean {
+  if (hasSpecificEventChoices(event.id)) return true;
   if (event.result === 'neutral' && event.type === 'daily') return false;
   if (event.type === 'disaster') return true;
   if (hasNegativeNumericEffect(event)) return true;
@@ -479,6 +480,9 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
 }
 
 function getEventChoices(gameState: GameState, event: GameEvent): EventChoice[] {
+  const specificChoices = getSpecificEventChoices(event.id);
+  if (specificChoices) return specificChoices;
+
   const strategy = getCultivationStrategy(gameState.strategy);
 
   return [
