@@ -220,13 +220,32 @@ export default function EventDisplay({
               onPrepare={useBreakthroughPreparation}
             />
           )}
+          {showBreakthroughControls && canBreakthrough && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 rounded-md border border-[#a9823c]/45 bg-[#f0dfad]/70 px-4 py-3 text-center shadow-sm"
+            >
+              <div className="text-sm font-semibold text-[#7a5426] sm:text-base">
+                瓶颈已松动，可以尝试突破
+              </div>
+            </motion.div>
+          )}
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
             {showBreakthroughControls && canBreakthrough && (
               <motion.button
+                animate={{
+                  boxShadow: [
+                    '0 8px 20px rgba(122, 84, 38, 0.18)',
+                    '0 10px 28px rgba(169, 130, 60, 0.36)',
+                    '0 8px 20px rgba(122, 84, 38, 0.18)'
+                  ]
+                }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onBreakthrough}
-                className="w-full rounded-md border border-[#a9823c]/45 bg-[#f0dfad] px-6 py-3 text-lg font-bold text-[#7a5426] shadow-lg transition-all hover:brightness-105 sm:w-auto sm:px-8 sm:text-xl"
+                className="w-full rounded-md border border-[#a9823c]/70 bg-[#f0dfad] px-6 py-3 text-lg font-bold text-[#7a5426] transition-all hover:brightness-105 sm:w-auto sm:px-8 sm:text-xl"
               >
                 突破瓶颈
               </motion.button>
