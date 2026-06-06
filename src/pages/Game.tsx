@@ -712,8 +712,9 @@ function MobileBreakthroughPanel({
   onBreakthrough: () => void;
   onPrepare: (actionId: string) => void;
 }) {
-  const { gameState } = useGameStore();
+  const { gameState, getBreakthroughSuccessChance } = useGameStore();
   const isBlockedByChoice = !!gameState.pendingEvent || gameState.pendingPathChoice || !!gameState.pendingTribulation;
+  const breakthroughChance = getBreakthroughSuccessChance();
 
   return (
     <div className="ink-panel space-y-3 rounded-lg p-4">
@@ -721,10 +722,14 @@ function MobileBreakthroughPanel({
         currentRealmName={gameState.currentRealm.name}
         attributes={gameState.attributes}
       />
-      <BreakthroughPrepSummary preparation={gameState.breakthroughPreparation} />
+      <BreakthroughPrepSummary
+        preparation={gameState.breakthroughPreparation}
+        chance={breakthroughChance}
+      />
       <PreparationPanel
         canUse={!isBlockedByChoice}
         familyWealth={gameState.familyWealth}
+        inventory={gameState.inventory}
         realmLevel={gameState.currentRealm.level}
         shouldPrepare={gameState.cultivationProgress > 0 && !canBreakthrough}
         onPrepare={onPrepare}
@@ -760,17 +765,20 @@ function MobileBreakthroughPanel({
 }
 
 function BreakthroughPrepSummary({
-  preparation
+  preparation,
+  chance
 }: {
   preparation: { elixir: number; artifact: number; talisman: number; array: number };
+  chance: number | null;
 }) {
   const total = preparation.elixir + preparation.artifact + preparation.talisman + preparation.array;
+  const chanceText = chance === null ? '--' : `${Math.round(chance * 100)}%`;
 
   return (
     <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-xs text-[#66766e]">
       <div className="mb-2 flex items-center justify-between">
         <span className="font-semibold text-[#45564f]">准备加成</span>
-        <span>共 {total} 层</span>
+        <span>成功率约 {chanceText}</span>
       </div>
       <div className="grid grid-cols-4 gap-2 text-center">
         <span>丹 {preparation.elixir}</span>
@@ -778,6 +786,7 @@ function BreakthroughPrepSummary({
         <span>符 {preparation.talisman}</span>
         <span>阵 {preparation.array}</span>
       </div>
+      <div className="mt-2 text-right">共 {total} 层，突破后清空</div>
     </div>
   );
 }

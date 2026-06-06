@@ -52,6 +52,7 @@ interface GameStore {
   processEvent: () => void;
   checkRealmAdvancement: () => boolean;
   canBreakthrough: () => boolean;
+  getBreakthroughSuccessChance: () => number | null;
   breakthroughRealm: () => void;
   resolveTribulationStrike: (success: boolean) => void;
   saveCurrentGame: () => void;
@@ -583,6 +584,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   canBreakthrough: () => {
     const { gameState } = get();
     return canBreakthrough(gameState);
+  },
+
+  getBreakthroughSuccessChance: () => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || isChildhood(gameState)) return null;
+
+    const currentIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
+    const nextRealm = realms[currentIndex + 1];
+    if (!nextRealm) return null;
+
+    return calculateBreakthroughSuccessRate(gameState, nextRealm);
   },
 
   breakthroughRealm: () => {
@@ -1278,7 +1290,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
       resolveChoiceEffects(gameState, effectiveChoice)
     )
     : baseEffects;
-  const combatEffects = getCombatRewardEffects(combatResult.report, combatResult.rawResult, combatResult.isWin);
+  const combatEffects = getCombatRewardEffects(gameState, combatResult.report, combatResult.rawResult, combatResult.isWin);
   const chosenEffects = mergeEffects(choiceEffects, combatEffects);
   const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
   const progressDelta = calculateCultivationProgressDelta(gameState, event, adjustedEffects);
@@ -1294,7 +1306,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
-  const itemRewards = generateCombatItemRewards(event, combatResult.rawResult, combatResult.isWin);
+  const itemRewards = generateCombatItemRewards(gameState, event, combatResult.rawResult, combatResult.isWin);
   const itemLosses = generateCombatItemLosses(gameState, combatResult.rawResult, combatResult.isWin);
   const techniqueRewards = combatResult.isWin
     ? generateEventTechniqueRewards(gameState, event, combatResult.rawResult)
@@ -1324,7 +1336,10 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     events: [...gameState.events, newEvent]
   };
 
-  return unlockAchievements(applyLifeGoalProgress(updateRivalAfterCombat(stateAfterEvent, event, combatResult.isWin), newEvent));
+  const stateAfterRival = updateRivalAfterCombat(stateAfterEvent, event, combatResult.isWin);
+  const resolvedEvent = stateAfterRival.events[stateAfterRival.events.length - 1] ?? newEvent;
+
+  return unlockAchievements(applyLifeGoalProgress(stateAfterRival, resolvedEvent));
 }
 
 function calculateCombatResult(
@@ -1410,35 +1425,77 @@ function updateRivalAfterCombat(gameState: GameState, event: GameEvent, isWin: b
     const nextEnmity = isWin
       ? Math.max(0, currentRival.enmity - 4)
       : Math.min(20, currentRival.enmity + 3);
-    return {
-      ...gameState,
-      rival: {
-        ...currentRival,
-        enmity: nextEnmity,
-        defeats: currentRival.defeats + (isWin ? 1 : 0),
-        active: nextEnmity > 0
-      }
+    const nextRival = {
+      ...currentRival,
+      enmity: nextEnmity,
+      defeats: currentRival.defeats + (isWin ? 1 : 0),
+      active: nextEnmity > 0
     };
+    return appendLastEventDescription({
+      ...gameState,
+      rival: nextRival
+    }, formatRivalAftermath(currentRival, nextRival, isWin));
   }
 
-  if (!isWin && event.type === 'combat' && Math.random() < 0.22) {
+  const rivalFormationChance = gameState.cultivationPath === 'demonic'
+    ? 0.34
+    : gameState.cultivationPath === 'sword'
+      ? 0.18
+      : 0.22;
+  if (!isWin && event.type === 'combat' && Math.random() < rivalFormationChance) {
+    const nextRival = strengthenRival(currentRival);
     return {
       ...gameState,
-      rival: strengthenRival(currentRival)
+      rival: nextRival,
+      events: appendEventDescription(
+        gameState.events,
+        currentRival
+          ? `此败让${nextRival.name}声势更盛，仇怨升至 ${nextRival.enmity}。`
+          : `${nextRival.name}记下你的破绽，自此成了绕不开的宿敌。`
+      )
     };
   }
 
   if (isWin && currentRival?.active && Math.random() < 0.08) {
-    return {
-      ...gameState,
-      rival: {
-        ...currentRival,
-        enmity: Math.min(20, currentRival.enmity + 1)
-      }
+    const nextRival = {
+      ...currentRival,
+      enmity: Math.min(20, currentRival.enmity + 1)
     };
+    return appendLastEventDescription({
+      ...gameState,
+      rival: nextRival
+    }, `${currentRival.name}虽未现身，却借此战再添怨气，仇怨升至 ${nextRival.enmity}。`);
   }
 
   return gameState;
+}
+
+function appendLastEventDescription(gameState: GameState, extraText: string): GameState {
+  return {
+    ...gameState,
+    events: appendEventDescription(gameState.events, extraText)
+  };
+}
+
+function appendEventDescription(events: GameEvent[], extraText: string): GameEvent[] {
+  if (events.length === 0) return events;
+
+  return events.map((event, index) => index === events.length - 1
+    ? { ...event, description: `${event.description}${extraText}` }
+    : event
+  );
+}
+
+function formatRivalAftermath(before: RivalState, after: RivalState, isWin: boolean): string {
+  if (!after.active) {
+    return `${before.name}被你彻底压服，这段宿怨暂告了结。`;
+  }
+
+  if (isWin) {
+    return `你挫了${before.name}的锋芒，仇怨降至 ${after.enmity}。`;
+  }
+
+  return `${before.name}乘胜逼迫，仇怨升至 ${after.enmity}。`;
 }
 
 function strengthenRival(rival: RivalState | null): RivalState {
@@ -1933,6 +1990,7 @@ function scaleCombatBaseEffects(
 }
 
 function getCombatRewardEffects(
+  gameState: GameState,
   report: CombatReport,
   result: GameEvent['result'],
   isWin: boolean
@@ -1940,11 +1998,37 @@ function getCombatRewardEffects(
   const injuryLifespanLoss = Math.max(0, Math.ceil(report.injuryChange / 4));
   const focusGain = result === 'great-success' ? 3 : isWin ? 1 : 0;
 
-  return {
+  return mergeEffects({
     修为: report.cultivationPercent,
     ...(!isWin && injuryLifespanLoss > 0 ? { 寿命: -injuryLifespanLoss } : {}),
     ...(focusGain > 0 ? { 根骨: focusGain, 神识: Math.max(1, focusGain - 1) } : {})
-  };
+  }, getCombatPathRewardEffects(gameState, isWin, result));
+}
+
+function getCombatPathRewardEffects(
+  gameState: GameState,
+  isWin: boolean,
+  result: GameEvent['result']
+): GameEvent['effects'] {
+  if (!isWin) {
+    if (gameState.cultivationPath === 'body') return { 根骨: 1 };
+    if (gameState.cultivationPath === 'demonic') return { 气运: -1 };
+    return {};
+  }
+
+  const greatBonus = result === 'great-success' ? 2 : 1;
+  switch (gameState.cultivationPath) {
+    case 'sword':
+      return { 修为: 2 * greatBonus, 根骨: greatBonus };
+    case 'body':
+      return { 根骨: greatBonus, 寿命: result === 'great-success' ? 1 : 0 };
+    case 'spell':
+      return { 神识: greatBonus, 悟性: greatBonus };
+    case 'demonic':
+      return { 修为: 3 * greatBonus, 气运: -1 };
+    default:
+      return {};
+  }
 }
 
 function updateCombatStats(
@@ -2379,16 +2463,22 @@ function formatLifeSkillResult(skillId: LifeSkillId, hasReward: boolean): string
 }
 
 function generateCombatItemRewards(
+  gameState: GameState,
   event: GameEvent,
   result: GameEvent['result'],
   isWin: boolean
 ): InventoryReward[] {
   if (!isWin) return [];
 
-  const rewardChance = result === 'great-success' ? 0.82 : 0.48;
+  const pathLootBonus = gameState.cultivationPath === 'demonic'
+    ? 0.1
+    : gameState.cultivationPath === 'sword'
+      ? 0.04
+      : 0;
+  const rewardChance = (result === 'great-success' ? 0.82 : 0.48) + pathLootBonus;
   if (Math.random() > rewardChance) return [];
 
-  const quantity = result === 'great-success' ? 2 : 1;
+  const quantity = result === 'great-success' || (gameState.cultivationPath === 'demonic' && Math.random() < 0.18) ? 2 : 1;
   switch (event.id) {
     case 'combat-beast-hunt':
       return rollOneReward([
@@ -2536,32 +2626,37 @@ function generateEventTechniqueRewards(
   );
   if (candidates.length === 0) return [];
 
-  const chance = getTechniqueRewardChance(event, result);
+  const chance = getTechniqueRewardChance(gameState, event, result);
   if (Math.random() > chance) return [];
 
   return [pickTechniqueReward(candidates).id];
 }
 
-function getTechniqueRewardChance(event: GameEvent, result: GameEvent['result']): number {
+function getTechniqueRewardChance(gameState: GameState, event: GameEvent, result: GameEvent['result']): number {
   const resultChance = result === 'great-success'
     ? 0.24
     : result === 'success'
       ? 0.1
       : 0.018;
+  const pathBonus = gameState.cultivationPath === 'spell'
+    ? 0.04
+    : gameState.cultivationPath === 'sword' && event.type === 'combat'
+      ? 0.02
+      : 0;
 
   switch (event.type) {
     case 'encounter':
     case 'mind':
-      return resultChance + 0.05;
+      return resultChance + 0.05 + pathBonus;
     case 'sect':
     case 'resource':
-      return resultChance + 0.035;
+      return resultChance + 0.035 + pathBonus;
     case 'combat':
-      return resultChance + 0.03;
+      return resultChance + 0.03 + pathBonus;
     case 'cultivation':
-      return resultChance + 0.015;
+      return resultChance + 0.015 + pathBonus;
     default:
-      return resultChance;
+      return resultChance + pathBonus;
   }
 }
 

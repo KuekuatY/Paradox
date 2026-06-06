@@ -4,7 +4,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { cultivationPaths } from '@/data/cultivationPaths';
 import { getItem } from '@/data/items';
 import { getTechnique } from '@/data/techniques';
-import type { CombatReport, CultivationPath, EventChoice, InventoryReward, YearActionId } from '@/types';
+import type { CombatReport, CultivationPath, EventChoice, InventoryEntry, InventoryReward, YearActionId } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -324,6 +324,7 @@ function YearActionPanel({
   activeAction: YearActionId;
   onSelect: (actionId: YearActionId) => void;
 }) {
+  const { gameState } = useGameStore();
   const actions: Array<{ id: YearActionId; label: string; hint: string }> = [
     { id: 'cultivate', label: '修炼', hint: '主涨修为' },
     { id: 'adventure', label: '历练', hint: '触发事件' },
@@ -355,7 +356,7 @@ function YearActionPanel({
             >
               {action.label}
               <span className={`block text-[11px] font-normal ${isActive ? 'text-[#eef3df]' : 'text-[#66766e]'}`}>
-                {action.hint}
+                {getPathActionHint(gameState.cultivationPath, action.id) ?? action.hint}
               </span>
             </button>
           );
@@ -363,6 +364,29 @@ function YearActionPanel({
       </div>
     </div>
   );
+}
+
+function getPathActionHint(pathId: string | null, actionId: YearActionId): string | null {
+  const hints: Record<string, Partial<Record<YearActionId, string>>> = {
+    sword: {
+      adventure: '剑修加成',
+      cultivate: '剑意磨身'
+    },
+    body: {
+      cultivate: '体修加成',
+      recuperate: '恢复更强'
+    },
+    spell: {
+      seclusion: '法修加成',
+      'life-skill': '百艺略强'
+    },
+    demonic: {
+      adventure: '高收益高怨',
+      cultivate: '速成有损'
+    }
+  };
+
+  return pathId ? hints[pathId]?.[actionId] ?? null : null;
 }
 
 function TechniqueRewardPanel({ techniqueIds }: { techniqueIds: string[] }) {
@@ -579,12 +603,14 @@ function EventChoices({
 export function PreparationPanel({
   canUse,
   familyWealth,
+  inventory,
   realmLevel,
   shouldPrepare,
   onPrepare
 }: {
   canUse: boolean;
   familyWealth: number;
+  inventory: InventoryEntry[];
   realmLevel: number;
   shouldPrepare: boolean;
   onPrepare: (actionId: string) => void;
@@ -607,7 +633,8 @@ export function PreparationPanel({
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {actions.map(action => {
           const cost = getPreparationCost(action.cost, realmLevel);
-          const disabled = !canUse || familyWealth < cost;
+          const itemCost = getPreparationItemLabel(action.id, inventory);
+          const disabled = !canUse || (!itemCost && familyWealth < cost);
           return (
             <button
               key={action.id}
@@ -620,13 +647,29 @@ export function PreparationPanel({
               }`}
             >
               {action.label}
-              <span className="block text-xs font-normal">家境 {cost}</span>
+              <span className="block text-xs font-normal">{itemCost ?? `家境 ${cost}`}</span>
             </button>
           );
         })}
       </div>
     </div>
   );
+}
+
+function getPreparationItemLabel(actionId: string, inventory: InventoryEntry[]): string | null {
+  const candidates: Record<string, string[]> = {
+    stabilize: ['minor-array-plate', 'soul-settling-orb', 'old-manual-page'],
+    elixir: ['tribulation-pill', 'dragon-blood-pill', 'bone-tempering-pill', 'qi-gathering-pill'],
+    master: ['old-manual-page', 'mystic-manual-fragment', 'immortal-talisman-page'],
+    ward: ['tribulation-ward', 'protection-talisman', 'minor-ward', 'minor-array-plate']
+  };
+  const itemId = candidates[actionId]?.find(candidateId => {
+    const entry = inventory.find(item => item.itemId === candidateId);
+    return (entry?.quantity ?? 0) > 0;
+  });
+  const item = itemId ? getItem(itemId) : undefined;
+
+  return item ? `消耗 ${item.name}` : null;
 }
 
 function getPreparationCost(baseCost: number, realmLevel: number): number {
