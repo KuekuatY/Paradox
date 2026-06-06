@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { talents } from '@/data/talents';
 import { spiritRoots } from '@/data/spiritRoots';
 import { realms } from '@/data/realms';
-import { childhoodEvents, events } from '@/data/events';
+import { childhoodEvents, earlyEvents, lateEvents, midEvents } from '@/data/events';
 import { getCultivationPath } from '@/data/cultivationPaths';
 import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
@@ -891,11 +891,18 @@ function selectAvailableEvent(gameState: GameState): GameEvent {
     return pickWeightedEvent(childhoodEvents, gameState);
   }
 
-  const availableEvents = events.filter(event => {
+  const eventPool = getRealmEventPool(gameState);
+  const availableEvents = eventPool.filter(event => {
     return event.effects.境界 !== 'advance' && matchesEventConditions(event, gameState);
   });
 
-  return pickWeightedEvent(availableEvents.length > 0 ? availableEvents : events, gameState);
+  return pickWeightedEvent(availableEvents.length > 0 ? availableEvents : eventPool, gameState);
+}
+
+function getRealmEventPool(gameState: GameState): GameEvent[] {
+  if (gameState.currentRealm.level >= 7) return lateEvents;
+  if (gameState.currentRealm.level >= 4) return midEvents;
+  return earlyEvents;
 }
 
 function pickWeightedEvent(availableEvents: GameEvent[], gameState: GameState): GameEvent {
@@ -954,7 +961,9 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   const successRate = isNeutralEvent
     ? 0.5
     : clampRate(calculateEventSuccessRate(event, gameState) + (effectiveChoice?.successModifier ?? 0));
-  const result = event.type === 'childhood' ? 'neutral' : calculateEventOutcome(successRate, isNeutralEvent);
+  const result = event.type === 'childhood'
+    ? 'neutral'
+    : calculateEventOutcome(successRate, isNeutralEvent, getEventOutcomePhase(gameState));
   const resolvedEffects = event.type === 'childhood' ? event.effects : resolveEventEffects(event, result);
   const chosenEffects = effectiveChoice
     ? mergeEffects(
@@ -1091,9 +1100,10 @@ function calculateCombatResult(
     0.5 + ((playerPower - enemyPower) / Math.max(1, enemyPower * 2.2)) + (choice?.successModifier ?? 0)
   );
   const roll = Math.random();
+  const greatFailureFactor = getCombatGreatFailureFactor(gameState);
   const rawResult = roll <= winRate
     ? roll <= winRate * 0.07 ? 'great-success' : 'success'
-    : roll >= 1 - ((1 - winRate) * 0.04) ? 'great-failure' : 'failure';
+    : greatFailureFactor > 0 && roll >= 1 - ((1 - winRate) * greatFailureFactor) ? 'great-failure' : 'failure';
   const result = rawResult === 'great-success' || rawResult === 'great-failure' ? rawResult : 'neutral';
   const isWin = rawResult === 'success' || rawResult === 'great-success';
   const outcomeScale = rawResult === 'great-success'
@@ -1122,6 +1132,12 @@ function calculateCombatResult(
   };
 
   return { result, rawResult, isWin, report };
+}
+
+function getCombatGreatFailureFactor(gameState: GameState): number {
+  if (gameState.currentRealm.level >= 7) return 0;
+  if (gameState.currentRealm.level >= 4) return 0.018;
+  return 0.04;
 }
 
 function getCombatEncounter(event: GameEvent): CombatEncounter {
@@ -1531,11 +1547,27 @@ function formatChoiceOutcome(choice: EventChoice, differential?: ChoiceDifferent
   return `你选择${choice.label}，${choice.outcome}${differential?.outcome ?? ''}`;
 }
 
-function calculateEventOutcome(successRate: number, isNeutralEvent: boolean): GameEvent['result'] {
+type EventOutcomePhase = 'early' | 'mid' | 'late';
+
+function getEventOutcomePhase(gameState: GameState): EventOutcomePhase {
+  if (gameState.currentRealm.level >= 7) return 'late';
+  if (gameState.currentRealm.level >= 4) return 'mid';
+  return 'early';
+}
+
+function calculateEventOutcome(
+  successRate: number,
+  isNeutralEvent: boolean,
+  phase: EventOutcomePhase
+): GameEvent['result'] {
   if (isNeutralEvent) return 'neutral';
 
   const greatSuccessChance = Math.max(0.02, Math.min(0.06, 0.02 + successRate * 0.04));
-  const greatFailureChance = Math.max(0.01, Math.min(0.035, 0.01 + (1 - successRate) * 0.025));
+  const greatFailureChance = phase === 'late'
+    ? 0
+    : phase === 'mid'
+      ? Math.max(0.003, Math.min(0.012, 0.003 + (1 - successRate) * 0.009))
+      : Math.max(0.01, Math.min(0.035, 0.01 + (1 - successRate) * 0.025));
   const roll = Math.random();
 
   if (roll < greatFailureChance) return 'great-failure';

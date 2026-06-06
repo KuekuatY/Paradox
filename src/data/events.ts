@@ -133,7 +133,7 @@ export const childhoodEvents: GameEvent[] = [
   }
 ];
 
-export const events: GameEvent[] = [
+export const earlyEvents: GameEvent[] = [
   {
     id: 'cultivation-meridian-flow',
     age: 0,
@@ -1331,3 +1331,178 @@ export const events: GameEvent[] = [
     result: 'failure'
   }
 ];
+
+type PhaseId = 'mid' | 'late';
+
+interface PhaseEventGroup {
+  type: GameEvent['type'];
+  titles: string[];
+}
+
+const midEventGroups: PhaseEventGroup[] = [
+  {
+    type: 'cultivation',
+    titles: ['婴火温养', '神识游宫', '灵台映月', '元婴听潮', '虚室生白', '紫府开窗', '法相初摹', '玄窍回音', '星息入脉', '玉液还丹', '道胎轻鸣', '丹田生莲', '云篆入骨', '灵息归藏']
+  },
+  {
+    type: 'combat',
+    titles: ['婴火斗妖', '破阵伏魔', '夜斩妖王', '灵舟遭袭', '秘境护法', '峡谷斗修', '夺旗演武', '雷泽突围', '魔窟清剿', '荒城守夜']
+  },
+  {
+    type: 'encounter',
+    titles: ['旧仙碑文', '月下灵舟', '古镜照魂', '洞天裂隙', '异香引路', '残阵藏珍', '白鹿衔芝', '云端棋局', '前贤留问', '沉湖玉匣']
+  },
+  {
+    type: 'social',
+    titles: ['元婴论交', '道侣问心', '宗外结盟', '旧敌和解', '名门拜帖', '云台清谈', '同道相邀', '远客赠礼']
+  },
+  {
+    type: 'disaster',
+    titles: ['婴火失控', '识海裂痛', '洞府走水', '灵债追索', '邪念缠身', '秘境塌陷', '旧怨伏杀', '丹毒入脉']
+  },
+  {
+    type: 'daily',
+    titles: ['温炉养息', '山门巡行', '静室观云', '灵茶入喉', '打理洞府', '祭炼小器', '檐下听雨', '晨钟醒神', '松间慢行', '雪夜抄经']
+  },
+  {
+    type: 'resource',
+    titles: ['灵脉分润', '丹阁赊药', '药圃扩建', '珍材易手', '矿契入账', '坊市暗拍', '灵舟跑商', '古器抵押', '洞府租契', '宗门赏赐']
+  },
+  {
+    type: 'mind',
+    titles: ['照见本心', '梦游紫府', '旧愿重燃', '心魔问答', '经义忽通', '观劫悟生', '静坐忘身', '灵台扫尘', '一念澄澈', '听雪明道']
+  },
+  {
+    type: 'sect',
+    titles: ['内殿议事', '长老点拨', '护法差遣', '秘库借阅', '宗门嘉奖', '执事考评', '法会讲席', '山门护阵', '同门推举', '客卿邀约']
+  }
+];
+
+const lateEventGroups: PhaseEventGroup[] = [
+  {
+    type: 'cultivation',
+    titles: ['合体归元', '天人一息', '大乘观空', '雷池洗骨', '星河入体', '法域重塑', '万象归藏', '道纹自生', '虚天炼魄', '劫前静坐']
+  },
+  {
+    type: 'combat',
+    titles: ['法域争锋', '天魔叩关', '大妖围山', '星海斗阵', '斩王庭主', '劫前护道', '云海决战', '破界追袭', '雷狱搏杀']
+  },
+  {
+    type: 'encounter',
+    titles: ['天外残星', '上古道场', '仙人遗问', '九霄风眼', '龙眠古泽', '不周碎石', '天门倒影', '玄黄古井', '归墟潮声']
+  },
+  {
+    type: 'social',
+    titles: ['诸宗会盟', '大能论道', '旧友证道', '天骄来拜', '道侣共劫', '门人托付', '故人归尘']
+  },
+  {
+    type: 'disaster',
+    titles: ['天机反噬', '劫云早现', '法域崩角', '道伤复燃', '天魔窥梦', '气运倒卷', '寿火摇曳']
+  },
+  {
+    type: 'daily',
+    titles: ['云海闭目', '劫前焚香', '观霞养神', '扫坛定心', '夜读仙箓', '听风入定', '守炉一夜']
+  },
+  {
+    type: 'resource',
+    titles: ['仙材入库', '大宗供奉', '古宝重炼', '星砂成器', '雷竹收获', '洞天税契', '天阶丹成', '护劫阵材']
+  },
+  {
+    type: 'mind',
+    titles: ['大梦千年', '忘我观劫', '道心映天', '一念万里', '斩念留真', '听雷悟命', '心灯不灭', '天门自问']
+  },
+  {
+    type: 'sect',
+    titles: ['太上议席', '宗门托孤', '护山大阵', '飞升观礼', '道统传承']
+  }
+];
+
+export const midEvents: GameEvent[] = createPhaseEvents('mid', midEventGroups);
+export const lateEvents: GameEvent[] = createPhaseEvents('late', lateEventGroups);
+export const events = earlyEvents;
+
+function createPhaseEvents(phase: PhaseId, groups: PhaseEventGroup[]): GameEvent[] {
+  return groups.flatMap(group => group.titles.map((title, index) => {
+    const typeIndex = index + 1;
+    return {
+      id: `${phase}-${group.type}-${typeIndex}`,
+      age: 0,
+      type: group.type,
+      title,
+      description: getPhaseEventDescription(phase, group.type, title),
+      weight: getPhaseEventWeight(group.type, index),
+      effects: getPhaseEventEffects(phase, group.type, index),
+      result: group.type === 'disaster' ? 'failure' : group.type === 'daily' ? 'neutral' : 'success'
+    };
+  }));
+}
+
+function getPhaseEventDescription(phase: PhaseId, type: GameEvent['type'], title: string): string {
+  const stageText = phase === 'late' ? '高境界' : '元婴之后';
+  const descriptions: Partial<Record<GameEvent['type'], string>> = {
+    cultivation: `${stageText}修行渐入玄微，${title}让你从灵机深处打磨根基。`,
+    combat: `${stageText}的争斗不再只是胜负，${title}逼你在生死之间印证道法。`,
+    encounter: `${title}牵出一段难得机缘，天地旧痕在你眼前微微发亮。`,
+    social: `${title}让人情与道途交错，声名、因果和资源都随之流转。`,
+    disaster: `${title}骤然临身，修为越高，反噬越深，稍有不慎便会伤及根本。`,
+    daily: `${title}看似寻常，却在漫长修行中积累成扎实底蕴。`,
+    resource: `${title}带来一批更高阶的修行资粮，足以支撑一段清修。`,
+    mind: `${title}触动道心，许多旧日执念在高境界中重新显影。`,
+    sect: `${title}使你更深卷入宗门道统，得失都不再局限于一人一事。`
+  };
+
+  return descriptions[type] ?? `${title}改变了这一段修行。`;
+}
+
+function getPhaseEventWeight(type: GameEvent['type'], index: number): number {
+  const baseWeight: Partial<Record<GameEvent['type'], number>> = {
+    cultivation: 1,
+    combat: 0.72,
+    encounter: 0.62,
+    social: 0.56,
+    disaster: 0.52,
+    daily: 0.9,
+    resource: 0.66,
+    mind: 0.72,
+    sect: 0.68
+  };
+
+  return Math.max(0.25, (baseWeight[type] ?? 0.6) - (index % 4) * 0.04);
+}
+
+function getPhaseEventEffects(phase: PhaseId, type: GameEvent['type'], index: number): GameEvent['effects'] {
+  const late = phase === 'late';
+  const attr = late ? 16 + (index % 5) * 4 : 8 + (index % 5) * 3;
+  const minor = late ? 8 + (index % 4) * 2 : 4 + (index % 4) * 2;
+  const progress = late ? 16 + (index % 5) * 4 : 9 + (index % 5) * 3;
+  const wealth = late ? 4 + (index % 3) * 2 : 2 + (index % 3);
+
+  switch (type) {
+    case 'cultivation':
+      return index % 3 === 0
+        ? { 修为: progress, 根骨: attr, 神识: minor }
+        : index % 3 === 1
+          ? { 修为: progress, 悟性: attr, 气运: minor }
+          : { 修为: progress, 神识: attr, 根骨: minor };
+    case 'combat':
+      return { 修为: progress + 3, 根骨: attr, 神识: minor, 气运: minor };
+    case 'encounter':
+      return { 修为: progress, 气运: attr, 悟性: minor, 家境: wealth };
+    case 'social':
+      return { 颜值: attr, 气运: minor, 家境: wealth, 修为: Math.max(4, progress - 5) };
+    case 'disaster':
+      return late
+        ? { 寿命: -(7 + index % 5), 根骨: -minor, 神识: -minor, 修为: -(12 + index % 5) }
+        : { 寿命: -(3 + index % 4), 根骨: -Math.ceil(minor / 2), 神识: -Math.ceil(minor / 2), 修为: -(7 + index % 4) };
+    case 'daily':
+      return { 修为: Math.max(5, progress - 4), 根骨: minor, 悟性: minor, 神识: Math.ceil(minor / 2) };
+    case 'resource':
+      return { 家境: wealth + 1, 根骨: minor, 气运: minor, 修为: progress };
+    case 'mind':
+      return { 神识: attr, 悟性: minor, 气运: minor, 修为: progress };
+    case 'sect':
+      return { 家境: wealth, 悟性: minor, 神识: minor, 颜值: minor, 修为: progress };
+    default:
+      return { 修为: progress };
+  }
+}
