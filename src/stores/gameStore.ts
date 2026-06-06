@@ -1909,8 +1909,6 @@ function generateCombatItemRewards(
     case 'combat-caravan-escort':
     case 'combat-bandit-camp':
     case 'choice-combat-resource-thief':
-    case 'mid-combat-spirit-boat-raid':
-    case 'mid-combat-capture-banner':
       return rollOneReward([
         ['spirit-stone-pouch', 0.55],
         ['qi-gathering-pill', 0.3],
@@ -1925,51 +1923,74 @@ function generateCombatItemRewards(
     case 'combat-sword-contest':
     case 'combat-arena-duel':
     case 'choice-combat-rival-duel':
-    case 'mid-combat-break-demon-array':
-    case 'mid-combat-canyon-rival':
-    case 'late-combat-law-domain-duel':
-    case 'late-combat-star-sea-array':
       return rollOneReward([
         ['old-manual-page', 0.35],
         ['bone-tempering-pill', 0.28],
         ['spirit-stone-pouch', 0.37]
+      ], quantity);
+    case 'mid-combat-spirit-boat-raid':
+    case 'mid-combat-capture-banner':
+      return rollOneReward([
+        ['star-spirit-stone', 0.42],
+        ['mystic-spirit-pill', 0.36],
+        ['purple-crystal-marrow', 0.22]
+      ], quantity);
+    case 'mid-combat-break-demon-array':
+    case 'mid-combat-canyon-rival':
+      return rollOneReward([
+        ['mystic-manual-fragment', 0.38],
+        ['soul-settling-orb', 0.28],
+        ['star-spirit-stone', 0.34]
       ], quantity);
     case 'mid-combat-infant-fire-demon':
     case 'mid-combat-night-demon-king':
     case 'mid-combat-secret-realm-guardian':
     case 'mid-combat-thunder-marsh-breakout':
       return rollOneReward([
-        ['beast-core', 0.36],
-        ['ancient-scale', 0.24],
-        ['bone-tempering-pill', 0.2],
-        ['spirit-herb', 0.2]
+        ['thunder-beast-core', 0.34],
+        ['purple-crystal-marrow', 0.26],
+        ['dragon-blood-pill', 0.24],
+        ['mystic-spirit-pill', 0.16]
       ], quantity);
     case 'mid-combat-demon-cave-purge':
     case 'mid-combat-ruined-city-watch':
+      return rollOneReward([
+        ['nether-bone', 0.34],
+        ['soul-settling-orb', 0.28],
+        ['mystic-spirit-pill', 0.22],
+        ['star-spirit-stone', 0.16]
+      ], quantity);
+    case 'late-combat-law-domain-duel':
+    case 'late-combat-star-sea-array':
+      return rollOneReward([
+        ['immortal-talisman-page', 0.34],
+        ['heaven-soul-jade', 0.28],
+        ['outer-star-sand', 0.38]
+      ], quantity);
     case 'late-combat-heavenly-demon-gate':
       return rollOneReward([
-        ['blood-jade', 0.36],
-        ['soul-nourishing-pill', 0.28],
-        ['fortune-talisman', 0.2],
-        ['spirit-stone-pouch', 0.16]
+        ['heaven-soul-jade', 0.32],
+        ['tribulation-ward', 0.3],
+        ['xuanhuang-marrow', 0.18],
+        ['immortal-talisman-page', 0.2]
       ], quantity);
     case 'late-combat-great-demon-siege':
     case 'late-combat-king-court-lord':
     case 'late-combat-cloud-sea-decisive':
     case 'late-combat-thunder-prison-brawl':
       return rollOneReward([
-        ['ancient-scale', 0.36],
-        ['beast-core', 0.24],
-        ['bone-tempering-pill', 0.22],
-        ['fortune-talisman', 0.18]
+        ['ancient-immortal-scale', 0.28],
+        ['tribulation-crystal', 0.3],
+        ['tribulation-pill', 0.24],
+        ['outer-star-sand', 0.18]
       ], quantity);
     case 'late-combat-tribulation-guardian':
     case 'late-combat-boundary-pursuit':
       return rollOneReward([
-        ['fortune-talisman', 0.32],
-        ['soul-nourishing-pill', 0.26],
-        ['old-manual-page', 0.22],
-        ['spirit-stone-pouch', 0.2]
+        ['tribulation-ward', 0.34],
+        ['heaven-soul-jade', 0.24],
+        ['immortal-talisman-page', 0.22],
+        ['tribulation-crystal', 0.2]
       ], quantity);
     default:
       return rollOneReward([
