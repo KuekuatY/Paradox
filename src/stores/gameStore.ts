@@ -55,7 +55,7 @@ interface GameStore {
   resetGame: () => void;
 }
 
-const ATTRIBUTE_MAX = 800;
+const ATTRIBUTE_MAX = 9999;
 const STARTING_AGE = 0;
 const QI_CONDENSING_AGE = 10;
 const BASE_ATTRIBUTE_VALUE = 10;

@@ -5,7 +5,7 @@ export const realms: Realm[] = [
     name: '幼年期',
     level: 0,
     maxAge: 100,
-    attributeCap: 40,
+    attributeCap: 9999,
     cultivationRequired: 0,
     description: '蒙昧未开，静待引气入体',
     requirements: {
@@ -17,7 +17,7 @@ export const realms: Realm[] = [
     name: '炼气期',
     level: 1,
     maxAge: 100,
-    attributeCap: 80,
+    attributeCap: 9999,
     cultivationRequired: 0,
     description: '吸纳灵气，引气入体',
     requirements: {
@@ -29,7 +29,7 @@ export const realms: Realm[] = [
     name: '筑基期',
     level: 2,
     maxAge: 200,
-    attributeCap: 120,
+    attributeCap: 9999,
     cultivationRequired: 100,
     description: '筑就仙基，丹中气旋',
     requirements: {
@@ -41,7 +41,7 @@ export const realms: Realm[] = [
     name: '金丹期',
     level: 3,
     maxAge: 300,
-    attributeCap: 210,
+    attributeCap: 9999,
     cultivationRequired: 150,
     description: '丹成金色，金丹入腹',
     requirements: {
@@ -53,7 +53,7 @@ export const realms: Realm[] = [
     name: '元婴期',
     level: 4,
     maxAge: 500,
-    attributeCap: 310,
+    attributeCap: 9999,
     cultivationRequired: 300,
     description: '孕育元婴，神魂出窍',
     requirements: {
@@ -65,7 +65,7 @@ export const realms: Realm[] = [
     name: '化神期',
     level: 5,
     maxAge: 1000,
-    attributeCap: 420,
+    attributeCap: 9999,
     cultivationRequired: 750,
     description: '元婴化神，神识万里',
     requirements: {
@@ -77,7 +77,7 @@ export const realms: Realm[] = [
     name: '炼虚期',
     level: 6,
     maxAge: 3000,
-    attributeCap: 540,
+    attributeCap: 9999,
     cultivationRequired: 1800,
     description: '炼化虚妄，身化天地',
     requirements: {
@@ -89,7 +89,7 @@ export const realms: Realm[] = [
     name: '合体期',
     level: 7,
     maxAge: 7000,
-    attributeCap: 660,
+    attributeCap: 9999,
     cultivationRequired: 4000,
     description: '神魂合体，初窥天道',
     requirements: {
@@ -101,7 +101,7 @@ export const realms: Realm[] = [
     name: '大乘期',
     level: 8,
     maxAge: 15000,
-    attributeCap: 740,
+    attributeCap: 9999,
     cultivationRequired: 9000,
     description: '功德圆满，只待飞升',
     requirements: {
@@ -113,7 +113,7 @@ export const realms: Realm[] = [
     name: '渡劫期',
     level: 9,
     maxAge: 50000,
-    attributeCap: 800,
+    attributeCap: 9999,
     cultivationRequired: 20000,
     description: '历经天劫，飞升成仙',
     requirements: {
