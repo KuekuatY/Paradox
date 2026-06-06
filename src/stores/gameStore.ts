@@ -955,10 +955,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     return resolveCombatEvent(gameState, event, choice);
   }
 
-  const choiceDifferential = choice ? rollChoiceDifferential() : undefined;
-  const effectiveChoice = choice && choiceDifferential
-    ? applyChoiceDifferential(choice, choiceDifferential)
-    : choice;
+  const effectiveChoice = choice;
   const isNeutralEvent = event.result === 'neutral';
   const successRate = isNeutralEvent
     ? 0.5
@@ -991,8 +988,8 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   const techniqueRewards = generateEventTechniqueRewards(gameState, event, result);
   const newEvent: GameEvent = {
     ...event,
-    title: choice ? `${event.title}：${formatChoiceTitle(choice, choiceDifferential)}` : event.title,
-    description: choice ? `${event.description}${formatChoiceOutcome(choice, choiceDifferential)}` : event.description,
+    title: choice ? `${event.title}：${formatChoiceTitle(choice)}` : event.title,
+    description: choice ? `${event.description}${formatChoiceOutcome(choice)}` : event.description,
     appliedEffects,
     ...(itemRewards.length > 0 ? { itemRewards } : {}),
     ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
@@ -1024,10 +1021,7 @@ interface CombatEncounter {
 }
 
 function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
-  const choiceDifferential = choice ? rollChoiceDifferential() : undefined;
-  const effectiveChoice = choice && choiceDifferential
-    ? applyChoiceDifferential(choice, choiceDifferential)
-    : choice;
+  const effectiveChoice = choice;
   const combatResult = calculateCombatResult(gameState, event, effectiveChoice);
   const baseEffects = scaleCombatBaseEffects(event.effects, combatResult.rawResult);
   const choiceEffects = effectiveChoice
@@ -1057,10 +1051,10 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
   const techniqueRewards = combatResult.isWin
     ? generateEventTechniqueRewards(gameState, event, combatResult.rawResult)
     : [];
-  const choiceText = choice ? formatChoiceOutcome(choice, choiceDifferential) : '';
+  const choiceText = choice ? formatChoiceOutcome(choice) : '';
   const newEvent: GameEvent = {
     ...event,
-    title: choice ? `${event.title}：${formatChoiceTitle(choice, choiceDifferential)}` : event.title,
+    title: choice ? `${event.title}：${formatChoiceTitle(choice)}` : event.title,
     description: `${event.description}${choiceText}${combatResult.report.resultText}`,
     appliedEffects,
     combat: combatResult.report,
@@ -1634,90 +1628,12 @@ function getCombatResultText(result: GameEvent['result'], enemyName: string): st
   }
 }
 
-interface ChoiceDifferential {
-  label: string;
-  outcome: string;
-  successModifier: number;
-  positiveScale: number;
-  negativeScale: number;
-  effectPositiveScale: number;
-  effectNegativeScale: number;
+function formatChoiceTitle(choice: EventChoice): string {
+  return choice.label;
 }
 
-const choiceDifferentials: ChoiceDifferential[] = [
-  {
-    label: '顺势',
-    outcome: '此举推进得格外顺手，额外收益更明显。',
-    successModifier: 0.05,
-    positiveScale: 1.18,
-    negativeScale: 0.82,
-    effectPositiveScale: 1.25,
-    effectNegativeScale: 0.75
-  },
-  {
-    label: '平稳',
-    outcome: '事情大致按预想推进，没有额外波澜。',
-    successModifier: 0,
-    positiveScale: 1,
-    negativeScale: 1,
-    effectPositiveScale: 1,
-    effectNegativeScale: 1
-  },
-  {
-    label: '生变',
-    outcome: '中途横生枝节，收益被削弱，代价也更重。',
-    successModifier: -0.05,
-    positiveScale: 0.82,
-    negativeScale: 1.18,
-    effectPositiveScale: 0.75,
-    effectNegativeScale: 1.25
-  }
-];
-
-function rollChoiceDifferential(): ChoiceDifferential {
-  return choiceDifferentials[Math.floor(Math.random() * choiceDifferentials.length)];
-}
-
-function applyChoiceDifferential(choice: EventChoice, differential: ChoiceDifferential): EventChoice {
-  return {
-    ...choice,
-    successModifier: (choice.successModifier ?? 0) + differential.successModifier,
-    positiveScale: (choice.positiveScale ?? 1) * differential.positiveScale,
-    negativeScale: (choice.negativeScale ?? 1) * differential.negativeScale,
-    effects: choice.effects
-      ? scaleChoiceDifferentialEffects(choice.effects, differential)
-      : undefined
-  };
-}
-
-function scaleChoiceDifferentialEffects(
-  effects: GameEvent['effects'],
-  differential: ChoiceDifferential
-): GameEvent['effects'] {
-  const scaledEffects: GameEvent['effects'] = {};
-
-  Object.entries(effects).forEach(([key, value]) => {
-    if (typeof value !== 'number') {
-      (scaledEffects as Record<string, typeof value>)[key] = value;
-      return;
-    }
-
-    const scale = value >= 0 ? differential.effectPositiveScale : differential.effectNegativeScale;
-    const scaledValue = scaleNumericValue(value, scale);
-    if (scaledValue !== 0) {
-      (scaledEffects as Record<string, number>)[key] = scaledValue;
-    }
-  });
-
-  return scaledEffects;
-}
-
-function formatChoiceTitle(choice: EventChoice, differential?: ChoiceDifferential): string {
-  return differential ? `${choice.label}·${differential.label}` : choice.label;
-}
-
-function formatChoiceOutcome(choice: EventChoice, differential?: ChoiceDifferential): string {
-  return `你选择${choice.label}，${choice.outcome}${differential?.outcome ?? ''}`;
+function formatChoiceOutcome(choice: EventChoice): string {
+  return `你选择${choice.label}，${choice.outcome}`;
 }
 
 type EventOutcomePhase = 'early' | 'mid' | 'late';
