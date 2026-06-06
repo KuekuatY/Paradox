@@ -118,7 +118,7 @@ export default function Game() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -16 }}
-                  className="grid grid-cols-[220px_minmax(0,1fr)] gap-6"
+                  className="grid grid-cols-[190px_minmax(520px,1fr)_360px] items-start gap-5 xl:grid-cols-[210px_minmax(620px,1fr)_390px]"
                 >
                   <DesktopGameNav activeTab={mobileTab} onSelect={setMobileTab} />
                   <div className="min-w-0">
@@ -134,8 +134,10 @@ export default function Game() {
                       onResolveTribulationStrike={resolveTribulationStrike}
                       onSave={handleSaveGame}
                       onSelectTab={setMobileTab}
+                      showCultivationPanel={false}
                     />
                   </div>
+                  <DesktopFixedStatusPanel />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -231,7 +233,7 @@ function DesktopGameNav({
   onSelect: (tab: MobileTab) => void;
 }) {
   return (
-    <aside className="sticky top-8 h-fit rounded-lg border border-[#738275]/25 bg-[#fff9e8]/80 p-3 shadow-md backdrop-blur">
+    <aside className="sticky top-8 h-[640px] rounded-lg border border-[#738275]/25 bg-[#fff9e8]/80 p-3 shadow-md backdrop-blur xl:h-[660px]">
       <div className="mb-3 px-2 text-xs font-semibold text-[#66766e]">问道轮回</div>
       <div className="space-y-1.5">
         {gameTabs.map(tab => {
@@ -257,6 +259,51 @@ function DesktopGameNav({
   );
 }
 
+function DesktopFixedStatusPanel() {
+  const { gameState } = useGameStore();
+  const { age, lifespan } = gameState;
+  const lifespanPercent = lifespan === Infinity ? 100 : Math.min(100, age / lifespan * 100);
+
+  return (
+    <aside className="sticky top-8 h-[640px] max-h-[calc(100vh-4rem)] overflow-y-auto xl:h-[660px]">
+      <div className="ink-panel h-full space-y-3 rounded-lg p-4">
+        <div className="text-center">
+          <div className="mb-1 text-xs text-[#66766e]">{gameState.characterName || '无名'}</div>
+          <div className="ink-title text-2xl font-bold">{gameState.currentRealm.name}</div>
+        </div>
+
+        <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3">
+          <div className="mb-2 flex justify-between text-sm">
+            <span className="ink-muted">年龄</span>
+            <span className="font-semibold text-[#263832]">{age} 岁</span>
+          </div>
+          <div className="relative h-2 overflow-hidden rounded-full bg-[#c8c2a9]">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${lifespanPercent}%` }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#5f7c64] via-[#b49a4b] to-[#9b4b35]"
+            />
+          </div>
+          <div className="mt-2 text-right text-xs text-[#66766e]">
+            寿元: {lifespan === Infinity ? '无尽' : `${lifespan} 年`}
+          </div>
+        </div>
+
+        <CultivationProgress
+          currentRealmName={gameState.currentRealm.name}
+          progress={gameState.cultivationProgress}
+        />
+        <AttributePanel attributes={gameState.attributes} cap={gameState.currentRealm.attributeCap} />
+        <BreakthroughRequirements
+          currentRealmName={gameState.currentRealm.name}
+          attributes={gameState.attributes}
+        />
+      </div>
+    </aside>
+  );
+}
+
 function GameTabContent({
   activeTab,
   canBreakthrough,
@@ -268,7 +315,8 @@ function GameTabContent({
   onPracticeLifeSkill,
   onResolveTribulationStrike,
   onSave,
-  onSelectTab
+  onSelectTab,
+  showCultivationPanel = true
 }: {
   activeTab: MobileTab;
   canBreakthrough: boolean;
@@ -281,8 +329,15 @@ function GameTabContent({
   onResolveTribulationStrike: (success: boolean) => void;
   onSave: () => void;
   onSelectTab: (tab: MobileTab) => void;
+  showCultivationPanel?: boolean;
 }) {
   const { gameState } = useGameStore();
+  const desktopScrollClass = showCultivationPanel
+    ? ''
+    : 'ink-scrollbar h-[640px] overflow-y-auto pr-1 xl:h-[660px]';
+  const desktopPanelFillClass = showCultivationPanel ? '' : 'min-h-full';
+  const pageClassName = (baseClassName = '') =>
+    [baseClassName, desktopScrollClass].filter(Boolean).join(' ');
 
   return (
     <AnimatePresence mode="wait">
@@ -292,12 +347,14 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="space-y-3"
+          className={pageClassName('space-y-3')}
         >
-          <MobileCultivationPanel
-            canBreakthrough={canBreakthrough}
-            onGoBreakthrough={() => onSelectTab('breakthrough')}
-          />
+          {showCultivationPanel && (
+            <MobileCultivationPanel
+              canBreakthrough={canBreakthrough}
+              onGoBreakthrough={() => onSelectTab('breakthrough')}
+            />
+          )}
           {gameState.pendingTribulation ? (
             <TribulationQte
               tribulation={gameState.pendingTribulation}
@@ -309,7 +366,8 @@ function GameTabContent({
               onBreakthrough={onBreakthrough}
               onContinue={onContinue}
               onMeditationEnd={onMeditationEnd}
-              showBreakthroughControls={false}
+              panelClassName={showCultivationPanel ? '' : 'lg:h-[640px] xl:h-[660px]'}
+              showBreakthroughControls={!showCultivationPanel}
             />
           )}
         </motion.div>
@@ -321,14 +379,14 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="space-y-3"
+          className={pageClassName('space-y-3')}
         >
           <SaveGamePanel
             characterName={gameState.characterName}
             lastSavedAt={lastSavedAt}
             onSave={onSave}
           />
-          <MobileStatusPanel />
+          <MobileStatusPanel showAttributes={showCultivationPanel} />
         </motion.div>
       )}
 
@@ -338,13 +396,17 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="space-y-3"
+          className={pageClassName('flex flex-col gap-3')}
         >
           <LifeGoalPanel
             activeGoal={gameState.activeGoal}
             completedCount={gameState.completedGoals.length}
+            className={showCultivationPanel ? '' : 'shrink-0'}
           />
-          <RecentEvents events={gameState.events} />
+          <RecentEvents
+            events={gameState.events}
+            className={showCultivationPanel ? '' : 'min-h-0 flex-1'}
+          />
         </motion.div>
       )}
 
@@ -354,11 +416,14 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
+          className={pageClassName()}
         >
           <MobileBreakthroughPanel
             canBreakthrough={canBreakthrough}
+            className={desktopPanelFillClass}
             onBreakthrough={onBreakthrough}
             onPrepare={onPrepare}
+            showBreakthroughButton={showCultivationPanel}
           />
         </motion.div>
       )}
@@ -369,8 +434,9 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
+          className={pageClassName()}
         >
-          <TechniquePanel gameState={gameState} />
+          <TechniquePanel gameState={gameState} className={desktopPanelFillClass} />
         </motion.div>
       )}
 
@@ -380,6 +446,7 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
+          className={pageClassName()}
         >
           <LifeSkillPanel
             canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
@@ -394,10 +461,12 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
+          className={pageClassName()}
         >
           <InventoryPanel
             inventory={gameState.inventory}
             canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
+            className={desktopPanelFillClass}
           />
         </motion.div>
       )}
@@ -408,8 +477,9 @@ function GameTabContent({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
+          className={pageClassName()}
         >
-          <AchievementPanel achievements={gameState.achievements} />
+          <AchievementPanel achievements={gameState.achievements} className={desktopPanelFillClass} />
         </motion.div>
       )}
     </AnimatePresence>
@@ -450,9 +520,11 @@ function MobileGameNav({
 }
 
 function LifeSkillPanel({
+  compact = false,
   canUse,
   onPractice
 }: {
+  compact?: boolean;
   canUse: boolean;
   onPractice: (skillId: LifeSkillId) => void;
 }) {
@@ -479,7 +551,7 @@ function LifeSkillPanel({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-3 ${compact ? '' : 'md:grid-cols-2 xl:grid-cols-3'}`}>
         {lifeSkills.map(skill => {
           const disabledReason = getDisabledReason(skill);
           const isDisabled = disabledReason !== '';
@@ -489,7 +561,7 @@ function LifeSkillPanel({
           return (
             <div
               key={skill.id}
-              className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 p-4 shadow-sm"
+              className="flex h-full flex-col rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 p-4 shadow-sm"
             >
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
@@ -552,7 +624,7 @@ function LifeSkillPanel({
                 type="button"
                 disabled={isDisabled}
                 onClick={() => onPractice(skill.id)}
-                className={`mt-4 w-full rounded-md border px-4 py-2 text-sm font-bold transition ${
+                className={`mt-auto w-full rounded-md border px-4 py-2 text-sm font-bold transition ${
                   isDisabled
                     ? 'border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
                     : 'border-[#738275]/35 bg-[#355d58] text-[#fff9e8] shadow-sm hover:bg-[#416f68]'
@@ -642,7 +714,7 @@ function getRealmNameByLevel(level: number): string {
   return '渡劫';
 }
 
-function MobileStatusPanel() {
+function MobileStatusPanel({ showAttributes = true }: { showAttributes?: boolean }) {
   const { gameState } = useGameStore();
   const { spiritRoot, talent, cultivationPath, attributes, currentRealm } = gameState;
 
@@ -677,7 +749,9 @@ function MobileStatusPanel() {
       {gameState.rival?.active && (
         <RivalPanel name={gameState.rival.name} enmity={gameState.rival.enmity} defeats={gameState.rival.defeats} />
       )}
-      <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
+      {showAttributes && (
+        <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
+      )}
     </div>
   );
 }
@@ -705,19 +779,23 @@ function RivalPanel({
 
 function MobileBreakthroughPanel({
   canBreakthrough,
+  className = '',
   onBreakthrough,
-  onPrepare
+  onPrepare,
+  showBreakthroughButton = true
 }: {
   canBreakthrough: boolean;
+  className?: string;
   onBreakthrough: () => void;
   onPrepare: (actionId: string) => void;
+  showBreakthroughButton?: boolean;
 }) {
   const { gameState, getBreakthroughSuccessChance } = useGameStore();
   const isBlockedByChoice = !!gameState.pendingEvent || gameState.pendingPathChoice || !!gameState.pendingTribulation;
   const breakthroughChance = getBreakthroughSuccessChance();
 
   return (
-    <div className="ink-panel space-y-3 rounded-lg p-4">
+    <div className={`ink-panel space-y-3 rounded-lg p-4 ${className}`}>
       <BreakthroughRequirements
         currentRealmName={gameState.currentRealm.name}
         attributes={gameState.attributes}
@@ -735,19 +813,23 @@ function MobileBreakthroughPanel({
         onPrepare={onPrepare}
       />
       <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-center">
-        <div className="mb-3 text-sm font-semibold text-[#45564f]">突破瓶颈</div>
-        <button
-          type="button"
-          disabled={!canBreakthrough}
-          onClick={onBreakthrough}
-          className={`w-full rounded-md px-6 py-3 text-lg font-bold transition ${
-            canBreakthrough
-              ? 'border border-[#a9823c]/45 bg-[#f0dfad] text-[#7a5426] shadow-lg hover:brightness-105'
-              : 'border border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
-          }`}
-        >
-          突破瓶颈
-        </button>
+        {showBreakthroughButton && (
+          <>
+            <div className="mb-3 text-sm font-semibold text-[#45564f]">突破瓶颈</div>
+            <button
+              type="button"
+              disabled={!canBreakthrough}
+              onClick={onBreakthrough}
+              className={`w-full rounded-md px-6 py-3 text-lg font-bold transition ${
+                canBreakthrough
+                  ? 'border border-[#a9823c]/45 bg-[#f0dfad] text-[#7a5426] shadow-lg hover:brightness-105'
+                  : 'border border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
+              }`}
+            >
+              突破瓶颈
+            </button>
+          </>
+        )}
         <p className="mt-3 text-xs leading-relaxed text-[#66766e]">
           {gameState.pendingPathChoice
             ? '需先在修行页立定流派，方可继续筹备突破。'

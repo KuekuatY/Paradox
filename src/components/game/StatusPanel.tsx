@@ -312,24 +312,32 @@ export function BreakthroughRequirements({
   );
 }
 
-export function TechniquePanel({ gameState }: { gameState: GameState }) {
+export function TechniquePanel({
+  gameState,
+  className = ''
+}: {
+  gameState: GameState;
+  className?: string;
+}) {
   const { trainTechnique } = useGameStore();
   const learnedTechniques = gameState.techniques
     .map(learnedTechnique => ({ learnedTechnique, technique: getTechnique(learnedTechnique.techniqueId) }))
     .filter((entry): entry is { learnedTechnique: LearnedTechnique; technique: TechniqueDefinition } => !!entry.technique);
 
   return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#45564f]">功法</span>
-        <span className="text-xs text-[#66766e]">{learnedTechniques.length} 本</span>
+    <div className={`ink-panel rounded-lg p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="ink-title text-xl font-bold">功法</span>
+        <span className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-1 text-xs font-semibold text-[#66766e]">
+          {learnedTechniques.length} 本
+        </span>
       </div>
       {learnedTechniques.length === 0 ? (
-        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-3 text-sm text-[#66766e]">
+        <div className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 text-sm font-semibold text-[#66766e]">
           立定流派后，基础功法会收入道途。
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {learnedTechniques.map(({ learnedTechnique, technique }) => (
             <TechniqueCard
               key={technique.id}
@@ -368,7 +376,7 @@ function TechniqueCard({
   const combatBonus = Math.round(learnedTechnique.level * technique.combatPowerPerLevel * 100);
 
   return (
-    <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-2">
+    <div className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 shadow-sm">
       <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
         <div>
           <div className="font-bold text-[#355d58]">
@@ -430,10 +438,12 @@ function getVisibleTechniqueTrainingCost(gameState: GameState, technique: Techni
 
 export function InventoryPanel({
   inventory,
-  canUse
+  canUse,
+  className = ''
 }: {
   inventory: InventoryEntry[];
   canUse: boolean;
+  className?: string;
 }) {
   const { consumeInventoryItem } = useGameStore();
   const entries = inventory
@@ -441,24 +451,26 @@ export function InventoryPanel({
     .filter((entry): entry is InventoryEntry & { item: NonNullable<ReturnType<typeof getItem>> } => !!entry.item);
 
   return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#45564f]">储物戒</span>
-        <span className="text-xs text-[#66766e]">{entries.length} 类</span>
+    <div className={`ink-panel rounded-lg p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="ink-title text-xl font-bold">储物戒</span>
+        <span className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-1 text-xs font-semibold text-[#66766e]">
+          {entries.length} 类
+        </span>
       </div>
       {entries.length === 0 ? (
-        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-3 text-sm text-[#66766e]">
+        <div className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 text-sm font-semibold text-[#66766e]">
           戒中尚无可用之物。
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
           {entries.map(({ itemId, quantity, item }) => {
             const usable = canUse && item.usable;
 
             return (
               <div
                 key={itemId}
-                className="rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-3 py-2"
+                className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 shadow-sm"
               >
                 <div className="mb-1 flex items-start justify-between gap-2">
                   <div>
@@ -568,16 +580,18 @@ function CombatStatItem({ label, value }: { label: string; value: number }) {
 
 export function LifeGoalPanel({
   activeGoal,
-  completedCount
+  completedCount,
+  className = ''
 }: {
   activeGoal: ActiveLifeGoal | null;
   completedCount: number;
+  className?: string;
 }) {
   const definition = activeGoal ? getLifeGoalDefinition(activeGoal.id) : undefined;
 
   if (!activeGoal || !definition) {
     return (
-      <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-sm text-[#66766e] sm:px-4">
+      <div className={`ink-panel rounded-lg p-4 text-sm font-semibold text-[#66766e] sm:p-5 ${className}`}>
         道途目标将在入世后显现。
       </div>
     );
@@ -587,17 +601,19 @@ export function LifeGoalPanel({
   const rewardEntries = Object.entries(definition.reward).filter(([, value]) => value !== undefined);
 
   return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#45564f]">道途目标</span>
-        <span className="text-xs text-[#66766e]">已成 {completedCount}</span>
+    <div className={`ink-panel rounded-lg p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="ink-title text-xl font-bold">道途目标</span>
+        <span className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-1 text-xs font-semibold text-[#66766e]">
+          已成 {completedCount}
+        </span>
       </div>
       <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
         <div>
           <div className="font-bold text-[#355d58]">{definition.name}</div>
           <p className="mt-1 text-xs leading-relaxed text-[#66766e]">{definition.description}</p>
         </div>
-        <div className="shrink-0 rounded border border-[#738275]/20 bg-[#fffdf2]/60 px-2 py-1 text-xs font-semibold text-[#6d634d]">
+        <div className="shrink-0 rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-1.5 text-xs font-semibold text-[#6d634d]">
           {definition.targetLabel}
         </div>
       </div>
@@ -631,19 +647,25 @@ export function LifeGoalPanel({
   );
 }
 
-export function AchievementPanel({ achievements }: { achievements: string[] }) {
+export function AchievementPanel({
+  achievements,
+  className = ''
+}: {
+  achievements: string[];
+  className?: string;
+}) {
   const unlocked = new Set(achievements);
   const visibleAchievements = achievementCatalog.slice(0, 8);
 
   return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#45564f]">成就</span>
-        <span className="text-xs text-[#66766e]">
+    <div className={`ink-panel rounded-lg p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="ink-title text-xl font-bold">成就</span>
+        <span className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-1 text-xs font-semibold text-[#66766e]">
           {achievements.length}/{achievementCatalog.length}
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
         {visibleAchievements.map(achievement => {
           const isUnlocked = unlocked.has(achievement.id);
 
@@ -651,16 +673,16 @@ export function AchievementPanel({ achievements }: { achievements: string[] }) {
             <div
               key={achievement.id}
               title={achievement.description}
-              className={`rounded border px-2 py-2 text-xs ${
+              className={`min-h-[64px] rounded-md border px-3 py-3 text-xs shadow-sm ${
                 isUnlocked
-                  ? 'border-[#a9823c]/35 bg-[#f0dfad]/55 text-[#6f4d24]'
-                  : 'border-[#738275]/15 bg-[#eee8d4]/40 text-[#8d947f]'
+                  ? 'border-[#a9823c]/40 bg-[#f4e6ba]/85 text-[#6f4d24]'
+                  : 'border-[#738275]/20 bg-[#fffdf2]/75 text-[#7b8378]'
               }`}
             >
-              <span className="block truncate font-semibold">
+              <span className={`block truncate font-bold ${isUnlocked ? 'text-[#6f4d24]' : 'text-[#59645f]'}`}>
                 {isUnlocked ? achievement.name : '未解锁'}
               </span>
-              <span className="block truncate opacity-75">
+              <span className="mt-1 block truncate text-[#66766e]">
                 {isUnlocked ? achievement.description : achievement.name}
               </span>
             </div>
@@ -668,12 +690,12 @@ export function AchievementPanel({ achievements }: { achievements: string[] }) {
         })}
       </div>
       {achievements.length > visibleAchievements.length && (
-        <div className="mt-2 text-right text-xs text-[#66766e]">
+        <div className="mt-3 text-right text-xs font-semibold text-[#66766e]">
           另有 {achievements.length - visibleAchievements.length} 项已解锁
         </div>
       )}
       {achievements.length > 0 && (
-        <div className="mt-2 text-xs text-[#66766e]">
+        <div className="mt-3 rounded-md border border-[#738275]/20 bg-[#fffdf2]/75 px-3 py-2 text-xs font-semibold text-[#66766e]">
           最近：{getAchievementInfo(achievements[achievements.length - 1]).name}
         </div>
       )}
@@ -681,25 +703,33 @@ export function AchievementPanel({ achievements }: { achievements: string[] }) {
   );
 }
 
-export function RecentEvents({ events }: { events: GameEvent[] }) {
+export function RecentEvents({
+  events,
+  className = ''
+}: {
+  events: GameEvent[];
+  className?: string;
+}) {
   const recentEvents = events.slice(-4).reverse();
 
   return (
-    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-semibold text-[#45564f]">最近年表</span>
-        <span className="text-xs text-[#66766e]">{events.length} 事</span>
+    <div className={`ink-panel rounded-lg p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="ink-title text-xl font-bold">最近年表</span>
+        <span className="rounded-full border border-[#738275]/25 bg-[#fffdf2]/80 px-3 py-1 text-xs font-semibold text-[#66766e]">
+          {events.length} 事
+        </span>
       </div>
       {recentEvents.length === 0 ? (
-        <div className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-3 text-sm text-[#66766e]">
+        <div className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 text-sm font-semibold text-[#66766e]">
           此世年表尚未落笔。
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {recentEvents.map(event => (
             <div
               key={`${event.id}-${event.age}`}
-              className="rounded border border-[#738275]/15 bg-[#fffdf2]/50 px-3 py-2"
+              className="rounded-md border border-[#738275]/20 bg-[#fffdf2]/80 px-3 py-3 shadow-sm"
             >
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="font-semibold text-[#355d58]">第 {event.age} 年</span>

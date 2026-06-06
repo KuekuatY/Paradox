@@ -11,6 +11,7 @@ interface EventDisplayProps {
   onBreakthrough: () => void;
   onContinue: () => void;
   onMeditationEnd: () => void;
+  panelClassName?: string;
   showBreakthroughControls?: boolean;
 }
 
@@ -19,6 +20,7 @@ export default function EventDisplay({
   onBreakthrough,
   onContinue,
   onMeditationEnd,
+  panelClassName = '',
   showBreakthroughControls = true
 }: EventDisplayProps) {
   const {
@@ -150,7 +152,7 @@ export default function EventDisplay({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="ink-panel rounded-lg p-4 sm:p-6 lg:p-8"
+      className={`ink-panel ink-scrollbar overflow-y-auto rounded-lg p-4 sm:p-6 lg:p-8 ${panelClassName}`}
     >
       <div className="mb-4 text-center sm:mb-6">
         <motion.div
@@ -251,35 +253,29 @@ export default function EventDisplay({
             onSelect={selectYearAction}
           />
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-            {showBreakthroughControls && canBreakthrough && (
-              <motion.button
-                animate={{
-                  boxShadow: [
-                    '0 8px 20px rgba(122, 84, 38, 0.18)',
-                    '0 10px 28px rgba(169, 130, 60, 0.36)',
-                    '0 8px 20px rgba(122, 84, 38, 0.18)'
-                  ]
-                }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            {showBreakthroughControls && (
+              <button
+                type="button"
+                disabled={!canBreakthrough}
                 onClick={onBreakthrough}
-                className="w-full rounded-md border border-[#a9823c]/70 bg-[#f0dfad] px-6 py-3 text-lg font-bold text-[#7a5426] transition-all hover:brightness-105 sm:w-auto sm:px-8 sm:text-xl"
+                className={`w-full rounded-md border px-6 py-3 text-lg font-bold transition-colors sm:w-auto sm:px-8 sm:text-xl ${
+                  canBreakthrough
+                    ? 'border-[#a9823c]/70 bg-[#f0dfad] text-[#7a5426] shadow-md hover:bg-[#f4e6ba]'
+                    : 'border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
+                }`}
               >
                 突破瓶颈
-              </motion.button>
+              </button>
             )}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
+            type="button"
             onClick={handleContinue}
             className="ink-button-primary w-full text-lg sm:w-auto sm:text-xl"
           >
             继续修仙
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          </button>
+          <button
+            type="button"
             onClick={handleMeditationEndClick}
             className={`w-full text-lg sm:w-auto sm:text-xl ${
               isConfirmingMeditationEnd
@@ -288,7 +284,7 @@ export default function EventDisplay({
             }`}
           >
             {isConfirmingMeditationEnd ? '确认散功' : '散功坐化'}
-          </motion.button>
+          </button>
             {isConfirmingMeditationEnd && (
               <motion.button
                 initial={{ opacity: 0, y: 6 }}
@@ -533,12 +529,11 @@ function PathChoices({ onChoose }: { onChoose: (pathId: CultivationPath['id']) =
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {cultivationPaths.map(path => (
-        <motion.button
+        <button
+          type="button"
           key={path.id}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
           onClick={() => onChoose(path.id)}
-          className="rounded-md border border-[#738275]/30 bg-[#fff9e8]/70 px-4 py-3 text-left transition-all hover:border-[#355d58]/55 hover:bg-[#eef3df] sm:py-4"
+          className="rounded-md border border-[#738275]/30 bg-[#fff9e8]/70 px-4 py-3 text-left transition-colors hover:border-[#355d58]/55 hover:bg-[#eef3df] sm:py-4"
         >
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <span className="text-lg font-bold text-[#355d58]">{path.name}</span>
@@ -569,7 +564,7 @@ function PathChoices({ onChoose }: { onChoose: (pathId: CultivationPath['id']) =
               </span>
             ))}
           </div>
-        </motion.button>
+        </button>
       ))}
     </div>
   );
