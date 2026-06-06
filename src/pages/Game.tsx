@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
+import { lifeSkills, type LifeSkillId } from '@/data/lifeSkills';
 import Background from '@/components/layout/Background';
 import {
   AchievementPanel,
@@ -22,13 +23,14 @@ import TalentDraw from '@/components/game/TalentDraw';
 import GameOverModal from '@/components/game/GameOverModal';
 import TribulationQte from '@/components/game/TribulationQte';
 
-type MobileTab = 'event' | 'status' | 'goal' | 'technique' | 'inventory' | 'breakthrough' | 'records';
+type MobileTab = 'event' | 'status' | 'goal' | 'technique' | 'skills' | 'inventory' | 'breakthrough' | 'records';
 
 const gameTabs: Array<{ id: MobileTab; label: string }> = [
   { id: 'event', label: '修行' },
   { id: 'status', label: '状态' },
   { id: 'goal', label: '道途' },
   { id: 'technique', label: '功法' },
+  { id: 'skills', label: '百艺' },
   { id: 'inventory', label: '储物' },
   { id: 'breakthrough', label: '突破' },
   { id: 'records', label: '成就' }
@@ -44,7 +46,8 @@ export default function Game() {
     resolveTribulationStrike,
     saveCurrentGame,
     endGame,
-    useBreakthroughPreparation
+    useBreakthroughPreparation,
+    practiceLifeSkill
   } = useGameStore();
   const [showGameOver, setShowGameOver] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('event');
@@ -126,6 +129,7 @@ export default function Game() {
                       onContinue={handleContinue}
                       onMeditationEnd={handleMeditationEnd}
                       onPrepare={useBreakthroughPreparation}
+                      onPracticeLifeSkill={practiceLifeSkill}
                       onResolveTribulationStrike={resolveTribulationStrike}
                       onSave={handleSaveGame}
                       onSelectTab={setMobileTab}
@@ -165,6 +169,7 @@ export default function Game() {
                     onContinue={handleContinue}
                     onMeditationEnd={handleMeditationEnd}
                     onPrepare={useBreakthroughPreparation}
+                    onPracticeLifeSkill={practiceLifeSkill}
                     onResolveTribulationStrike={resolveTribulationStrike}
                     onSave={handleSaveGame}
                     onSelectTab={setMobileTab}
@@ -259,6 +264,7 @@ function GameTabContent({
   onContinue,
   onMeditationEnd,
   onPrepare,
+  onPracticeLifeSkill,
   onResolveTribulationStrike,
   onSave,
   onSelectTab
@@ -270,6 +276,7 @@ function GameTabContent({
   onContinue: () => void;
   onMeditationEnd: () => void;
   onPrepare: (actionId: string) => void;
+  onPracticeLifeSkill: (skillId: LifeSkillId) => void;
   onResolveTribulationStrike: (success: boolean) => void;
   onSave: () => void;
   onSelectTab: (tab: MobileTab) => void;
@@ -366,6 +373,20 @@ function GameTabContent({
         </motion.div>
       )}
 
+      {activeTab === 'skills' && (
+        <motion.div
+          key="tab-skills"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <LifeSkillPanel
+            canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
+            onPractice={onPracticeLifeSkill}
+          />
+        </motion.div>
+      )}
+
       {activeTab === 'inventory' && (
         <motion.div
           key="tab-inventory"
@@ -403,7 +424,7 @@ function MobileGameNav({
 }) {
   return (
     <div className="fixed left-3 right-3 top-3 z-30 rounded-md border border-[#738275]/25 bg-[#fff9e8]/90 p-1 shadow-md backdrop-blur">
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         {gameTabs.map(tab => {
           const isActive = activeTab === tab.id;
 
@@ -420,6 +441,100 @@ function MobileGameNav({
             >
               {tab.label}
             </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LifeSkillPanel({
+  canUse,
+  onPractice
+}: {
+  canUse: boolean;
+  onPractice: (skillId: LifeSkillId) => void;
+}) {
+  const { gameState } = useGameStore();
+
+  const getDisabledReason = (skill: (typeof lifeSkills)[number]) => {
+    if (!canUse) return '需先处理当前事项';
+    if (gameState.currentRealm.level < skill.minRealmLevel) return `需达${getRealmNameByLevel(skill.minRealmLevel)}`;
+    if (gameState.familyWealth < skill.familyWealthCost) return '家境不足';
+    if (gameState.age >= gameState.lifespan - skill.timeCost) return '寿元不足';
+    return '';
+  };
+
+  return (
+    <div className="ink-panel rounded-lg p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="ink-title text-xl font-bold">百艺</h2>
+          <p className="mt-1 text-sm text-[#66766e]">炼器、炼丹、画符、阵法、钓鱼、灵田</p>
+        </div>
+        <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/55 px-3 py-2 text-right text-xs text-[#66766e]">
+          <div>年龄 {gameState.age} 岁</div>
+          <div>家境 {gameState.familyWealth}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {lifeSkills.map(skill => {
+          const disabledReason = getDisabledReason(skill);
+          const isDisabled = disabledReason !== '';
+
+          return (
+            <div
+              key={skill.id}
+              className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 p-4 shadow-sm"
+            >
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-[#263832]">{skill.name}</h3>
+                  <p className="mt-1 text-xs font-semibold text-[#7a5426]">{skill.focus}</p>
+                </div>
+                <span className="shrink-0 rounded border border-[#738275]/25 bg-[#eef3df] px-2 py-1 text-xs font-semibold text-[#45564f]">
+                  {getRealmNameByLevel(skill.minRealmLevel)}可习
+                </span>
+              </div>
+
+              <p className="min-h-[44px] text-sm leading-relaxed text-[#59645f]">{skill.description}</p>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded bg-[#eee8d4] px-2 py-1 text-[#6d634d]">耗时 {skill.timeCost} 年</span>
+                <span className="rounded bg-[#eee8d4] px-2 py-1 text-[#6d634d]">家境 {skill.familyWealthCost}</span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {Object.entries(skill.effects)
+                  .filter(([, value]) => value !== undefined && value !== 0)
+                  .map(([key, value]) => (
+                    <span
+                      key={key}
+                      className={`rounded px-2 py-1 text-xs font-semibold ${
+                        typeof value === 'number' && value < 0
+                          ? 'bg-[#f2d9d2] text-[#9d3d2f]'
+                          : 'bg-[#e7eddd] text-[#355d58]'
+                      }`}
+                    >
+                      {key} {typeof value === 'number' && value > 0 ? '+' : ''}{value}
+                    </span>
+                  ))}
+              </div>
+
+              <button
+                type="button"
+                disabled={isDisabled}
+                onClick={() => onPractice(skill.id)}
+                className={`mt-4 w-full rounded-md border px-4 py-2 text-sm font-bold transition ${
+                  isDisabled
+                    ? 'border-[#738275]/20 bg-[#eee8d4]/55 text-[#8d947f]'
+                    : 'border-[#738275]/35 bg-[#355d58] text-[#fff9e8] shadow-sm hover:bg-[#416f68]'
+                }`}
+              >
+                {isDisabled ? disabledReason : '修习'}
+              </button>
+            </div>
           );
         })}
       </div>
@@ -475,6 +590,18 @@ function MobileCultivationPanel({
       )}
     </div>
   );
+}
+
+function getRealmNameByLevel(level: number): string {
+  if (level <= 1) return '炼气';
+  if (level === 2) return '筑基';
+  if (level === 3) return '金丹';
+  if (level === 4) return '元婴';
+  if (level === 5) return '化神';
+  if (level === 6) return '炼虚';
+  if (level === 7) return '合体';
+  if (level === 8) return '大乘';
+  return '渡劫';
 }
 
 function MobileStatusPanel() {

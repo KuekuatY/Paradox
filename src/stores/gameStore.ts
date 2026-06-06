@@ -8,6 +8,7 @@ import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import { getItem } from '@/data/items';
 import { getAvailableTechniqueRewards, getBaseTechnique, getTechnique } from '@/data/techniques';
+import { getLifeSkill, type LifeSkillId } from '@/data/lifeSkills';
 import type {
   ActiveLifeGoal,
   EventChoice,
@@ -39,6 +40,7 @@ interface GameStore {
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
   consumeInventoryItem: (itemId: string) => void;
+  practiceLifeSkill: (skillId: LifeSkillId) => void;
   trainTechnique: (techniqueId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
@@ -272,6 +274,79 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       gameState: unlockAchievements(applyLifeGoalProgress(stateAfterUse, itemEvent))
+    });
+
+    get().checkGameEnd();
+  },
+
+  practiceLifeSkill: (skillId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
+
+    const skill = getLifeSkill(skillId);
+    if (!skill || gameState.currentRealm.level < skill.minRealmLevel) return;
+    if (gameState.familyWealth < skill.familyWealthCost) return;
+    if (gameState.age >= gameState.lifespan - skill.timeCost) return;
+
+    const stateAfterCost: GameState = {
+      ...gameState,
+      age: gameState.age + skill.timeCost,
+      familyWealth: Math.max(0, gameState.familyWealth - skill.familyWealthCost)
+    };
+    const itemRewards = generateLifeSkillItemRewards(skill.id, gameState.currentRealm.level);
+    const progressDelta = calculateCultivationProgressDelta(stateAfterCost, {
+      id: `life-skill-${skill.id}`,
+      age: stateAfterCost.age,
+      type: skill.eventType,
+      title: skill.name,
+      description: skill.description,
+      effects: skill.effects,
+      result: 'neutral'
+    }, skill.effects);
+    const lifespanDelta = calculateLifespanDelta(stateAfterCost, {
+      id: `life-skill-${skill.id}`,
+      age: stateAfterCost.age,
+      type: skill.eventType,
+      title: skill.name,
+      description: skill.description,
+      effects: skill.effects,
+      result: 'neutral'
+    }, skill.effects);
+    const familyWealthDelta = (skill.effects.家境 ?? 0) - skill.familyWealthCost;
+    const appliedEffects = buildAppliedEffects(
+      {
+        ...skill.effects,
+        修为: skill.effects.修为 ?? getDefaultProgressPercent(skill.eventType),
+        ...(familyWealthDelta !== 0 ? { 家境: familyWealthDelta } : {}),
+        时间: skill.timeCost
+      },
+      progressDelta,
+      lifespanDelta
+    );
+    const skillEvent: GameEvent = {
+      id: `life-skill-${skill.id}-${Date.now()}`,
+      age: stateAfterCost.age,
+      type: skill.eventType,
+      title: skill.name,
+      description: `${skill.description}你花费 ${skill.timeCost} 年钻研${skill.name}，${formatLifeSkillResult(skill.id, itemRewards.length > 0)}。`,
+      effects: skill.effects,
+      appliedEffects,
+      ...(itemRewards.length > 0 ? { itemRewards } : {}),
+      result: 'neutral'
+    };
+    const requiredProgress = getRequiredCultivationProgress(stateAfterCost);
+    const stateAfterSkill: GameState = {
+      ...stateAfterCost,
+      attributes: applyAttributeEffects(stateAfterCost, skill.effects),
+      familyWealth: applyFamilyWealthEffects(stateAfterCost, skill.effects),
+      lifespan: lifespanDelta ? Math.max(1, stateAfterCost.lifespan + lifespanDelta) : stateAfterCost.lifespan,
+      cultivationProgress: clampProgress(stateAfterCost.cultivationProgress + progressDelta, requiredProgress),
+      inventory: addInventoryRewards(stateAfterCost.inventory, itemRewards),
+      events: [...stateAfterCost.events, skillEvent]
+    };
+
+    set({
+      gameState: unlockAchievements(applyLifeGoalProgress(stateAfterSkill, skillEvent))
     });
 
     get().checkGameEnd();
@@ -1870,6 +1945,76 @@ function generateEventItemRewards(event: GameEvent, result: GameEvent['result'])
       ]);
     default:
       return [];
+  }
+}
+
+function generateLifeSkillItemRewards(skillId: LifeSkillId, realmLevel: number): InventoryReward[] {
+  const rewardChance = realmLevel >= 7 ? 0.72 : realmLevel >= 4 ? 0.62 : 0.48;
+  if (Math.random() > rewardChance) return [];
+
+  const quantity = realmLevel >= 7 ? 2 : 1;
+  switch (skillId) {
+    case 'alchemy':
+      return rollOneReward(realmLevel >= 7
+        ? [['tribulation-pill', 0.36], ['heaven-soul-jade', 0.24], ['mystic-spirit-pill', 0.4]]
+        : realmLevel >= 4
+          ? [['mystic-spirit-pill', 0.45], ['dragon-blood-pill', 0.25], ['soul-nourishing-pill', 0.3]]
+          : [['qi-gathering-pill', 0.5], ['bone-tempering-pill', 0.25], ['spirit-herb', 0.25]], quantity);
+    case 'crafting':
+      return rollOneReward(realmLevel >= 7
+        ? [['tribulation-ward', 0.34], ['outer-star-sand', 0.28], ['ancient-immortal-scale', 0.18], ['heaven-soul-jade', 0.2]]
+        : realmLevel >= 4
+          ? [['soul-settling-orb', 0.35], ['star-spirit-stone', 0.32], ['purple-crystal-marrow', 0.33]]
+          : [['fortune-talisman', 0.35], ['spirit-stone-pouch', 0.35], ['beast-core', 0.3]], quantity);
+    case 'talisman':
+      return rollOneReward(realmLevel >= 7
+        ? [['tribulation-ward', 0.46], ['immortal-talisman-page', 0.28], ['heaven-soul-jade', 0.26]]
+        : realmLevel >= 4
+          ? [['fortune-talisman', 0.35], ['soul-settling-orb', 0.3], ['mystic-manual-fragment', 0.35]]
+          : [['fortune-talisman', 0.55], ['old-manual-page', 0.25], ['spirit-stone-pouch', 0.2]], quantity);
+    case 'array':
+      return rollOneReward(realmLevel >= 7
+        ? [['xuanhuang-marrow', 0.28], ['tribulation-crystal', 0.34], ['tribulation-ward', 0.38]]
+        : realmLevel >= 4
+          ? [['mystic-manual-fragment', 0.32], ['soul-settling-orb', 0.3], ['purple-crystal-marrow', 0.38]]
+          : [['old-manual-page', 0.36], ['fortune-talisman', 0.32], ['spirit-stone-pouch', 0.32]], quantity);
+    case 'fishing':
+      return rollOneReward(realmLevel >= 7
+        ? [['outer-star-sand', 0.28], ['tribulation-crystal', 0.22], ['xuanhuang-marrow', 0.18], ['heaven-soul-jade', 0.32]]
+        : realmLevel >= 4
+          ? [['purple-crystal-marrow', 0.3], ['thunder-beast-core', 0.24], ['star-spirit-stone', 0.46]]
+          : [['spirit-herb', 0.45], ['beast-core', 0.2], ['spirit-stone-pouch', 0.35]], quantity);
+    case 'spirit-field':
+      return rollOneReward(realmLevel >= 7
+        ? [['tribulation-pill', 0.28], ['outer-star-sand', 0.22], ['xuanhuang-marrow', 0.18], ['tribulation-ward', 0.32]]
+        : realmLevel >= 4
+          ? [['mystic-spirit-pill', 0.35], ['purple-crystal-marrow', 0.35], ['dragon-blood-pill', 0.3]]
+          : [['spirit-herb', 0.5], ['qi-gathering-pill', 0.28], ['spirit-stone-pouch', 0.22]], quantity);
+    default:
+      return [];
+  }
+}
+
+function formatLifeSkillResult(skillId: LifeSkillId, hasReward: boolean): string {
+  if (!hasReward) {
+    return '虽未得奇物，手法却比从前更稳';
+  }
+
+  switch (skillId) {
+    case 'alchemy':
+      return '炉火收束时凝出一批可用丹药';
+    case 'crafting':
+      return '器胚成形，还留下几件能收入储物戒的材料';
+    case 'talisman':
+      return '符成一瞬灵光跃纸，可留作后用';
+    case 'array':
+      return '阵纹推演有成，额外整理出一件阵材';
+    case 'fishing':
+      return '水面忽起涟漪，竟钓得一件灵物';
+    case 'spirit-field':
+      return '灵田收获颇丰，药香绕了洞府半日';
+    default:
+      return '额外得了一件可用之物';
   }
 }
 
