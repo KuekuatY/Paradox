@@ -10,7 +10,7 @@ interface GameOverModalProps {
 export default function GameOverModal({ onRestart, onGoHome }: GameOverModalProps) {
   const { gameState } = useGameStore();
   
-  const isAscended = gameState.currentRealm.name === '渡劫期' && gameState.age >= 5000;
+  const isAscended = gameState.endReason === 'ascended';
   const isMeditationEnd = gameState.endReason === 'meditation';
   
   const getEvaluation = () => {

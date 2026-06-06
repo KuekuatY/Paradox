@@ -225,8 +225,10 @@ export function CultivationProgress({
   }
 
   const realmIndex = realms.findIndex(realm => realm.name === currentRealmName);
+  const currentRealm = realmIndex >= 0 ? realms[realmIndex] : undefined;
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
-  const requiredProgress = nextRealm?.cultivationRequired ?? 0;
+  const requiredProgress = nextRealm?.cultivationRequired ?? currentRealm?.cultivationRequired ?? 0;
+  const progressTarget = nextRealm ? `距 ${nextRealm.name}` : '距飞升';
   const progressPercent = requiredProgress > 0
     ? Math.round(Math.min(100, progress / requiredProgress * 100))
     : 100;
@@ -248,7 +250,7 @@ export function CultivationProgress({
         />
       </div>
       <div className="mt-1 text-right text-xs text-[#66766e]">
-        {nextRealm ? `距 ${nextRealm.name} ${progressPercent}%` : '大道圆满'}
+        {requiredProgress > 0 ? `${progressTarget} ${progressPercent}%` : '大道圆满'}
       </div>
     </div>
   );
@@ -433,7 +435,7 @@ export function InventoryPanel({
   inventory: InventoryEntry[];
   canUse: boolean;
 }) {
-  const { useInventoryItem } = useGameStore();
+  const { consumeInventoryItem } = useGameStore();
   const entries = inventory
     .map(entry => ({ ...entry, item: getItem(entry.itemId) }))
     .filter((entry): entry is InventoryEntry & { item: NonNullable<ReturnType<typeof getItem>> } => !!entry.item);
@@ -494,7 +496,7 @@ export function InventoryPanel({
                   <button
                     type="button"
                     disabled={!usable}
-                    onClick={() => useInventoryItem(itemId)}
+                    onClick={() => consumeInventoryItem(itemId)}
                     className={`mt-2 w-full rounded border px-3 py-1.5 text-xs font-bold transition ${
                       usable
                         ? 'border-[#738275]/30 bg-[#eef3df] text-[#355d58] hover:border-[#9a5b2f]/45'

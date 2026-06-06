@@ -38,7 +38,7 @@ interface GameStore {
   chooseCultivationPath: (pathId: CultivationPathId) => void;
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
-  useInventoryItem: (itemId: string) => void;
+  consumeInventoryItem: (itemId: string) => void;
   trainTechnique: (techniqueId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
   advanceAge: () => void;
@@ -221,7 +221,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().checkGameEnd();
   },
 
-  useInventoryItem: (itemId) => {
+  consumeInventoryItem: (itemId) => {
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
 
@@ -393,6 +393,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       gameState: unlockAchievements(applyLifeGoalProgress(stateAfterPreparation, preparationEvent))
     });
+
+    get().checkGameEnd();
   },
 
   advanceAge: () => {
@@ -573,7 +575,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    if (gameState.currentRealm.name === '渡劫期' && gameState.age >= 5000) {
+    if (canAscend(gameState)) {
       get().endGame('ascended', 'ascended');
     }
   },
@@ -2706,6 +2708,15 @@ function canBreakthrough(gameState: GameState): boolean {
     && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState);
 }
 
+function canAscend(gameState: GameState): boolean {
+  const realmIndex = realms.findIndex(realm => realm.name === gameState.currentRealm.name);
+  const isFinalRealm = realmIndex === realms.length - 1;
+
+  return isFinalRealm
+    && gameState.currentRealm.name === '渡劫期'
+    && gameState.cultivationProgress >= getRequiredCultivationProgress(gameState);
+}
+
 function canAdvanceRealm(gameState: GameState): boolean {
   const { currentRealm, attributes } = gameState;
 
@@ -2800,7 +2811,7 @@ function getRequiredCultivationProgress(gameState: GameState): number {
   const realmIndex = realms.findIndex(r => r.name === gameState.currentRealm.name);
   const nextRealm = realmIndex >= 0 ? realms[realmIndex + 1] : undefined;
 
-  return nextRealm?.cultivationRequired ?? 0;
+  return nextRealm?.cultivationRequired ?? gameState.currentRealm.cultivationRequired;
 }
 
 function getCultivationYearStep(realmLevel: number): number {
