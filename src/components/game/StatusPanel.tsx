@@ -749,7 +749,6 @@ export function AttributePanel({ attributes, cap }: { attributes: Attributes; ca
     <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
       <div className="mb-3 flex items-center justify-between text-xs">
         <span className="font-semibold text-[#45564f]">五维属性</span>
-        <span className="text-[#66766e]">当前上限 {cap}</span>
       </div>
       <div className="space-y-2.5 sm:space-y-3">
         {Object.entries(attributes).map(([key, value]) => (
@@ -767,7 +766,7 @@ function AttributeBar({ name, value, cap }: { name: string; value: number; cap: 
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="ink-muted">{name}</span>
-        <span className="font-semibold text-[#263832]">{value}/{cap}</span>
+        <span className="font-semibold text-[#263832]">{value}</span>
       </div>
       <div className="relative h-1.5 bg-[#c8c2a9] rounded-full overflow-hidden">
         <motion.div
