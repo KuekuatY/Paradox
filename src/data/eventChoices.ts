@@ -353,6 +353,198 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       effects: { 家境: -2, 气运: 1 }
     }
   ],
+  'mid-cultivation-4': [
+    {
+      id: 'ride-tide',
+      label: '顺潮吐纳',
+      description: '追求修为进度，收益直接但根基提升较少。',
+      outcome: '你顺着潮声吐纳，让元婴随灵潮一涨一落。',
+      successModifier: 0,
+      positiveScale: 1.15,
+      negativeScale: 1,
+      effects: { 修为: 3, 根骨: -1 }
+    },
+    {
+      id: 'store-tide',
+      label: '藏潮入骨',
+      description: '压慢进度，把潮汐灵机沉入根骨。',
+      outcome: '你没有急着催动修为，而是把潮汐灵机一寸寸藏入骨中。',
+      successModifier: 0.06,
+      positiveScale: 0.86,
+      negativeScale: 0.75,
+      effects: { 根骨: 4, 修为: -2 }
+    },
+    {
+      id: 'listen-source',
+      label: '追听潮源',
+      description: '更考悟性，成功时会额外牵动气运。',
+      outcome: '你试着分辨潮声源头，沿着若有若无的回响追索。',
+      successModifier: -0.02,
+      positiveScale: 1.04,
+      negativeScale: 1,
+      effects: { 悟性: 2, 气运: 2 }
+    }
+  ],
+  'mid-encounter-8': [
+    {
+      id: 'solve-endgame',
+      label: '强解残局',
+      description: '悟性收益高，但落错一子会扰乱心神。',
+      outcome: '你凝神推演残局，落子时云海随之翻动。',
+      successModifier: -0.05,
+      positiveScale: 1.2,
+      negativeScale: 1.22,
+      effects: { 悟性: 3, 神识: -1 }
+    },
+    {
+      id: 'stop-third-move',
+      label: '三手即止',
+      description: '见好就收，降低风险。',
+      outcome: '你只看三手便收回神识，没有让棋局继续牵住心神。',
+      successModifier: 0.12,
+      positiveScale: 0.78,
+      negativeScale: 0.55,
+      effects: { 神识: 2, 修为: -1 }
+    },
+    {
+      id: 'leave-countermove',
+      label: '留下一子',
+      description: '把机缘留给后来人，气运更稳。',
+      outcome: '你没有独占棋局，而是在云端留下一枚可续之子。',
+      successModifier: 0.05,
+      positiveScale: 0.9,
+      negativeScale: 0.75,
+      effects: { 气运: 3, 颜值: 1 }
+    }
+  ],
+  'mid-social-4': [
+    {
+      id: 'accept-apology',
+      label: '收礼和解',
+      description: '资源与名声更稳，但旧怨未必全消。',
+      outcome: '你收下赔礼，也把话说在明处，不再追究旧事。',
+      successModifier: 0.08,
+      positiveScale: 0.9,
+      negativeScale: 0.7,
+      effects: { 家境: 2, 颜值: 1 }
+    },
+    {
+      id: 'test-sincerity',
+      label: '试其诚意',
+      description: '收益更高，但容易重新激化矛盾。',
+      outcome: '你没有立刻点头，而是提出一件需要对方亲自补救的旧事。',
+      successModifier: -0.04,
+      positiveScale: 1.15,
+      negativeScale: 1.18,
+      effects: { 悟性: 2, 气运: 1 }
+    },
+    {
+      id: 'keep-distance',
+      label: '淡淡揭过',
+      description: '不深交，风险和收益都较低。',
+      outcome: '你给了对方面子，却没有让他重新走近自己的道途。',
+      successModifier: 0.1,
+      positiveScale: 0.72,
+      negativeScale: 0.55,
+      effects: { 神识: 2, 修为: -1 }
+    }
+  ],
+  'mid-disaster-2': [
+    {
+      id: 'seal-sense',
+      label: '封闭五感',
+      description: '强行止痛，修为损失较小但伤神。',
+      outcome: '你封住五感，把识海裂痛压进最深处。',
+      successModifier: 0.04,
+      positiveScale: 0.75,
+      negativeScale: 0.85,
+      effects: { 修为: 2, 神识: -1 }
+    },
+    {
+      id: 'trace-crack',
+      label: '追索裂痕',
+      description: '借灾修心，风险和悟性收益都更高。',
+      outcome: '你忍痛追索裂痕来源，试图在痛楚里看清识海弱点。',
+      successModifier: -0.06,
+      positiveScale: 1.1,
+      negativeScale: 1.28,
+      effects: { 悟性: 3, 寿命: -1 }
+    },
+    {
+      id: 'ask-protection',
+      label: '求护心丹',
+      description: '消耗家底，显著降低灾祸损失。',
+      outcome: '你向丹阁求来护心丹，以药力护住识海边缘。',
+      successModifier: 0.14,
+      positiveScale: 0.65,
+      negativeScale: 0.5,
+      effects: { 家境: -3, 神识: 1 }
+    }
+  ],
+  'mid-resource-6': [
+    {
+      id: 'bid-real-treasure',
+      label: '押注真货',
+      description: '看准目标重金出手，资源收益高。',
+      outcome: '你盯住其中一件真货，在众人犹豫时直接落槌。',
+      successModifier: -0.03,
+      positiveScale: 1.18,
+      negativeScale: 1.18,
+      effects: { 家境: -3, 气运: 3 }
+    },
+    {
+      id: 'read-sellers',
+      label: '观察卖家',
+      description: '少买多看，悟性和风险控制更好。',
+      outcome: '你没有急着竞价，而是看卖家神色和托价手法。',
+      successModifier: 0.1,
+      positiveScale: 0.76,
+      negativeScale: 0.58,
+      effects: { 悟性: 3, 修为: -1 }
+    },
+    {
+      id: 'pool-funds',
+      label: '合资竞拍',
+      description: '借人脉分摊成本，收益偏家境和名声。',
+      outcome: '你临时联合熟识同道合资竞拍，把风险摊薄。',
+      successModifier: 0.04,
+      positiveScale: 0.95,
+      negativeScale: 0.82,
+      effects: { 颜值: 2, 家境: 1 }
+    }
+  ],
+  'mid-sect-4': [
+    {
+      id: 'read-breakthrough-notes',
+      label: '翻破境札记',
+      description: '偏突破门槛收益，消耗一次秘库机会。',
+      outcome: '你直奔破境札记，把前人失败处逐条记下。',
+      successModifier: 0.02,
+      positiveScale: 1.08,
+      negativeScale: 0.95,
+      effects: { 悟性: 3, 神识: 1 }
+    },
+    {
+      id: 'copy-array-volume',
+      label: '抄阵法残卷',
+      description: '偏神识与宗门资源，修为收益略低。',
+      outcome: '你抄下一卷阵法残篇，准备回洞府慢慢拆解。',
+      successModifier: 0.06,
+      positiveScale: 0.9,
+      negativeScale: 0.72,
+      effects: { 神识: 3, 修为: -1 }
+    },
+    {
+      id: 'search-technique-clue',
+      label: '找功法线索',
+      description: '更看气运，可能为后续功法获取铺路。',
+      outcome: '你在书目夹缝里寻找功法来历，记下几条可追的线索。',
+      successModifier: -0.01,
+      positiveScale: 1.02,
+      negativeScale: 0.95,
+      effects: { 气运: 3, 家境: -1 }
+    }
+  ],
   'mid-combat-break-demon-array': [
     {
       id: 'strike-array-core',
