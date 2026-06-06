@@ -10,7 +10,13 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: 0.08,
       positiveScale: 1.05,
       negativeScale: 1.2,
-      effects: { 气运: 3, 修为: -2 }
+      effects: { 气运: 3, 修为: -2 },
+      combat: {
+        id: 'choice-combat-resource-thief',
+        title: '追查窃贼',
+        description: '你沿着灵材残留气息追入黑市后巷，窃贼察觉行踪，反手祭出短刃与烟阵。',
+        effects: { 修为: 8, 家境: 4, 神识: 2, 气运: 2 }
+      }
     },
     {
       id: 'cut-loss',
@@ -116,7 +122,13 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       successModifier: -0.02,
       positiveScale: 1.15,
       negativeScale: 1.25,
-      effects: { 颜值: 2, 修为: -2 }
+      effects: { 颜值: 2, 修为: -2 },
+      combat: {
+        id: 'choice-combat-rival-duel',
+        title: '仇怨斗法',
+        description: '你没有继续口舌相争，而是与对方约到山门外斗法台，将这段梁子摆到明面上。',
+        effects: { 修为: 7, 根骨: 3, 神识: 2, 颜值: 3 }
+      }
     },
     {
       id: 'mediate',

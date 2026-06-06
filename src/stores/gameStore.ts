@@ -951,28 +951,30 @@ function shouldOfferEventChoice(_gameState: GameState, event: GameEvent): boolea
 }
 
 function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: EventChoice): GameState {
-  if (event.type === 'combat') {
-    return resolveCombatEvent(gameState, event, choice);
+  const eventForResolution = choice?.combat ? createChoiceCombatEvent(event, choice) : event;
+
+  if (eventForResolution.type === 'combat') {
+    return resolveCombatEvent(gameState, eventForResolution, choice);
   }
 
   const effectiveChoice = choice;
-  const isNeutralEvent = event.result === 'neutral';
+  const isNeutralEvent = eventForResolution.result === 'neutral';
   const successRate = isNeutralEvent
     ? 0.5
-    : clampRate(calculateEventSuccessRate(event, gameState) + (effectiveChoice?.successModifier ?? 0));
-  const result = event.type === 'childhood'
+    : clampRate(calculateEventSuccessRate(eventForResolution, gameState) + (effectiveChoice?.successModifier ?? 0));
+  const result = eventForResolution.type === 'childhood'
     ? 'neutral'
     : calculateEventOutcome(successRate, isNeutralEvent, getEventOutcomePhase(gameState));
-  const resolvedEffects = event.type === 'childhood' ? event.effects : resolveEventEffects(event, result);
+  const resolvedEffects = eventForResolution.type === 'childhood' ? eventForResolution.effects : resolveEventEffects(eventForResolution, result);
   const chosenEffects = effectiveChoice
     ? mergeEffects(
       scaleEventEffectsForChoice(resolvedEffects, effectiveChoice),
       resolveChoiceEffects(gameState, effectiveChoice)
     )
     : resolvedEffects;
-  const adjustedEffects = applyAttributeModifiers(gameState, event, chosenEffects);
-  const progressDelta = calculateCultivationProgressDelta(gameState, event, chosenEffects);
-  const lifespanDelta = calculateLifespanDelta(gameState, event, chosenEffects);
+  const adjustedEffects = applyAttributeModifiers(gameState, eventForResolution, chosenEffects);
+  const progressDelta = calculateCultivationProgressDelta(gameState, eventForResolution, chosenEffects);
+  const lifespanDelta = calculateLifespanDelta(gameState, eventForResolution, chosenEffects);
   const appliedEffects = buildAppliedEffects(adjustedEffects, progressDelta, lifespanDelta);
   const stateForEffects = {
     ...gameState,
@@ -984,12 +986,12 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
-  const itemRewards = generateEventItemRewards(event, result);
-  const techniqueRewards = generateEventTechniqueRewards(gameState, event, result);
+  const itemRewards = generateEventItemRewards(eventForResolution, result);
+  const techniqueRewards = generateEventTechniqueRewards(gameState, eventForResolution, result);
   const newEvent: GameEvent = {
-    ...event,
-    title: choice ? `${event.title}：${formatChoiceTitle(choice)}` : event.title,
-    description: choice ? `${event.description}${formatChoiceOutcome(choice)}` : event.description,
+    ...eventForResolution,
+    title: choice ? `${eventForResolution.title}：${formatChoiceTitle(choice)}` : eventForResolution.title,
+    description: choice ? `${eventForResolution.description}${formatChoiceOutcome(choice)}` : eventForResolution.description,
     appliedEffects,
     ...(itemRewards.length > 0 ? { itemRewards } : {}),
     ...(techniqueRewards.length > 0 ? { techniqueRewards } : {}),
@@ -1008,6 +1010,22 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
   };
 
   return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+}
+
+function createChoiceCombatEvent(event: GameEvent, choice: EventChoice): GameEvent {
+  const combat = choice.combat;
+
+  if (!combat) return event;
+
+  return {
+    ...event,
+    id: combat.id,
+    type: 'combat',
+    title: combat.title ?? event.title,
+    description: combat.description ?? event.description,
+    effects: combat.effects,
+    result: 'success'
+  };
 }
 
 interface CombatEncounter {
@@ -1245,6 +1263,24 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       injury: 12,
       primary: ['根骨', '神识', '气运'],
       styleText: '雷痕鏖战'
+    },
+    'choice-combat-resource-thief': {
+      enemyName: '黑市窃修',
+      enemyRank: '同阶',
+      difficulty: 1.02,
+      cultivationPercent: 8,
+      injury: 7,
+      primary: ['神识', '气运'],
+      styleText: '追赃缠斗'
+    },
+    'choice-combat-rival-duel': {
+      enemyName: '结怨修士',
+      enemyRank: '同阶',
+      difficulty: 1.05,
+      cultivationPercent: 8,
+      injury: 6,
+      primary: ['根骨', '神识'],
+      styleText: '斗法台决'
     },
     'mid-combat-infant-fire-demon': {
       enemyName: '地火妖王',
@@ -1872,6 +1908,7 @@ function generateCombatItemRewards(
       ], quantity);
     case 'combat-caravan-escort':
     case 'combat-bandit-camp':
+    case 'choice-combat-resource-thief':
     case 'mid-combat-spirit-boat-raid':
     case 'mid-combat-capture-banner':
       return rollOneReward([
@@ -1887,6 +1924,7 @@ function generateCombatItemRewards(
       ], quantity);
     case 'combat-sword-contest':
     case 'combat-arena-duel':
+    case 'choice-combat-rival-duel':
     case 'mid-combat-break-demon-array':
     case 'mid-combat-canyon-rival':
     case 'late-combat-law-domain-duel':

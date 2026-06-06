@@ -53,6 +53,12 @@ export interface EventChoice {
   positiveScale?: number;
   negativeScale?: number;
   effects?: GameEvent['effects'];
+  combat?: {
+    id: string;
+    title?: string;
+    description?: string;
+    effects: GameEvent['effects'];
+  };
 }
 
 export interface GrowthModifiers {
