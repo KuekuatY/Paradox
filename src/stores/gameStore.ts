@@ -8,9 +8,10 @@ import { lifeGoals, getLifeGoalDefinition } from '@/data/lifeGoals';
 import { getSpecificEventChoices, hasSpecificEventChoices } from '@/data/eventChoices';
 import { getItem } from '@/data/items';
 import { getAvailableTechniqueRewards, getBaseTechnique, getTechnique } from '@/data/techniques';
-import { getLifeSkill, type LifeSkillId } from '@/data/lifeSkills';
+import { getLifeSkill, lifeSkills, type LifeSkillId, type LifeSkillRecipe } from '@/data/lifeSkills';
 import type {
   ActiveLifeGoal,
+  BreakthroughPreparationState,
   EventChoice,
   GameState,
   Talent,
@@ -24,9 +25,12 @@ import type {
   CombatStats,
   InventoryEntry,
   InventoryReward,
+  LifeSkillProgress,
+  RivalState,
   LearnedTechnique,
   TechniqueDefinition,
-  TribulationState
+  TribulationState,
+  YearActionId
 } from '@/types';
 import { getSavedGame, hasSavedGame, saveGameRecord, saveGameState } from '@/utils/storage';
 
@@ -40,6 +44,7 @@ interface GameStore {
   getCurrentEventChoices: () => EventChoice[];
   chooseEventOption: (choiceId: string) => void;
   consumeInventoryItem: (itemId: string) => void;
+  selectYearAction: (actionId: YearActionId) => void;
   practiceLifeSkill: (skillId: LifeSkillId) => void;
   trainTechnique: (techniqueId: string) => void;
   useBreakthroughPreparation: (actionId: string) => void;
@@ -68,6 +73,17 @@ const initialCombatStats: CombatStats = {
   bestStreak: 0,
   currentStreak: 0
 };
+const initialBreakthroughPreparation: BreakthroughPreparationState = {
+  elixir: 0,
+  artifact: 0,
+  talisman: 0,
+  array: 0
+};
+const initialLifeSkillProgress: LifeSkillProgress[] = lifeSkills.map(skill => ({
+  skillId: skill.id,
+  level: 1,
+  exp: 0
+}));
 
 const initialState: GameState = {
   status: 'idle',
@@ -85,6 +101,10 @@ const initialState: GameState = {
   combatStats: initialCombatStats,
   inventory: [],
   techniques: [],
+  lifeSkills: initialLifeSkillProgress,
+  selectedYearAction: 'adventure',
+  rival: null,
+  breakthroughPreparation: initialBreakthroughPreparation,
   spiritRoot: null,
   talent: null,
   cultivationPath: null,
@@ -129,6 +149,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       combatStats: initialCombatStats,
       inventory: [],
       techniques: [],
+      lifeSkills: initialLifeSkillProgress,
+      selectedYearAction: 'adventure',
+      rival: null,
+      breakthroughPreparation: initialBreakthroughPreparation,
       spiritRoot,
       talent,
       cultivationPath: null,
@@ -279,6 +303,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().checkGameEnd();
   },
 
+  selectYearAction: (actionId) => {
+    const { gameState } = get();
+    if (gameState.status !== 'playing') return;
+
+    set({
+      gameState: {
+        ...gameState,
+        selectedYearAction: actionId
+      }
+    });
+  },
+
   practiceLifeSkill: (skillId) => {
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
@@ -288,35 +324,44 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (gameState.familyWealth < skill.familyWealthCost) return;
     if (gameState.age >= gameState.lifespan - skill.timeCost) return;
 
+    const skillProgress = getLifeSkillProgress(gameState, skill.id);
+    const recipe = selectLifeSkillRecipe(skill.recipes, skillProgress.level, gameState.currentRealm.level, gameState.inventory);
+    const skillEffects = recipe ? mergeEffects(skill.effects, recipe.effects) : skill.effects;
+    const itemCosts = recipe?.costs ?? [];
+    const recipeRewards = recipe?.rewards ?? [];
     const stateAfterCost: GameState = {
       ...gameState,
       age: gameState.age + skill.timeCost,
-      familyWealth: Math.max(0, gameState.familyWealth - skill.familyWealthCost)
+      familyWealth: Math.max(0, gameState.familyWealth - skill.familyWealthCost),
+      inventory: removeInventoryRewards(gameState.inventory, itemCosts)
     };
-    const itemRewards = generateLifeSkillItemRewards(skill.id, gameState.currentRealm.level);
+    const itemRewards = recipe
+      ? recipeRewards
+      : generateLifeSkillItemRewards(skill.id, gameState.currentRealm.level);
     const progressDelta = calculateCultivationProgressDelta(stateAfterCost, {
       id: `life-skill-${skill.id}`,
       age: stateAfterCost.age,
       type: skill.eventType,
       title: skill.name,
       description: skill.description,
-      effects: skill.effects,
+      effects: skillEffects,
       result: 'neutral'
-    }, skill.effects);
+    }, skillEffects);
     const lifespanDelta = calculateLifespanDelta(stateAfterCost, {
       id: `life-skill-${skill.id}`,
       age: stateAfterCost.age,
       type: skill.eventType,
       title: skill.name,
       description: skill.description,
-      effects: skill.effects,
+      effects: skillEffects,
       result: 'neutral'
-    }, skill.effects);
-    const familyWealthDelta = (skill.effects.家境 ?? 0) - skill.familyWealthCost;
+    }, skillEffects);
+    const familyWealthDelta = (skillEffects.家境 ?? 0) - skill.familyWealthCost;
+    const expGain = Math.round((recipe?.exp ?? skill.expGain) * getPathLifeSkillExpMultiplier(gameState, skill.id));
     const appliedEffects = buildAppliedEffects(
       {
-        ...skill.effects,
-        修为: skill.effects.修为 ?? getDefaultProgressPercent(skill.eventType),
+        ...skillEffects,
+        修为: skillEffects.修为 ?? getDefaultProgressPercent(skill.eventType),
         ...(familyWealthDelta !== 0 ? { 家境: familyWealthDelta } : {}),
         时间: skill.timeCost
       },
@@ -328,8 +373,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       age: stateAfterCost.age,
       type: skill.eventType,
       title: skill.name,
-      description: `${skill.description}你花费 ${skill.timeCost} 年钻研${skill.name}，${formatLifeSkillResult(skill.id, itemRewards.length > 0)}。`,
-      effects: skill.effects,
+      description: `${skill.description}你花费 ${skill.timeCost} 年钻研${skill.name}，${recipe ? `完成「${recipe.name}」` : formatLifeSkillResult(skill.id, itemRewards.length > 0)}，熟练度 +${expGain}。`,
+      effects: skillEffects,
       appliedEffects,
       ...(itemRewards.length > 0 ? { itemRewards } : {}),
       result: 'neutral'
@@ -337,11 +382,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const requiredProgress = getRequiredCultivationProgress(stateAfterCost);
     const stateAfterSkill: GameState = {
       ...stateAfterCost,
-      attributes: applyAttributeEffects(stateAfterCost, skill.effects),
-      familyWealth: applyFamilyWealthEffects(stateAfterCost, skill.effects),
+      attributes: applyAttributeEffects(stateAfterCost, skillEffects),
+      familyWealth: applyFamilyWealthEffects(stateAfterCost, skillEffects),
       lifespan: lifespanDelta ? Math.max(1, stateAfterCost.lifespan + lifespanDelta) : stateAfterCost.lifespan,
       cultivationProgress: clampProgress(stateAfterCost.cultivationProgress + progressDelta, requiredProgress),
       inventory: addInventoryRewards(stateAfterCost.inventory, itemRewards),
+      lifeSkills: addLifeSkillExp(stateAfterCost.lifeSkills, skill.id, expGain),
       events: [...stateAfterCost.events, skillEvent]
     };
 
@@ -410,13 +456,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const action = getPreparationAction(actionId, gameState.currentRealm.level);
     if (!action) return;
 
-    if (gameState.familyWealth < action.cost) return;
+    const itemCost = getPreparationItemCost(action.id, gameState.inventory);
+    const usesItem = !!itemCost && hasInventoryRewards(gameState.inventory, [itemCost]);
+    if (!usesItem && gameState.familyWealth < action.cost) return;
 
     const requiredProgress = getRequiredCultivationProgress(gameState);
     const effects = action.effects(gameState);
     const stateAfterCost = {
       ...gameState,
-      familyWealth: Math.max(0, gameState.familyWealth - action.cost)
+      familyWealth: usesItem ? gameState.familyWealth : Math.max(0, gameState.familyWealth - action.cost),
+      inventory: usesItem ? removeInventoryRewards(gameState.inventory, [itemCost]) : gameState.inventory,
+      breakthroughPreparation: addBreakthroughPreparation(gameState.breakthroughPreparation, action.id)
     };
     const newAttributes = applyAttributeEffects(stateAfterCost, effects);
     const newFamilyWealth = applyFamilyWealthEffects(stateAfterCost, effects);
@@ -443,12 +493,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       age: gameState.age,
       type: 'daily',
       title: action.name,
-      description: action.description,
+      description: `${action.description}${usesItem ? '你从储物戒中取出一件相合之物作为准备。' : '你以家境与人情补齐所需。'}`,
       effects,
       appliedEffects: buildAppliedEffects(
         {
           ...effects,
-          ...(action.cost ? { 家境: -action.cost } : {})
+          ...(!usesItem && action.cost ? { 家境: -action.cost } : {})
         },
         progressDelta,
         lifespanDelta
@@ -457,7 +507,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     };
 
     const stateAfterPreparation: GameState = {
-      ...gameState,
+      ...stateAfterCost,
       attributes: newAttributes,
       familyWealth: newFamilyWealth,
       lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
@@ -502,8 +552,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   processEvent: () => {
     const { gameState } = get();
     if (gameState.status !== 'playing' || gameState.pendingEvent || gameState.pendingPathChoice || gameState.pendingTribulation) return;
+    const actionEvent = createYearActionEvent(gameState);
     const event = {
-      ...selectAvailableEvent(gameState),
+      ...(actionEvent ?? selectAvailableEvent(gameState)),
       age: gameState.age
     };
 
@@ -560,6 +611,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const progressDelta = calculateCultivationProgressDelta(gameState, failureEvent, failureEvent.effects);
       const stateAfterFailure: GameState = {
         ...gameState,
+        breakthroughPreparation: initialBreakthroughPreparation,
         lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
         cultivationProgress: clampProgress(
           gameState.cultivationProgress + progressDelta,
@@ -734,6 +786,7 @@ function completeBreakthrough(
     lifespan: addLifespan(gameState.lifespan, lifespanGain),
     cultivationProgress: 0,
     pendingTribulation: null,
+    breakthroughPreparation: initialBreakthroughPreparation,
     events: [...gameState.events, breakthroughEvent]
   };
 
@@ -790,7 +843,8 @@ function completeTribulationSuccess(
     currentRealm: nextRealm,
     lifespan: addLifespan(gameState.lifespan, lifespanGain),
     cultivationProgress: 0,
-    pendingTribulation: null
+    pendingTribulation: null,
+    breakthroughPreparation: initialBreakthroughPreparation
   };
   const requiredProgress = getRequiredCultivationProgress(stateAtNewRealm);
   const progressGain = Math.trunc(requiredProgress * progressPercent / 100);
@@ -858,6 +912,7 @@ function completeTribulationFailure(
   const stateAfterTribulation: GameState = {
     ...gameState,
     pendingTribulation: null,
+    breakthroughPreparation: initialBreakthroughPreparation,
     attributes: newAttributes,
     lifespan: lifespanDelta ? Math.max(1, gameState.lifespan + lifespanDelta) : gameState.lifespan,
     events: [...gameState.events, resolvedEvent]
@@ -933,10 +988,27 @@ function normalizeLoadedGameState(gameState: GameState): GameState {
     combatStats: gameState.combatStats ?? initialCombatStats,
     inventory: Array.isArray(gameState.inventory) ? gameState.inventory : [],
     techniques: Array.isArray(gameState.techniques) ? gameState.techniques : [],
+    lifeSkills: normalizeLifeSkillProgress(gameState.lifeSkills),
+    selectedYearAction: gameState.selectedYearAction ?? 'adventure',
+    rival: gameState.rival ?? null,
+    breakthroughPreparation: gameState.breakthroughPreparation ?? initialBreakthroughPreparation,
     events: Array.isArray(gameState.events) ? gameState.events : [],
     achievements: Array.isArray(gameState.achievements) ? gameState.achievements : [],
     completedGoals: Array.isArray(gameState.completedGoals) ? gameState.completedGoals : []
   };
+}
+
+function normalizeLifeSkillProgress(progressList: LifeSkillProgress[] | undefined): LifeSkillProgress[] {
+  const existingProgress = Array.isArray(progressList) ? progressList : [];
+
+  return lifeSkills.map(skill => {
+    const progress = existingProgress.find(item => item.skillId === skill.id);
+    return {
+      skillId: skill.id,
+      level: Math.max(1, Math.min(10, progress?.level ?? 1)),
+      exp: Math.max(0, progress?.exp ?? 0)
+    };
+  });
 }
 
 function enterQiCondensingRealm(gameState: GameState): GameState {
@@ -968,6 +1040,9 @@ function selectAvailableEvent(gameState: GameState): GameEvent {
     return pickWeightedEvent(childhoodEvents, gameState);
   }
 
+  const rivalEvent = createRivalAmbushEvent(gameState);
+  if (rivalEvent) return rivalEvent;
+
   const eventPool = getRealmEventPool(gameState);
   const availableEvents = eventPool.filter(event => {
     return event.effects.境界 !== 'advance' && matchesEventConditions(event, gameState);
@@ -980,6 +1055,83 @@ function getRealmEventPool(gameState: GameState): GameEvent[] {
   if (gameState.currentRealm.level >= 7) return lateEvents;
   if (gameState.currentRealm.level >= 4) return midEvents;
   return earlyEvents;
+}
+
+function createYearActionEvent(gameState: GameState): GameEvent | null {
+  if (isChildhood(gameState) || gameState.selectedYearAction === 'adventure') return null;
+
+  const pathBonus = getPathYearActionBonus(gameState, gameState.selectedYearAction);
+  const scale = (value: number) => Math.max(1, Math.round(value * pathBonus));
+
+  switch (gameState.selectedYearAction) {
+    case 'cultivate':
+      return {
+        id: `year-action-cultivate-${Date.now()}`,
+        age: gameState.age,
+        type: 'cultivation',
+        title: '静心修炼',
+        description: '你推掉杂务，整年打坐行功，灵气一遍遍洗过经脉。',
+        weight: 0,
+        effects: { 修为: scale(12), 根骨: 1 },
+        result: 'neutral'
+      };
+    case 'seclusion':
+      return {
+        id: `year-action-seclusion-${Date.now()}`,
+        age: gameState.age,
+        type: 'mind',
+        title: '闭关参悟',
+        description: '你闭门整理功法脉络，将近日所见所闻化作自己的理解。',
+        weight: 0,
+        effects: { 悟性: scale(3), 神识: scale(2), 修为: 4 },
+        result: 'neutral'
+      };
+    case 'life-skill': {
+      const skill = pickYearActionLifeSkill(gameState);
+      const itemRewards = generateYearActionLifeSkillRewards(skill.id, gameState.currentRealm.level);
+      return {
+        id: `year-action-life-skill-${skill.id}-${Date.now()}`,
+        age: gameState.age,
+        type: skill.eventType,
+        title: `钻研${skill.name}`,
+        description: `你把这一年投在${skill.name}上，手法渐熟，也积下几分可用材料。`,
+        weight: 0,
+        effects: mergeEffects(skill.effects, { 修为: 2 }),
+        ...(itemRewards.length > 0 ? { itemRewards } : {}),
+        result: 'neutral'
+      };
+    }
+    case 'recuperate':
+      return {
+        id: `year-action-recuperate-${Date.now()}`,
+        age: gameState.age,
+        type: 'daily',
+        title: '调养身心',
+        description: '你暂缓争斗，温养气血，修补暗伤，也让心绪重新平稳。',
+        weight: 0,
+        effects: { 寿命: 1, 气运: 1 },
+        result: 'neutral'
+      };
+    default:
+      return null;
+  }
+}
+
+function createRivalAmbushEvent(gameState: GameState): GameEvent | null {
+  if (gameState.selectedYearAction !== 'adventure' || !gameState.rival?.active) return null;
+  const chance = Math.min(0.32, 0.08 + gameState.rival.enmity * 0.015);
+  if (Math.random() > chance) return null;
+
+  return {
+    id: 'rival-ambush',
+    age: gameState.age,
+    type: 'combat',
+    title: '宿敌寻仇',
+    description: `${gameState.rival.name}循着你的踪迹追来，旧怨未消，此战难免。`,
+    weight: 0,
+    effects: { 修为: 8, 根骨: 2, 神识: 2 },
+    result: 'success'
+  };
 }
 
 function pickWeightedEvent(availableEvents: GameEvent[], gameState: GameState): GameEvent {
@@ -1061,7 +1213,10 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     ? Math.max(1, gameState.lifespan + lifespanDelta)
     : gameState.lifespan;
   const requiredProgress = getRequiredCultivationProgress(gameState);
-  const itemRewards = generateEventItemRewards(eventForResolution, result);
+  const itemRewards = [
+    ...(eventForResolution.itemRewards ?? []),
+    ...generateEventItemRewards(eventForResolution, result)
+  ];
   const techniqueRewards = generateEventTechniqueRewards(gameState, eventForResolution, result);
   const newEvent: GameEvent = {
     ...eventForResolution,
@@ -1084,7 +1239,7 @@ function resolveGameEvent(gameState: GameState, event: GameEvent, choice?: Event
     events: [...gameState.events, newEvent]
   };
 
-  return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+  return unlockAchievements(applyLifeGoalProgress(applyYearActionSideEffects(stateAfterEvent, eventForResolution), newEvent));
 }
 
 function createChoiceCombatEvent(event: GameEvent, choice: EventChoice): GameEvent {
@@ -1169,7 +1324,7 @@ function resolveCombatEvent(gameState: GameState, event: GameEvent, choice?: Eve
     events: [...gameState.events, newEvent]
   };
 
-  return unlockAchievements(applyLifeGoalProgress(stateAfterEvent, newEvent));
+  return unlockAchievements(applyLifeGoalProgress(updateRivalAfterCombat(stateAfterEvent, event, combatResult.isWin), newEvent));
 }
 
 function calculateCombatResult(
@@ -1182,7 +1337,7 @@ function calculateCombatResult(
   isWin: boolean;
   report: CombatReport;
 } {
-  const encounter = getCombatEncounter(event);
+  const encounter = getCombatEncounter(gameState, event);
   const playerPower = calculatePlayerCombatPower(gameState, encounter);
   const enemyPower = calculateEnemyCombatPower(gameState, encounter);
   const winRate = clampRate(
@@ -1223,13 +1378,98 @@ function calculateCombatResult(
   return { result, rawResult, isWin, report };
 }
 
+function applyYearActionSideEffects(gameState: GameState, event: GameEvent): GameState {
+  if (event.id.startsWith('year-action-recuperate')) {
+    const recovery = Math.max(8, 14 + gameState.currentRealm.level * 2);
+    return {
+      ...gameState,
+      combatStats: {
+        ...gameState.combatStats,
+        injury: Math.max(0, gameState.combatStats.injury - recovery)
+      }
+    };
+  }
+
+  if (event.id.startsWith('year-action-life-skill-')) {
+    const skillId = event.id.replace('year-action-life-skill-', '').split('-').slice(0, -1).join('-') as LifeSkillId;
+    const expGain = Math.round(10 * getPathLifeSkillExpMultiplier(gameState, skillId));
+    return {
+      ...gameState,
+      lifeSkills: addLifeSkillExp(gameState.lifeSkills, skillId, expGain)
+    };
+  }
+
+  return gameState;
+}
+
+function updateRivalAfterCombat(gameState: GameState, event: GameEvent, isWin: boolean): GameState {
+  const isRivalFight = event.id.includes('rival');
+  const currentRival = gameState.rival;
+
+  if (isRivalFight && currentRival?.active) {
+    const nextEnmity = isWin
+      ? Math.max(0, currentRival.enmity - 4)
+      : Math.min(20, currentRival.enmity + 3);
+    return {
+      ...gameState,
+      rival: {
+        ...currentRival,
+        enmity: nextEnmity,
+        defeats: currentRival.defeats + (isWin ? 1 : 0),
+        active: nextEnmity > 0
+      }
+    };
+  }
+
+  if (!isWin && event.type === 'combat' && Math.random() < 0.22) {
+    return {
+      ...gameState,
+      rival: strengthenRival(currentRival)
+    };
+  }
+
+  if (isWin && currentRival?.active && Math.random() < 0.08) {
+    return {
+      ...gameState,
+      rival: {
+        ...currentRival,
+        enmity: Math.min(20, currentRival.enmity + 1)
+      }
+    };
+  }
+
+  return gameState;
+}
+
+function strengthenRival(rival: RivalState | null): RivalState {
+  if (!rival) {
+    return {
+      name: pickRivalName(),
+      enmity: 5,
+      defeats: 0,
+      active: true
+    };
+  }
+
+  return {
+    ...rival,
+    enmity: Math.min(20, rival.enmity + 3),
+    active: true
+  };
+}
+
+function pickRivalName(): string {
+  const names = ['沈无咎', '陆青崖', '顾寒舟', '萧问锋', '林照影', '秦玄策'];
+  return names[Math.floor(Math.random() * names.length)];
+}
+
 function getCombatGreatFailureFactor(gameState: GameState): number {
   if (gameState.currentRealm.level >= 7) return 0;
   if (gameState.currentRealm.level >= 4) return 0.018;
   return 0.04;
 }
 
-function getCombatEncounter(event: GameEvent): CombatEncounter {
+function getCombatEncounter(gameState: GameState, event: GameEvent): CombatEncounter {
   const encounters: Record<string, CombatEncounter> = {
     'combat-beast-hunt': {
       enemyName: '山魈妖兽',
@@ -1356,6 +1596,15 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       injury: 6,
       primary: ['根骨', '神识'],
       styleText: '斗法台决'
+    },
+    'rival-ambush': {
+      enemyName: gameState.rival?.name ?? '宿敌',
+      enemyRank: '同阶劲敌',
+      difficulty: 1.16 + Math.min(0.18, (gameState.rival?.enmity ?? 0) * 0.01),
+      cultivationPercent: 12,
+      injury: 10,
+      primary: ['根骨', '神识', '悟性'],
+      styleText: '宿怨追杀'
     },
     'mid-combat-infant-fire-demon': {
       enemyName: '地火妖王',
@@ -1914,6 +2163,117 @@ function removeInventoryRewards(
   }, inventory);
 }
 
+function hasInventoryRewards(inventory: InventoryEntry[], costs: InventoryReward[]): boolean {
+  return costs.every(cost => {
+    const entry = inventory.find(item => item.itemId === cost.itemId);
+    return (entry?.quantity ?? 0) >= cost.quantity;
+  });
+}
+
+function getLifeSkillProgress(gameState: GameState, skillId: LifeSkillId): LifeSkillProgress {
+  return gameState.lifeSkills.find(skill => skill.skillId === skillId) ?? {
+    skillId,
+    level: 1,
+    exp: 0
+  };
+}
+
+function addLifeSkillExp(
+  progressList: LifeSkillProgress[],
+  skillId: LifeSkillId,
+  expGain: number
+): LifeSkillProgress[] {
+  const existing = progressList.find(progress => progress.skillId === skillId);
+  const normalized = existing
+    ? progressList
+    : [...progressList, { skillId, level: 1, exp: 0 }];
+
+  return normalized.map(progress => {
+    if (progress.skillId !== skillId) return progress;
+
+    const nextExp = progress.exp + expGain;
+    const nextLevel = Math.min(10, Math.max(progress.level, Math.floor(nextExp / 100) + 1));
+    return {
+      ...progress,
+      exp: nextExp,
+      level: nextLevel
+    };
+  });
+}
+
+function selectLifeSkillRecipe(
+  recipes: LifeSkillRecipe[],
+  skillLevel: number,
+  realmLevel: number,
+  inventory: InventoryEntry[]
+): LifeSkillRecipe | undefined {
+  return recipes
+    .filter(recipe => skillLevel >= recipe.minSkillLevel
+      && realmLevel >= recipe.minRealmLevel
+      && hasInventoryRewards(inventory, recipe.costs))
+    .sort((a, b) => b.minSkillLevel - a.minSkillLevel || b.minRealmLevel - a.minRealmLevel)[0];
+}
+
+function pickYearActionLifeSkill(gameState: GameState) {
+  const unlockedSkills = lifeSkills.filter(skill => gameState.currentRealm.level >= skill.minRealmLevel);
+  const candidates = unlockedSkills.length > 0 ? unlockedSkills : lifeSkills;
+  return candidates
+    .map(skill => ({ skill, progress: getLifeSkillProgress(gameState, skill.id) }))
+    .sort((a, b) => a.progress.exp - b.progress.exp)[0].skill;
+}
+
+function getPathLifeSkillExpMultiplier(gameState: GameState, skillId: LifeSkillId): number {
+  switch (gameState.cultivationPath) {
+    case 'sword':
+      return skillId === 'crafting' ? 1.35 : skillId === 'alchemy' ? 1.12 : 1;
+    case 'body':
+      return skillId === 'alchemy' || skillId === 'spirit-field' ? 1.25 : 1;
+    case 'spell':
+      return skillId === 'array' || skillId === 'talisman' ? 1.35 : 1;
+    case 'demonic':
+      return skillId === 'fishing' || skillId === 'talisman' ? 1.22 : 1.08;
+    default:
+      return 1;
+  }
+}
+
+function getPathYearActionBonus(gameState: GameState, actionId: YearActionId): number {
+  switch (gameState.cultivationPath) {
+    case 'sword':
+      return actionId === 'adventure' ? 1.18 : actionId === 'cultivate' ? 1.08 : 1;
+    case 'body':
+      return actionId === 'recuperate' ? 1.25 : actionId === 'cultivate' ? 1.12 : 1;
+    case 'spell':
+      return actionId === 'seclusion' ? 1.22 : actionId === 'life-skill' ? 1.08 : 1;
+    case 'demonic':
+      return actionId === 'adventure' || actionId === 'cultivate' ? 1.15 : actionId === 'recuperate' ? 0.88 : 1;
+    default:
+      return 1;
+  }
+}
+
+function generateYearActionLifeSkillRewards(skillId: LifeSkillId, realmLevel: number): InventoryReward[] {
+  const chance = realmLevel >= 4 ? 0.72 : 0.58;
+  if (Math.random() > chance) return [];
+
+  switch (skillId) {
+    case 'alchemy':
+      return rollOneReward([['spirit-herb', 0.62], ['spirit-seed', 0.26], ['spirit-bait', 0.12]]);
+    case 'crafting':
+      return rollOneReward([['spirit-ore', 0.58], ['beast-core', 0.28], ['array-stone', 0.14]]);
+    case 'talisman':
+      return rollOneReward([['talisman-paper', 0.7], ['beast-core', 0.18], ['spirit-stone-pouch', 0.12]]);
+    case 'array':
+      return rollOneReward([['array-stone', 0.62], ['spirit-ore', 0.24], ['talisman-paper', 0.14]]);
+    case 'fishing':
+      return rollOneReward([['spirit-fish', 0.58], ['spirit-bait', 0.26], ['jade-scale-fish', 0.16]]);
+    case 'spirit-field':
+      return rollOneReward([['spirit-seed', 0.5], ['spirit-herb', 0.36], ['talisman-paper', 0.14]]);
+    default:
+      return [];
+  }
+}
+
 function generateEventItemRewards(event: GameEvent, result: GameEvent['result']): InventoryReward[] {
   if (event.type === 'childhood' || result === 'great-failure' || result === 'failure') return [];
 
@@ -2286,6 +2646,38 @@ function getPreparationCost(baseCost: number, realmLevel: number): number {
   if (realmLevel >= 5) return Math.ceil(baseCost * 2.5);
   if (realmLevel >= 3) return Math.ceil(baseCost * 1.5);
   return baseCost;
+}
+
+function getPreparationItemCost(actionId: string, inventory: InventoryEntry[]): InventoryReward | undefined {
+  const candidates: Record<string, string[]> = {
+    stabilize: ['minor-array-plate', 'soul-settling-orb', 'old-manual-page'],
+    elixir: ['tribulation-pill', 'dragon-blood-pill', 'bone-tempering-pill', 'qi-gathering-pill'],
+    master: ['old-manual-page', 'mystic-manual-fragment', 'immortal-talisman-page'],
+    ward: ['tribulation-ward', 'protection-talisman', 'minor-ward', 'minor-array-plate']
+  };
+  const itemId = candidates[actionId]?.find(candidateId => {
+    const entry = inventory.find(item => item.itemId === candidateId);
+    return (entry?.quantity ?? 0) > 0;
+  });
+
+  return itemId ? { itemId, quantity: 1 } : undefined;
+}
+
+function addBreakthroughPreparation(
+  preparation: BreakthroughPreparationState,
+  actionId: string
+): BreakthroughPreparationState {
+  switch (actionId) {
+    case 'elixir':
+      return { ...preparation, elixir: preparation.elixir + 1 };
+    case 'master':
+      return { ...preparation, talisman: preparation.talisman + 1 };
+    case 'ward':
+      return { ...preparation, array: preparation.array + 1 };
+    case 'stabilize':
+    default:
+      return { ...preparation, artifact: preparation.artifact + 1 };
+  }
 }
 
 function createActiveLifeGoal(gameState: GameState): ActiveLifeGoal | null {
@@ -2866,12 +3258,23 @@ function calculateBreakthroughSuccessRate(
     : 0;
   const averageDeficit = calculateBreakthroughAverageDeficit(gameState, nextRealm);
   const fortuneBonus = getAttributePower(gameState.attributes.气运) * 0.006;
+  const preparationBonus = getBreakthroughPreparationBonus(gameState.breakthroughPreparation);
   const realmPressure = Math.max(0, gameState.currentRealm.level - 3) * 0.02;
   const minimumRate = averageDeficit >= 0.5 ? 0.05 : averageDeficit >= 0.3 ? 0.07 : 0.1;
 
   return Math.max(
     minimumRate,
-    Math.min(0.92, 0.74 + averageSurplus * 0.45 + fortuneBonus - realmPressure - averageDeficit * 0.75)
+    Math.min(0.94, 0.74 + averageSurplus * 0.45 + fortuneBonus + preparationBonus - realmPressure - averageDeficit * 0.75)
+  );
+}
+
+function getBreakthroughPreparationBonus(preparation: BreakthroughPreparationState): number {
+  return Math.min(
+    0.18,
+    preparation.elixir * 0.025
+      + preparation.artifact * 0.02
+      + preparation.talisman * 0.018
+      + preparation.array * 0.025
   );
 }
 

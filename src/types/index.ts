@@ -2,7 +2,9 @@ export type EventType = 'childhood' | 'cultivation' | 'combat' | 'encounter' | '
 
 export type Rarity = '凡品' | '下品' | '中品' | '上品' | '变异' | '极品' | '神话' | '传说';
 
-export type ItemType = '丹药' | '灵材' | '法器' | '功法' | '杂物';
+export type ItemType = '丹药' | '灵材' | '法器' | '符箓' | '阵材' | '功法' | '杂物';
+
+export type ResourceType = '灵草' | '矿材' | '兽材' | '符材' | '阵材' | '灵鱼' | '灵石' | '成品';
 
 export type TechniqueGrade = '黄' | '玄' | '地' | '天' | '仙';
 
@@ -11,6 +13,10 @@ export type AttributeEffect = Partial<Attributes> & {
 };
 
 export type CultivationPathId = 'sword' | 'body' | 'spell' | 'demonic';
+
+export type LifeSkillId = 'alchemy' | 'crafting' | 'talisman' | 'array' | 'fishing' | 'spirit-field';
+
+export type YearActionId = 'cultivate' | 'adventure' | 'seclusion' | 'life-skill' | 'recuperate';
 
 export interface CultivationPath {
   id: CultivationPathId;
@@ -125,6 +131,10 @@ export interface GameState {
   combatStats: CombatStats;
   inventory: InventoryEntry[];
   techniques: LearnedTechnique[];
+  lifeSkills: LifeSkillProgress[];
+  selectedYearAction: YearActionId;
+  rival: RivalState | null;
+  breakthroughPreparation: BreakthroughPreparationState;
   spiritRoot: SpiritRoot | null;
   talent: Talent | null;
   cultivationPath: CultivationPathId | null;
@@ -190,6 +200,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   type: ItemType;
+  resourceType?: ResourceType;
   rarity: Rarity;
   description: string;
   usable: boolean;
@@ -225,6 +236,26 @@ export interface TechniqueDefinition {
 export interface LearnedTechnique {
   techniqueId: string;
   level: number;
+}
+
+export interface LifeSkillProgress {
+  skillId: LifeSkillId;
+  level: number;
+  exp: number;
+}
+
+export interface RivalState {
+  name: string;
+  enmity: number;
+  defeats: number;
+  active: boolean;
+}
+
+export interface BreakthroughPreparationState {
+  elixir: number;
+  artifact: number;
+  talisman: number;
+  array: number;
 }
 
 export interface CombatStats {

@@ -466,7 +466,7 @@ export function InventoryPanel({
                       {item.name}
                     </div>
                     <div className="text-xs font-semibold text-[#6d634d]">
-                      {item.type} · {item.rarity}
+                      {item.type}{item.resourceType ? `/${item.resourceType}` : ''} · {item.rarity}
                     </div>
                   </div>
                   <span className="rounded-full bg-[#e7eddd] px-2 py-0.5 text-xs font-bold text-[#355d58]">

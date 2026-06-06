@@ -4,7 +4,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { cultivationPaths } from '@/data/cultivationPaths';
 import { getItem } from '@/data/items';
 import { getTechnique } from '@/data/techniques';
-import type { CombatReport, CultivationPath, EventChoice, InventoryReward } from '@/types';
+import type { CombatReport, CultivationPath, EventChoice, InventoryReward, YearActionId } from '@/types';
 
 interface EventDisplayProps {
   canBreakthrough: boolean;
@@ -25,7 +25,8 @@ export default function EventDisplay({
     gameState,
     chooseCultivationPath,
     chooseEventOption,
-    getCurrentEventChoices
+    getCurrentEventChoices,
+    selectYearAction
   } = useGameStore();
   const [displayedText, setDisplayedText] = useState('');
   const [isConfirmingMeditationEnd, setIsConfirmingMeditationEnd] = useState(false);
@@ -245,6 +246,10 @@ export default function EventDisplay({
               </div>
             </motion.div>
           )}
+          <YearActionPanel
+            activeAction={gameState.selectedYearAction}
+            onSelect={selectYearAction}
+          />
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
             {showBreakthroughControls && canBreakthrough && (
               <motion.button
@@ -309,6 +314,54 @@ export default function EventDisplay({
         </>
       )}
     </motion.div>
+  );
+}
+
+function YearActionPanel({
+  activeAction,
+  onSelect
+}: {
+  activeAction: YearActionId;
+  onSelect: (actionId: YearActionId) => void;
+}) {
+  const actions: Array<{ id: YearActionId; label: string; hint: string }> = [
+    { id: 'cultivate', label: '修炼', hint: '主涨修为' },
+    { id: 'adventure', label: '历练', hint: '触发事件' },
+    { id: 'seclusion', label: '闭关', hint: '悟性神识' },
+    { id: 'life-skill', label: '百艺', hint: '材料熟练' },
+    { id: 'recuperate', label: '调养', hint: '恢复伤势' }
+  ];
+
+  return (
+    <div className="mb-4 rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">本年安排</span>
+        <span className="text-xs text-[#66766e]">影响下一次继续修仙</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-5">
+        {actions.map(action => {
+          const isActive = activeAction === action.id;
+
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => onSelect(action.id)}
+              className={`min-h-[48px] rounded border px-2 py-2 text-xs font-bold transition ${
+                isActive
+                  ? 'border-[#355d58]/45 bg-[#355d58] text-[#fff9e8]'
+                  : 'border-[#738275]/25 bg-[#fffdf2]/65 text-[#59645f] hover:border-[#9a5b2f]/45'
+              }`}
+            >
+              {action.label}
+              <span className={`block text-[11px] font-normal ${isActive ? 'text-[#eef3df]' : 'text-[#66766e]'}`}>
+                {action.hint}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

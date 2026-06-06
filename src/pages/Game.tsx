@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { lifeSkills, type LifeSkillId } from '@/data/lifeSkills';
+import { getItem } from '@/data/items';
 import Background from '@/components/layout/Background';
 import {
   AchievementPanel,
@@ -482,6 +483,8 @@ function LifeSkillPanel({
         {lifeSkills.map(skill => {
           const disabledReason = getDisabledReason(skill);
           const isDisabled = disabledReason !== '';
+          const progress = gameState.lifeSkills.find(item => item.skillId === skill.id) ?? { level: 1, exp: 0 };
+          const visibleRecipes = skill.recipes.filter(recipe => gameState.currentRealm.level >= recipe.minRealmLevel);
 
           return (
             <div
@@ -492,6 +495,9 @@ function LifeSkillPanel({
                 <div>
                   <h3 className="text-lg font-bold text-[#263832]">{skill.name}</h3>
                   <p className="mt-1 text-xs font-semibold text-[#7a5426]">{skill.focus}</p>
+                  <p className="mt-1 text-xs text-[#66766e]">
+                    {progress.level} 阶 · 熟练 {progress.exp % 100}/100
+                  </p>
                 </div>
                 <span className="shrink-0 rounded border border-[#738275]/25 bg-[#eef3df] px-2 py-1 text-xs font-semibold text-[#45564f]">
                   {getRealmNameByLevel(skill.minRealmLevel)}可习
@@ -522,6 +528,26 @@ function LifeSkillPanel({
                   ))}
               </div>
 
+              {visibleRecipes.length > 0 && (
+                <div className="mt-3 space-y-1.5 rounded border border-[#738275]/15 bg-[#fffdf2]/55 px-2 py-2">
+                  {visibleRecipes.slice(0, 2).map(recipe => {
+                    const locked = progress.level < recipe.minSkillLevel;
+                    const affordable = recipe.costs.every(cost => getInventoryQuantity(gameState.inventory, cost.itemId) >= cost.quantity);
+
+                    return (
+                      <div key={recipe.id} className="text-xs leading-relaxed">
+                        <div className={`font-semibold ${locked ? 'text-[#8d947f]' : affordable ? 'text-[#355d58]' : 'text-[#9a5b2f]'}`}>
+                          {recipe.name}
+                        </div>
+                        <div className="text-[#66766e]">
+                          {locked ? `${recipe.minSkillLevel} 阶解锁` : formatRecipeCosts(recipe.costs)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <button
                 type="button"
                 disabled={isDisabled}
@@ -540,6 +566,18 @@ function LifeSkillPanel({
       </div>
     </div>
   );
+}
+
+function getInventoryQuantity(inventory: Array<{ itemId: string; quantity: number }>, itemId: string): number {
+  return inventory.find(item => item.itemId === itemId)?.quantity ?? 0;
+}
+
+function formatRecipeCosts(costs: Array<{ itemId: string; quantity: number }>): string {
+  if (costs.length === 0) return '无需材料';
+
+  return costs
+    .map(cost => `${getItem(cost.itemId)?.name ?? cost.itemId}x${cost.quantity}`)
+    .join(' · ');
 }
 
 function MobileCultivationPanel({
@@ -636,7 +674,31 @@ function MobileStatusPanel() {
       {currentRealm.name !== '幼年期' && (
         <CombatStatsPanel combatStats={gameState.combatStats} />
       )}
+      {gameState.rival?.active && (
+        <RivalPanel name={gameState.rival.name} enmity={gameState.rival.enmity} defeats={gameState.rival.defeats} />
+      )}
       <AttributePanel attributes={attributes} cap={currentRealm.attributeCap} />
+    </div>
+  );
+}
+
+function RivalPanel({
+  name,
+  enmity,
+  defeats
+}: {
+  name: string;
+  enmity: number;
+  defeats: number;
+}) {
+  return (
+    <div className="rounded-md border border-[#9a5b2f]/25 bg-[#fff9e8]/45 px-3 py-3 sm:px-4">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-semibold text-[#45564f]">宿敌</span>
+        <span className="text-xs font-semibold text-[#9a5b2f]">仇怨 {enmity}</span>
+      </div>
+      <div className="text-sm font-bold text-[#263832]">{name}</div>
+      <div className="mt-1 text-xs text-[#66766e]">已击退 {defeats} 次，历练时可能寻仇。</div>
     </div>
   );
 }
@@ -659,6 +721,7 @@ function MobileBreakthroughPanel({
         currentRealmName={gameState.currentRealm.name}
         attributes={gameState.attributes}
       />
+      <BreakthroughPrepSummary preparation={gameState.breakthroughPreparation} />
       <PreparationPanel
         canUse={!isBlockedByChoice}
         familyWealth={gameState.familyWealth}
@@ -691,6 +754,29 @@ function MobileBreakthroughPanel({
               ? '修为圆满，门槛已足，可以尝试突破。'
               : '修炼进度圆满且突破门槛满足后，便可在此突破。'}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function BreakthroughPrepSummary({
+  preparation
+}: {
+  preparation: { elixir: number; artifact: number; talisman: number; array: number };
+}) {
+  const total = preparation.elixir + preparation.artifact + preparation.talisman + preparation.array;
+
+  return (
+    <div className="rounded-md border border-[#738275]/25 bg-[#fff9e8]/45 px-3 py-3 text-xs text-[#66766e]">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-semibold text-[#45564f]">准备加成</span>
+        <span>共 {total} 层</span>
+      </div>
+      <div className="grid grid-cols-4 gap-2 text-center">
+        <span>丹 {preparation.elixir}</span>
+        <span>器 {preparation.artifact}</span>
+        <span>符 {preparation.talisman}</span>
+        <span>阵 {preparation.array}</span>
       </div>
     </div>
   );
