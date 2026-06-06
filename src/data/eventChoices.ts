@@ -352,6 +352,134 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       negativeScale: 0.5,
       effects: { 家境: -2, 气运: 1 }
     }
+  ],
+  'mid-combat-break-demon-array': [
+    {
+      id: 'strike-array-core',
+      label: '直破阵眼',
+      description: '抢时间破阵，收益更高，但容易被魔念反噬。',
+      outcome: '你锁定阵纹逆流处，冒着反噬强行斩入阵眼。',
+      successModifier: -0.04,
+      positiveScale: 1.18,
+      negativeScale: 1.25,
+      effects: { 悟性: 3, 神识: -1 }
+    },
+    {
+      id: 'stabilize-soul',
+      label: '先稳识海',
+      description: '放慢攻势，降低损失，更偏神识收益。',
+      outcome: '你先以神识镇住杂念，等阵势露出稳定破绽。',
+      successModifier: 0.12,
+      positiveScale: 0.82,
+      negativeScale: 0.55,
+      effects: { 神识: 3, 修为: -2 }
+    },
+    {
+      id: 'borrow-array',
+      label: '借阵反困',
+      description: '以悟性换打法，成功时收益更全面。',
+      outcome: '你没有急着毁阵，而是借残阵纹路反困魔念。',
+      successModifier: 0.02,
+      positiveScale: 1.05,
+      negativeScale: 0.9,
+      effects: { 悟性: 2, 气运: 2 }
+    }
+  ],
+  'mid-combat-spirit-boat-raid': [
+    {
+      id: 'guard-passengers',
+      label: '护住乘客',
+      description: '优先保人，名声和气运更稳，战利品少一些。',
+      outcome: '你守在客舱前，把劫修的术法尽数拦下。',
+      successModifier: 0.08,
+      positiveScale: 0.82,
+      negativeScale: 0.65,
+      effects: { 颜值: 3, 气运: 2, 家境: -1 }
+    },
+    {
+      id: 'protect-cargo',
+      label: '守住货舱',
+      description: '偏向资源收益，但会承受更多正面冲击。',
+      outcome: '你将护阵收束到货舱四周，硬接数轮破阵法器。',
+      successModifier: -0.02,
+      positiveScale: 1.08,
+      negativeScale: 1.12,
+      effects: { 家境: 2, 根骨: -1 }
+    },
+    {
+      id: 'hunt-raiders',
+      label: '追杀劫修',
+      description: '放手追敌，修为收益更高，风险也更高。',
+      outcome: '你冲出灵舟护阵，在云海里追上领头劫修。',
+      successModifier: -0.06,
+      positiveScale: 1.22,
+      negativeScale: 1.25,
+      effects: { 修为: 4, 气运: 1 }
+    }
+  ],
+  'mid-combat-thunder-marsh-breakout': [
+    {
+      id: 'force-through-thunder',
+      label: '硬闯雷潮',
+      description: '以根骨硬扛，修为和根骨收益更高。',
+      outcome: '你顶着雷潮向前，任电蛇一寸寸淬过筋骨。',
+      successModifier: -0.08,
+      positiveScale: 1.24,
+      negativeScale: 1.3,
+      effects: { 根骨: 4, 寿命: -1 }
+    },
+    {
+      id: 'follow-waterline',
+      label: '寻水脉退路',
+      description: '靠判断绕开雷眼，收益较稳。',
+      outcome: '你循着水脉暗流避开雷眼，几次险险绕过泥蛟伏击。',
+      successModifier: 0.08,
+      positiveScale: 0.9,
+      negativeScale: 0.65,
+      effects: { 悟性: 2, 气运: 2 }
+    },
+    {
+      id: 'lure-mud-dragon',
+      label: '诱蛟撞雷',
+      description: '借雷泽杀敌，成功时战利品与气运更好。',
+      outcome: '你故意露出破绽，引泥蛟撞进雷眼深处。',
+      successModifier: -0.02,
+      positiveScale: 1.08,
+      negativeScale: 1,
+      effects: { 气运: 3, 神识: 1 }
+    }
+  ],
+  'mid-combat-ruined-city-watch': [
+    {
+      id: 'hold-well-mouth',
+      label: '死守古井',
+      description: '稳住核心，降低大损失，修为收益偏少。',
+      outcome: '你一步不退守在古井旁，将阴兵一批批压回长街。',
+      successModifier: 0.1,
+      positiveScale: 0.78,
+      negativeScale: 0.55,
+      effects: { 神识: 3, 修为: -2 }
+    },
+    {
+      id: 'break-yin-banner',
+      label: '斩断阴旗',
+      description: '主动破局，成功收益高，失败会被围困。',
+      outcome: '你越过阴兵阵列，直取城楼上招魂阴旗。',
+      successModifier: -0.05,
+      positiveScale: 1.18,
+      negativeScale: 1.22,
+      effects: { 气运: 2, 根骨: 1 }
+    },
+    {
+      id: 'read-city-script',
+      label: '解读城纹',
+      description: '用悟性寻找旧城禁制，收益更偏心神。',
+      outcome: '你边战边读城砖上的旧纹，试着唤醒荒城残存禁制。',
+      successModifier: 0.02,
+      positiveScale: 0.96,
+      negativeScale: 0.8,
+      effects: { 悟性: 3, 神识: 1 }
+    }
   ]
 };
 

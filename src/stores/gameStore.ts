@@ -1249,6 +1249,96 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       injury: 12,
       primary: ['根骨', '神识', '气运'],
       styleText: '雷痕鏖战'
+    },
+    'mid-combat-infant-fire-demon': {
+      enemyName: '地火妖王',
+      enemyRank: '同阶上位',
+      difficulty: 1.1,
+      cultivationPercent: 11,
+      injury: 8,
+      primary: ['根骨', '神识'],
+      styleText: '婴火熔甲'
+    },
+    'mid-combat-break-demon-array': {
+      enemyName: '阵中魔念',
+      enemyRank: '诡阵心劫',
+      difficulty: 1.05,
+      cultivationPercent: 9,
+      injury: 6,
+      primary: ['神识', '悟性'],
+      styleText: '拆阵伏魔'
+    },
+    'mid-combat-night-demon-king': {
+      enemyName: '夜行妖王',
+      enemyRank: '同阶上位',
+      difficulty: 1.14,
+      cultivationPercent: 12,
+      injury: 9,
+      primary: ['根骨', '气运'],
+      styleText: '长街速斩'
+    },
+    'mid-combat-spirit-boat-raid': {
+      enemyName: '劫舟散修',
+      enemyRank: '同阶',
+      difficulty: 0.98,
+      cultivationPercent: 9,
+      injury: 6,
+      primary: ['气运', '根骨'],
+      styleText: '云海护舟'
+    },
+    'mid-combat-secret-realm-guardian': {
+      enemyName: '秘境守灵',
+      enemyRank: '同阶上位',
+      difficulty: 1.08,
+      cultivationPercent: 11,
+      injury: 7,
+      primary: ['神识', '气运'],
+      styleText: '禁制护法'
+    },
+    'mid-combat-canyon-rival': {
+      enemyName: '峡谷旧敌',
+      enemyRank: '同阶',
+      difficulty: 1.02,
+      cultivationPercent: 10,
+      injury: 7,
+      primary: ['根骨', '悟性'],
+      styleText: '借势斗修'
+    },
+    'mid-combat-capture-banner': {
+      enemyName: '演武魁首',
+      enemyRank: '同阶',
+      difficulty: 0.92,
+      cultivationPercent: 8,
+      injury: 4,
+      primary: ['神识', '悟性', '气运'],
+      styleText: '夺旗演武'
+    },
+    'mid-combat-thunder-marsh-breakout': {
+      enemyName: '雷泽泥蛟',
+      enemyRank: '越阶险境',
+      difficulty: 1.22,
+      cultivationPercent: 13,
+      injury: 11,
+      primary: ['根骨', '气运'],
+      styleText: '雷泽突围'
+    },
+    'mid-combat-demon-cave-purge': {
+      enemyName: '炼魂邪修',
+      enemyRank: '同阶上位',
+      difficulty: 1.16,
+      cultivationPercent: 12,
+      injury: 10,
+      primary: ['神识', '根骨'],
+      styleText: '断祭清窟'
+    },
+    'mid-combat-ruined-city-watch': {
+      enemyName: '荒城阴兵',
+      enemyRank: '群敌围困',
+      difficulty: 1.04,
+      cultivationPercent: 10,
+      injury: 7,
+      primary: ['神识', '气运', '悟性'],
+      styleText: '守井破阴'
     }
   };
 
@@ -1783,6 +1873,8 @@ function generateCombatItemRewards(
       ], quantity);
     case 'combat-caravan-escort':
     case 'combat-bandit-camp':
+    case 'mid-combat-spirit-boat-raid':
+    case 'mid-combat-capture-banner':
       return rollOneReward([
         ['spirit-stone-pouch', 0.55],
         ['qi-gathering-pill', 0.3],
@@ -1796,10 +1888,30 @@ function generateCombatItemRewards(
       ], quantity);
     case 'combat-sword-contest':
     case 'combat-arena-duel':
+    case 'mid-combat-break-demon-array':
+    case 'mid-combat-canyon-rival':
       return rollOneReward([
         ['old-manual-page', 0.35],
         ['bone-tempering-pill', 0.28],
         ['spirit-stone-pouch', 0.37]
+      ], quantity);
+    case 'mid-combat-infant-fire-demon':
+    case 'mid-combat-night-demon-king':
+    case 'mid-combat-secret-realm-guardian':
+    case 'mid-combat-thunder-marsh-breakout':
+      return rollOneReward([
+        ['beast-core', 0.36],
+        ['ancient-scale', 0.24],
+        ['bone-tempering-pill', 0.2],
+        ['spirit-herb', 0.2]
+      ], quantity);
+    case 'mid-combat-demon-cave-purge':
+    case 'mid-combat-ruined-city-watch':
+      return rollOneReward([
+        ['blood-jade', 0.36],
+        ['soul-nourishing-pill', 0.28],
+        ['fortune-talisman', 0.2],
+        ['spirit-stone-pouch', 0.16]
       ], quantity);
     default:
       return rollOneReward([

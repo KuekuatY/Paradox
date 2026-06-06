@@ -1345,10 +1345,6 @@ const midEventGroups: PhaseEventGroup[] = [
     titles: ['婴火温养', '神识游宫', '灵台映月', '元婴听潮', '虚室生白', '紫府开窗', '法相初摹', '玄窍回音', '星息入脉', '玉液还丹', '道胎轻鸣', '丹田生莲', '云篆入骨', '灵息归藏']
   },
   {
-    type: 'combat',
-    titles: ['婴火斗妖', '破阵伏魔', '夜斩妖王', '灵舟遭袭', '秘境护法', '峡谷斗修', '夺旗演武', '雷泽突围', '魔窟清剿', '荒城守夜']
-  },
-  {
     type: 'encounter',
     titles: ['旧仙碑文', '月下灵舟', '古镜照魂', '洞天裂隙', '异香引路', '残阵藏珍', '白鹿衔芝', '云端棋局', '前贤留问', '沉湖玉匣']
   },
@@ -1417,7 +1413,110 @@ const lateEventGroups: PhaseEventGroup[] = [
   }
 ];
 
-export const midEvents: GameEvent[] = createPhaseEvents('mid', midEventGroups);
+const midCombatEvents: GameEvent[] = [
+  {
+    id: 'mid-combat-infant-fire-demon',
+    age: 0,
+    type: 'combat',
+    title: '婴火斗妖',
+    description: '山腹妖王吞食地火，妖躯坚硬如铁。你必须以元婴真火熔开甲壳，才能逼出它腹中的妖核。',
+    weight: 0.72,
+    effects: { 修为: 14, 根骨: 14, 神识: 5 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-break-demon-array',
+    age: 0,
+    type: 'combat',
+    title: '破阵伏魔',
+    description: '残阵里困着一缕魔念，阵纹每转一圈都会换一种杀法。蛮力难以奏效，只能边拆阵眼边压住心神。',
+    weight: 0.68,
+    effects: { 修为: 12, 神识: 13, 悟性: 8 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-night-demon-king',
+    age: 0,
+    type: 'combat',
+    title: '夜斩妖王',
+    description: '妖王趁月黑袭扰村镇，你赶到时血雾已漫过长街。此战重在速决，拖久了便会牵连更多凡人。',
+    weight: 0.64,
+    effects: { 修为: 15, 根骨: 12, 气运: 8, 颜值: 4 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-spirit-boat-raid',
+    age: 0,
+    type: 'combat',
+    title: '灵舟遭袭',
+    description: '灵舟穿云时遭散修劫掠，货舱、护阵和乘客同时告急。你要在护人、护财和追敌之间快速取舍。',
+    weight: 0.7,
+    effects: { 修为: 13, 根骨: 7, 气运: 10, 家境: 2 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-secret-realm-guardian',
+    age: 0,
+    type: 'combat',
+    title: '秘境护法',
+    description: '同道破禁取宝时引来秘境守灵，你临时护法，既要挡住守灵冲撞，也不能让禁制反噬队伍。',
+    weight: 0.66,
+    effects: { 修为: 16, 神识: 12, 气运: 7, 家境: 1 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-canyon-rival',
+    age: 0,
+    type: 'combat',
+    title: '峡谷斗修',
+    description: '狭谷中遇到旧敌，退路被落石截断。双方都不敢全力毁山，只能在方寸地势里抢占先机。',
+    weight: 0.62,
+    effects: { 修为: 14, 根骨: 10, 悟性: 8, 神识: 5 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-capture-banner',
+    age: 0,
+    type: 'combat',
+    title: '夺旗演武',
+    description: '宗门大比改作夺旗演武，胜负不只看杀伤，更看调度、声望与临场判断。',
+    weight: 0.74,
+    effects: { 修为: 11, 神识: 8, 颜值: 10, 气运: 4 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-thunder-marsh-breakout',
+    age: 0,
+    type: 'combat',
+    title: '雷泽突围',
+    description: '雷泽骤然涨潮，电蛇、泥蛟和迷雾一同封路。你每前进一步，都要拿根骨硬接雷息。',
+    weight: 0.58,
+    effects: { 修为: 18, 根骨: 15, 气运: 7, 寿命: -1 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-demon-cave-purge',
+    age: 0,
+    type: 'combat',
+    title: '魔窟清剿',
+    description: '魔窟深处有邪修炼魂，入口狭窄而回音混乱。你要先断供血祭，再压住洞中怨念。',
+    weight: 0.6,
+    effects: { 修为: 17, 神识: 14, 根骨: 6, 气运: 5 },
+    result: 'success'
+  },
+  {
+    id: 'mid-combat-ruined-city-watch',
+    age: 0,
+    type: 'combat',
+    title: '荒城守夜',
+    description: '荒城夜半阴兵巡街，你受托守住城心古井。若被阴兵踏破井口，整片遗址都会沉入死气。',
+    weight: 0.64,
+    effects: { 修为: 13, 神识: 11, 气运: 9, 悟性: 4 },
+    result: 'success'
+  }
+];
+
+export const midEvents: GameEvent[] = [...createPhaseEvents('mid', midEventGroups), ...midCombatEvents];
 export const lateEvents: GameEvent[] = createPhaseEvents('late', lateEventGroups);
 export const events = earlyEvents;
 
