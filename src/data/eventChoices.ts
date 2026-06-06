@@ -545,6 +545,198 @@ const eventChoiceSets: Record<string, EventChoice[]> = {
       effects: { 气运: 3, 家境: -1 }
     }
   ],
+  'late-cultivation-4': [
+    {
+      id: 'accept-thunder',
+      label: '承雷淬骨',
+      description: '强吃雷力，根骨收益最高，寿元压力更大。',
+      outcome: '你撤去半数护阵，让雷池余电直接劈入骨髓。',
+      successModifier: -0.08,
+      positiveScale: 1.24,
+      negativeScale: 1.3,
+      effects: { 根骨: 5, 寿命: -1 }
+    },
+    {
+      id: 'guide-thunder-array',
+      label: '以阵引雷',
+      description: '消耗资源控雷，风险更低。',
+      outcome: '你以阵旗分流雷势，把最凶的一段雷意导入地脉。',
+      successModifier: 0.1,
+      positiveScale: 0.88,
+      negativeScale: 0.58,
+      effects: { 家境: -3, 神识: 2 }
+    },
+    {
+      id: 'observe-thunder',
+      label: '观雷不入',
+      description: '放弃淬骨强度，换取悟性和安全。',
+      outcome: '你只在雷池边观摩雷纹，不让身体承受过多雷意。',
+      successModifier: 0.14,
+      positiveScale: 0.68,
+      negativeScale: 0.45,
+      effects: { 悟性: 3, 修为: -2 }
+    }
+  ],
+  'late-encounter-3': [
+    {
+      id: 'answer-with-self',
+      label: '以己作答',
+      description: '道心收益高，回答错了会伤神。',
+      outcome: '你没有套用经义，而是把自己的取舍写在石壁下方。',
+      successModifier: -0.04,
+      positiveScale: 1.18,
+      negativeScale: 1.2,
+      effects: { 悟性: 4, 神识: -1 }
+    },
+    {
+      id: 'leave-question',
+      label: '留问后人',
+      description: '不求独占机缘，气运更稳。',
+      outcome: '你没有抹去仙人遗问，只在旁边添了一句自己的疑惑。',
+      successModifier: 0.08,
+      positiveScale: 0.86,
+      negativeScale: 0.68,
+      effects: { 气运: 4, 颜值: 1 }
+    },
+    {
+      id: 'seal-question',
+      label: '封存遗问',
+      description: '用资源封存危险机缘，降低反噬。',
+      outcome: '你以禁制封住石壁，免得后来者被此问逼疯心神。',
+      successModifier: 0.12,
+      positiveScale: 0.72,
+      negativeScale: 0.5,
+      effects: { 家境: -2, 神识: 2 }
+    }
+  ],
+  'late-disaster-1': [
+    {
+      id: 'cut-divination',
+      label: '斩断卦线',
+      description: '立刻止损，收益少但灾损低。',
+      outcome: '你一指斩断卦线，不再强行窥看后续天机。',
+      successModifier: 0.14,
+      positiveScale: 0.62,
+      negativeScale: 0.48,
+      effects: { 神识: 1, 修为: -1 }
+    },
+    {
+      id: 'force-reading',
+      label: '强读天机',
+      description: '赌一次关键情报，风险极高。',
+      outcome: '你任由鲜血浸透卦盘，强行看完最后一层卦象。',
+      successModifier: -0.1,
+      positiveScale: 1.28,
+      negativeScale: 1.35,
+      effects: { 悟性: 4, 寿命: -1 }
+    },
+    {
+      id: 'offer-incense',
+      label: '献祭遮因',
+      description: '消耗家底与气运，换取较稳处理。',
+      outcome: '你献出一批珍材遮掩因果，让反噬从身侧擦过。',
+      successModifier: 0.08,
+      positiveScale: 0.8,
+      negativeScale: 0.62,
+      effects: { 家境: -4, 气运: -1 }
+    }
+  ],
+  'late-resource-8': [
+    {
+      id: 'build-heavy-array',
+      label: '重筑护阵',
+      description: '资源消耗大，护劫收益最稳。',
+      outcome: '你将阵材尽数压入主阵，宁可奢侈，也不在劫前省这一笔。',
+      successModifier: 0.08,
+      positiveScale: 1.02,
+      negativeScale: 0.62,
+      effects: { 家境: -4, 气运: 3 }
+    },
+    {
+      id: 'save-core-material',
+      label: '留存核心',
+      description: '少用珍材，当前收益低，后续资源更宽。',
+      outcome: '你只启用必要阵材，把最珍贵的核心材料封存备用。',
+      successModifier: 0.04,
+      positiveScale: 0.72,
+      negativeScale: 0.7,
+      effects: { 家境: 2, 修为: -2 }
+    },
+    {
+      id: 'ask-array-master',
+      label: '请阵师校验',
+      description: '花费人情，神识与稳定性更好。',
+      outcome: '你请来阵师逐件校验阵材，连细小裂纹都不放过。',
+      successModifier: 0.12,
+      positiveScale: 0.86,
+      negativeScale: 0.52,
+      effects: { 神识: 3, 颜值: 1, 家境: -2 }
+    }
+  ],
+  'late-sect-2': [
+    {
+      id: 'protect-disciples',
+      label: '护住弟子',
+      description: '偏名声和气运，修行被牵扯。',
+      outcome: '你先为年轻弟子安排退路，再考虑自己的劫前清修。',
+      successModifier: 0.08,
+      positiveScale: 0.88,
+      negativeScale: 0.64,
+      effects: { 颜值: 3, 气运: 3, 修为: -2 }
+    },
+    {
+      id: 'set-hard-rules',
+      label: '立下严规',
+      description: '短期不讨喜，但宗门收益更稳。',
+      outcome: '你把规矩写得很冷硬，宁可被埋怨，也不让他们走险路。',
+      successModifier: 0.02,
+      positiveScale: 1,
+      negativeScale: 0.78,
+      effects: { 神识: 2, 颜值: -1, 家境: 2 }
+    },
+    {
+      id: 'teach-core-method',
+      label: '传核心法',
+      description: '以心神换传承，悟性收益更高。',
+      outcome: '你拆开自己的修行心得，把最关键的几处讲给他们听。',
+      successModifier: -0.02,
+      positiveScale: 1.12,
+      negativeScale: 1.02,
+      effects: { 悟性: 3, 神识: -1 }
+    }
+  ],
+  'late-combat-thunder-prison-brawl': [
+    {
+      id: 'break-chains',
+      label: '断链抢攻',
+      description: '主动放开雷狱锁链，收益和风险都极高。',
+      outcome: '你斩断半截锁链，趁凶影尚未完全脱困时抢先压上。',
+      successModifier: -0.1,
+      positiveScale: 1.26,
+      negativeScale: 1.35,
+      effects: { 修为: 5, 根骨: 2, 寿命: -1 }
+    },
+    {
+      id: 'use-chains',
+      label: '借链缚影',
+      description: '利用旧锁链控场，风险较低。',
+      outcome: '你没有急着近身，而是借雷狱旧锁链重新束住凶影。',
+      successModifier: 0.12,
+      positiveScale: 0.84,
+      negativeScale: 0.55,
+      effects: { 神识: 3, 修为: -2 }
+    },
+    {
+      id: 'temper-in-thunder',
+      label: '雷中炼身',
+      description: '把战斗当淬体，根骨收益更明显。',
+      outcome: '你故意踏入雷光最密处，让每一道雷都先落在自己身上。',
+      successModifier: -0.04,
+      positiveScale: 1.08,
+      negativeScale: 1.18,
+      effects: { 根骨: 4, 神识: 1 }
+    }
+  ],
   'mid-combat-break-demon-array': [
     {
       id: 'strike-array-core',

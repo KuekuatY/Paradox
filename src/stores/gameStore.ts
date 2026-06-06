@@ -1339,6 +1339,87 @@ function getCombatEncounter(event: GameEvent): CombatEncounter {
       injury: 7,
       primary: ['神识', '气运', '悟性'],
       styleText: '守井破阴'
+    },
+    'late-combat-law-domain-duel': {
+      enemyName: '法域大修',
+      enemyRank: '同阶上位',
+      difficulty: 1.12,
+      cultivationPercent: 12,
+      injury: 8,
+      primary: ['神识', '悟性'],
+      styleText: '法域对轰'
+    },
+    'late-combat-heavenly-demon-gate': {
+      enemyName: '叩关天魔',
+      enemyRank: '心劫强敌',
+      difficulty: 1.2,
+      cultivationPercent: 11,
+      injury: 10,
+      primary: ['神识', '气运', '悟性'],
+      styleText: '心关拒魔'
+    },
+    'late-combat-great-demon-siege': {
+      enemyName: '围山大妖',
+      enemyRank: '群敌压境',
+      difficulty: 1.15,
+      cultivationPercent: 13,
+      injury: 10,
+      primary: ['根骨', '神识'],
+      styleText: '护山斩妖'
+    },
+    'late-combat-star-sea-array': {
+      enemyName: '星阵敌修',
+      enemyRank: '阵道强敌',
+      difficulty: 1.08,
+      cultivationPercent: 12,
+      injury: 7,
+      primary: ['悟性', '神识'],
+      styleText: '星位斗阵'
+    },
+    'late-combat-king-court-lord': {
+      enemyName: '王庭之主',
+      enemyRank: '越阶强敌',
+      difficulty: 1.32,
+      cultivationPercent: 15,
+      injury: 13,
+      primary: ['根骨', '气运', '神识'],
+      styleText: '血脉决战'
+    },
+    'late-combat-tribulation-guardian': {
+      enemyName: '劫前袭杀者',
+      enemyRank: '同阶上位',
+      difficulty: 1.06,
+      cultivationPercent: 11,
+      injury: 7,
+      primary: ['神识', '气运'],
+      styleText: '洞府护道'
+    },
+    'late-combat-cloud-sea-decisive': {
+      enemyName: '云海宿敌',
+      enemyRank: '同阶上位',
+      difficulty: 1.18,
+      cultivationPercent: 14,
+      injury: 11,
+      primary: ['根骨', '神识', '气运'],
+      styleText: '云海死斗'
+    },
+    'late-combat-boundary-pursuit': {
+      enemyName: '破界遁修',
+      enemyRank: '乱流险敌',
+      difficulty: 1.24,
+      cultivationPercent: 15,
+      injury: 12,
+      primary: ['神识', '气运'],
+      styleText: '界缝追袭'
+    },
+    'late-combat-thunder-prison-brawl': {
+      enemyName: '雷狱凶影',
+      enemyRank: '越阶险境',
+      difficulty: 1.38,
+      cultivationPercent: 16,
+      injury: 15,
+      primary: ['根骨', '神识'],
+      styleText: '雷狱搏杀'
     }
   };
 
@@ -1890,6 +1971,8 @@ function generateCombatItemRewards(
     case 'combat-arena-duel':
     case 'mid-combat-break-demon-array':
     case 'mid-combat-canyon-rival':
+    case 'late-combat-law-domain-duel':
+    case 'late-combat-star-sea-array':
       return rollOneReward([
         ['old-manual-page', 0.35],
         ['bone-tempering-pill', 0.28],
@@ -1907,11 +1990,30 @@ function generateCombatItemRewards(
       ], quantity);
     case 'mid-combat-demon-cave-purge':
     case 'mid-combat-ruined-city-watch':
+    case 'late-combat-heavenly-demon-gate':
       return rollOneReward([
         ['blood-jade', 0.36],
         ['soul-nourishing-pill', 0.28],
         ['fortune-talisman', 0.2],
         ['spirit-stone-pouch', 0.16]
+      ], quantity);
+    case 'late-combat-great-demon-siege':
+    case 'late-combat-king-court-lord':
+    case 'late-combat-cloud-sea-decisive':
+    case 'late-combat-thunder-prison-brawl':
+      return rollOneReward([
+        ['ancient-scale', 0.36],
+        ['beast-core', 0.24],
+        ['bone-tempering-pill', 0.22],
+        ['fortune-talisman', 0.18]
+      ], quantity);
+    case 'late-combat-tribulation-guardian':
+    case 'late-combat-boundary-pursuit':
+      return rollOneReward([
+        ['fortune-talisman', 0.32],
+        ['soul-nourishing-pill', 0.26],
+        ['old-manual-page', 0.22],
+        ['spirit-stone-pouch', 0.2]
       ], quantity);
     default:
       return rollOneReward([
