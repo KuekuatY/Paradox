@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import Background from '@/components/layout/Background';
-import StatusPanel, {
+import {
   AchievementPanel,
   AttributePanel,
   BreakthroughRequirements,
@@ -23,6 +23,16 @@ import GameOverModal from '@/components/game/GameOverModal';
 import TribulationQte from '@/components/game/TribulationQte';
 
 type MobileTab = 'event' | 'status' | 'goal' | 'technique' | 'inventory' | 'breakthrough' | 'records';
+
+const gameTabs: Array<{ id: MobileTab; label: string }> = [
+  { id: 'event', label: '修行' },
+  { id: 'status', label: '状态' },
+  { id: 'goal', label: '道途' },
+  { id: 'technique', label: '功法' },
+  { id: 'inventory', label: '储物' },
+  { id: 'breakthrough', label: '突破' },
+  { id: 'records', label: '成就' }
+];
 
 export default function Game() {
   const navigate = useNavigate();
@@ -86,85 +96,44 @@ export default function Game() {
       
       <div className="container z-10 mx-auto flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:py-8">
         <div className="mx-auto max-w-[1500px]">
-          <div className="hidden gap-4 sm:gap-6 lg:grid lg:grid-cols-12">
-            <div className="order-2 lg:order-1 lg:col-span-5">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-4"
-              >
-                <StatusPanel />
-                {gameState.status === 'playing' && (
-                  <>
-                    <SaveGamePanel
-                      characterName={gameState.characterName}
+          <div className="hidden lg:block">
+            <AnimatePresence mode="wait">
+              {gameState.status === 'idle' ? (
+                <motion.div
+                  key="desktop-talent-draw"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  className="mx-auto max-w-3xl"
+                >
+                  <TalentDraw />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="desktop-game"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  className="grid grid-cols-[220px_minmax(0,1fr)] gap-6"
+                >
+                  <DesktopGameNav activeTab={mobileTab} onSelect={setMobileTab} />
+                  <div className="min-w-0">
+                    <GameTabContent
+                      activeTab={mobileTab}
+                      canBreakthrough={canBreak}
                       lastSavedAt={lastSavedAt}
-                      onSave={handleSaveGame}
-                    />
-                    <PreparationPanel
-                      canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
-                      familyWealth={gameState.familyWealth}
-                      realmLevel={gameState.currentRealm.level}
-                      shouldPrepare={gameState.cultivationProgress > 0 && !canBreak}
+                      onBreakthrough={handleBreakthrough}
+                      onContinue={handleContinue}
+                      onMeditationEnd={handleMeditationEnd}
                       onPrepare={useBreakthroughPreparation}
+                      onResolveTribulationStrike={resolveTribulationStrike}
+                      onSave={handleSaveGame}
+                      onSelectTab={setMobileTab}
                     />
-                  </>
-                )}
-              </motion.div>
-            </div>
-
-            <div className="order-1 lg:order-2 lg:col-span-7">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="space-y-4 sm:space-y-6"
-              >
-                <AnimatePresence mode="wait">
-                  {gameState.status === 'idle' ? (
-                    <motion.div
-                      key="talent-draw"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <TalentDraw />
-                    </motion.div>
-                  ) : gameState.pendingTribulation ? (
-                    <motion.div
-                      key="tribulation-qte"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                    >
-                      <TribulationQte
-                        tribulation={gameState.pendingTribulation}
-                        onResolveStrike={resolveTribulationStrike}
-                      />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="event-display"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                    >
-                      <EventDisplay
-                        canBreakthrough={canBreak}
-                        onBreakthrough={handleBreakthrough}
-                        onContinue={handleContinue}
-                        onMeditationEnd={handleMeditationEnd}
-                      />
-                      <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-4 xl:grid-cols-2">
-                        <AchievementPanel achievements={gameState.achievements} />
-                        <RecentEvents events={gameState.events} />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="lg:hidden">
@@ -188,119 +157,18 @@ export default function Game() {
                 >
                   <MobileGameNav activeTab={mobileTab} onSelect={setMobileTab} />
 
-                  <AnimatePresence mode="wait">
-                    {mobileTab === 'event' && (
-                      <motion.div
-                        key="mobile-event"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-3"
-                      >
-                        <MobileCultivationPanel
-                          canBreakthrough={canBreak}
-                          onGoBreakthrough={() => setMobileTab('breakthrough')}
-                        />
-                        {gameState.pendingTribulation ? (
-                          <TribulationQte
-                            tribulation={gameState.pendingTribulation}
-                            onResolveStrike={resolveTribulationStrike}
-                          />
-                        ) : (
-                          <EventDisplay
-                            canBreakthrough={canBreak}
-                            onBreakthrough={handleBreakthrough}
-                            onContinue={handleContinue}
-                            onMeditationEnd={handleMeditationEnd}
-                            showBreakthroughControls={false}
-                          />
-                        )}
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'status' && (
-                      <motion.div
-                        key="mobile-status"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <SaveGamePanel
-                          characterName={gameState.characterName}
-                          lastSavedAt={lastSavedAt}
-                          onSave={handleSaveGame}
-                        />
-                        <MobileStatusPanel />
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'goal' && (
-                      <motion.div
-                        key="mobile-goal"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-3"
-                      >
-                        <LifeGoalPanel
-                          activeGoal={gameState.activeGoal}
-                          completedCount={gameState.completedGoals.length}
-                        />
-                        <RecentEvents events={gameState.events} />
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'breakthrough' && (
-                      <motion.div
-                        key="mobile-breakthrough"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <MobileBreakthroughPanel
-                          canBreakthrough={canBreak}
-                          onBreakthrough={handleBreakthrough}
-                          onPrepare={useBreakthroughPreparation}
-                        />
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'technique' && (
-                      <motion.div
-                        key="mobile-technique"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <TechniquePanel gameState={gameState} />
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'inventory' && (
-                      <motion.div
-                        key="mobile-inventory"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <InventoryPanel
-                          inventory={gameState.inventory}
-                          canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
-                        />
-                      </motion.div>
-                    )}
-
-                    {mobileTab === 'records' && (
-                      <motion.div
-                        key="mobile-records"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <AchievementPanel achievements={gameState.achievements} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <GameTabContent
+                    activeTab={mobileTab}
+                    canBreakthrough={canBreak}
+                    lastSavedAt={lastSavedAt}
+                    onBreakthrough={handleBreakthrough}
+                    onContinue={handleContinue}
+                    onMeditationEnd={handleMeditationEnd}
+                    onPrepare={useBreakthroughPreparation}
+                    onResolveTribulationStrike={resolveTribulationStrike}
+                    onSave={handleSaveGame}
+                    onSelectTab={setMobileTab}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -349,6 +217,183 @@ function SaveGamePanel({
   );
 }
 
+function DesktopGameNav({
+  activeTab,
+  onSelect
+}: {
+  activeTab: MobileTab;
+  onSelect: (tab: MobileTab) => void;
+}) {
+  return (
+    <aside className="sticky top-8 h-fit rounded-lg border border-[#738275]/25 bg-[#fff9e8]/80 p-3 shadow-md backdrop-blur">
+      <div className="mb-3 px-2 text-xs font-semibold text-[#66766e]">问道轮回</div>
+      <div className="space-y-1.5">
+        {gameTabs.map(tab => {
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onSelect(tab.id)}
+              className={`flex min-h-[42px] w-full items-center rounded-md px-3 text-left text-sm font-bold transition ${
+                isActive
+                  ? 'bg-[#355d58] text-[#fff9e8] shadow-sm'
+                  : 'text-[#59645f] hover:bg-[#eef3df]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+function GameTabContent({
+  activeTab,
+  canBreakthrough,
+  lastSavedAt,
+  onBreakthrough,
+  onContinue,
+  onMeditationEnd,
+  onPrepare,
+  onResolveTribulationStrike,
+  onSave,
+  onSelectTab
+}: {
+  activeTab: MobileTab;
+  canBreakthrough: boolean;
+  lastSavedAt: string | null;
+  onBreakthrough: () => void;
+  onContinue: () => void;
+  onMeditationEnd: () => void;
+  onPrepare: (actionId: string) => void;
+  onResolveTribulationStrike: (success: boolean) => void;
+  onSave: () => void;
+  onSelectTab: (tab: MobileTab) => void;
+}) {
+  const { gameState } = useGameStore();
+
+  return (
+    <AnimatePresence mode="wait">
+      {activeTab === 'event' && (
+        <motion.div
+          key="tab-event"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="space-y-3"
+        >
+          <MobileCultivationPanel
+            canBreakthrough={canBreakthrough}
+            onGoBreakthrough={() => onSelectTab('breakthrough')}
+          />
+          {gameState.pendingTribulation ? (
+            <TribulationQte
+              tribulation={gameState.pendingTribulation}
+              onResolveStrike={onResolveTribulationStrike}
+            />
+          ) : (
+            <EventDisplay
+              canBreakthrough={canBreakthrough}
+              onBreakthrough={onBreakthrough}
+              onContinue={onContinue}
+              onMeditationEnd={onMeditationEnd}
+              showBreakthroughControls={false}
+            />
+          )}
+        </motion.div>
+      )}
+
+      {activeTab === 'status' && (
+        <motion.div
+          key="tab-status"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="space-y-3"
+        >
+          <SaveGamePanel
+            characterName={gameState.characterName}
+            lastSavedAt={lastSavedAt}
+            onSave={onSave}
+          />
+          <MobileStatusPanel />
+        </motion.div>
+      )}
+
+      {activeTab === 'goal' && (
+        <motion.div
+          key="tab-goal"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="space-y-3"
+        >
+          <LifeGoalPanel
+            activeGoal={gameState.activeGoal}
+            completedCount={gameState.completedGoals.length}
+          />
+          <RecentEvents events={gameState.events} />
+        </motion.div>
+      )}
+
+      {activeTab === 'breakthrough' && (
+        <motion.div
+          key="tab-breakthrough"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <MobileBreakthroughPanel
+            canBreakthrough={canBreakthrough}
+            onBreakthrough={onBreakthrough}
+            onPrepare={onPrepare}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === 'technique' && (
+        <motion.div
+          key="tab-technique"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <TechniquePanel gameState={gameState} />
+        </motion.div>
+      )}
+
+      {activeTab === 'inventory' && (
+        <motion.div
+          key="tab-inventory"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <InventoryPanel
+            inventory={gameState.inventory}
+            canUse={!gameState.pendingEvent && !gameState.pendingPathChoice && !gameState.pendingTribulation}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === 'records' && (
+        <motion.div
+          key="tab-records"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          <AchievementPanel achievements={gameState.achievements} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function MobileGameNav({
   activeTab,
   onSelect
@@ -356,20 +401,10 @@ function MobileGameNav({
   activeTab: MobileTab;
   onSelect: (tab: MobileTab) => void;
 }) {
-  const tabs: Array<{ id: MobileTab; label: string }> = [
-    { id: 'event', label: '修行' },
-    { id: 'status', label: '状态' },
-    { id: 'goal', label: '道途' },
-    { id: 'technique', label: '功法' },
-    { id: 'inventory', label: '储物' },
-    { id: 'breakthrough', label: '突破' },
-    { id: 'records', label: '成就' }
-  ];
-
   return (
     <div className="fixed left-3 right-3 top-3 z-30 rounded-md border border-[#738275]/25 bg-[#fff9e8]/90 p-1 shadow-md backdrop-blur">
       <div className="grid grid-cols-7 gap-1">
-        {tabs.map(tab => {
+        {gameTabs.map(tab => {
           const isActive = activeTab === tab.id;
 
           return (
