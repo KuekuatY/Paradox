@@ -95,6 +95,15 @@ export default function Home() {
         >
           从炼气期到飞升，体验一世仙途
         </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="mt-3 text-sm font-semibold text-[#6d5a36]"
+        >
+          反馈群323735949
+        </motion.p>
       </motion.div>
     </div>
   );
