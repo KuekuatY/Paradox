@@ -16,7 +16,7 @@ export type CultivationPathId = 'sword' | 'body' | 'spell' | 'demonic';
 
 export type LifeSkillId = 'alchemy' | 'crafting' | 'talisman' | 'array' | 'fishing' | 'spirit-field';
 
-export type YearActionId = 'cultivate' | 'adventure' | 'seclusion' | 'life-skill' | 'recuperate';
+export type YearActionId = 'cultivate' | 'adventure' | 'seclusion' | 'life-skill';
 
 export interface CultivationPath {
   id: CultivationPathId;

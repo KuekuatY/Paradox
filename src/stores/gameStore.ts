@@ -1001,7 +1001,7 @@ function normalizeLoadedGameState(gameState: GameState): GameState {
     inventory: Array.isArray(gameState.inventory) ? gameState.inventory : [],
     techniques: Array.isArray(gameState.techniques) ? gameState.techniques : [],
     lifeSkills: normalizeLifeSkillProgress(gameState.lifeSkills),
-    selectedYearAction: gameState.selectedYearAction ?? 'adventure',
+    selectedYearAction: normalizeYearAction(gameState.selectedYearAction),
     rival: gameState.rival ?? null,
     breakthroughPreparation: gameState.breakthroughPreparation ?? initialBreakthroughPreparation,
     events: Array.isArray(gameState.events) ? gameState.events : [],
@@ -1021,6 +1021,13 @@ function normalizeLifeSkillProgress(progressList: LifeSkillProgress[] | undefine
       exp: Math.max(0, progress?.exp ?? 0)
     };
   });
+}
+
+function normalizeYearAction(actionId: unknown): YearActionId {
+  const availableActions: YearActionId[] = ['cultivate', 'adventure', 'seclusion', 'life-skill'];
+  return typeof actionId === 'string' && availableActions.includes(actionId as YearActionId)
+    ? actionId as YearActionId
+    : 'adventure';
 }
 
 function enterQiCondensingRealm(gameState: GameState): GameState {
@@ -1113,17 +1120,6 @@ function createYearActionEvent(gameState: GameState): GameEvent | null {
         result: 'neutral'
       };
     }
-    case 'recuperate':
-      return {
-        id: `year-action-recuperate-${Date.now()}`,
-        age: gameState.age,
-        type: 'daily',
-        title: '调养身心',
-        description: '你暂缓争斗，温养气血，修补暗伤，也让心绪重新平稳。',
-        weight: 0,
-        effects: { 寿命: 1, 气运: 1 },
-        result: 'neutral'
-      };
     default:
       return null;
   }
@@ -1394,17 +1390,6 @@ function calculateCombatResult(
 }
 
 function applyYearActionSideEffects(gameState: GameState, event: GameEvent): GameState {
-  if (event.id.startsWith('year-action-recuperate')) {
-    const recovery = Math.max(8, 14 + gameState.currentRealm.level * 2);
-    return {
-      ...gameState,
-      combatStats: {
-        ...gameState.combatStats,
-        injury: Math.max(0, gameState.combatStats.injury - recovery)
-      }
-    };
-  }
-
   if (event.id.startsWith('year-action-life-skill-')) {
     const skillId = event.id.replace('year-action-life-skill-', '').split('-').slice(0, -1).join('-') as LifeSkillId;
     const expGain = Math.round(10 * getPathLifeSkillExpMultiplier(gameState, skillId));
@@ -2326,11 +2311,11 @@ function getPathYearActionBonus(gameState: GameState, actionId: YearActionId): n
     case 'sword':
       return actionId === 'adventure' ? 1.18 : actionId === 'cultivate' ? 1.08 : 1;
     case 'body':
-      return actionId === 'recuperate' ? 1.25 : actionId === 'cultivate' ? 1.12 : 1;
+      return actionId === 'cultivate' ? 1.12 : 1;
     case 'spell':
       return actionId === 'seclusion' ? 1.22 : actionId === 'life-skill' ? 1.08 : 1;
     case 'demonic':
-      return actionId === 'adventure' || actionId === 'cultivate' ? 1.15 : actionId === 'recuperate' ? 0.88 : 1;
+      return actionId === 'adventure' || actionId === 'cultivate' ? 1.15 : 1;
     default:
       return 1;
   }

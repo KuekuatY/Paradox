@@ -248,10 +248,12 @@ export default function EventDisplay({
               </div>
             </motion.div>
           )}
-          <YearActionPanel
-            activeAction={gameState.selectedYearAction}
-            onSelect={selectYearAction}
-          />
+          {gameState.currentRealm.name !== '幼年期' && (
+            <YearActionPanel
+              activeAction={gameState.selectedYearAction}
+              onSelect={selectYearAction}
+            />
+          )}
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
             {showBreakthroughControls && (
               <button
@@ -320,13 +322,11 @@ function YearActionPanel({
   activeAction: YearActionId;
   onSelect: (actionId: YearActionId) => void;
 }) {
-  const { gameState } = useGameStore();
-  const actions: Array<{ id: YearActionId; label: string; hint: string }> = [
-    { id: 'cultivate', label: '修炼', hint: '主涨修为' },
-    { id: 'adventure', label: '历练', hint: '触发事件' },
-    { id: 'seclusion', label: '闭关', hint: '悟性神识' },
-    { id: 'life-skill', label: '百艺', hint: '材料熟练' },
-    { id: 'recuperate', label: '调养', hint: '恢复伤势' }
+  const actions: Array<{ id: YearActionId; label: string }> = [
+    { id: 'cultivate', label: '修炼' },
+    { id: 'adventure', label: '历练' },
+    { id: 'seclusion', label: '闭关' },
+    { id: 'life-skill', label: '百艺' }
   ];
 
   return (
@@ -335,7 +335,7 @@ function YearActionPanel({
         <span className="font-semibold text-[#45564f]">本年安排</span>
         <span className="text-xs text-[#66766e]">影响下一次继续修仙</span>
       </div>
-      <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-4">
         {actions.map(action => {
           const isActive = activeAction === action.id;
 
@@ -351,38 +351,12 @@ function YearActionPanel({
               }`}
             >
               {action.label}
-              <span className={`block text-[11px] font-normal ${isActive ? 'text-[#eef3df]' : 'text-[#66766e]'}`}>
-                {getPathActionHint(gameState.cultivationPath, action.id) ?? action.hint}
-              </span>
             </button>
           );
         })}
       </div>
     </div>
   );
-}
-
-function getPathActionHint(pathId: string | null, actionId: YearActionId): string | null {
-  const hints: Record<string, Partial<Record<YearActionId, string>>> = {
-    sword: {
-      adventure: '剑修加成',
-      cultivate: '剑意磨身'
-    },
-    body: {
-      cultivate: '体修加成',
-      recuperate: '恢复更强'
-    },
-    spell: {
-      seclusion: '法修加成',
-      'life-skill': '百艺略强'
-    },
-    demonic: {
-      adventure: '高收益高怨',
-      cultivate: '速成有损'
-    }
-  };
-
-  return pathId ? hints[pathId]?.[actionId] ?? null : null;
 }
 
 function TechniqueRewardPanel({ techniqueIds }: { techniqueIds: string[] }) {
