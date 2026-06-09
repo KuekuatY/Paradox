@@ -160,7 +160,7 @@ export default function Game() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -16 }}
-                  className="space-y-3 pt-14"
+                  className="space-y-3 pt-28"
                 >
                   <MobileGameNav activeTab={mobileTab} onSelect={setMobileTab} />
 
